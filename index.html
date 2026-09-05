@@ -1559,14 +1559,31 @@ function renameDoctor(i,v){if(!isAdmin())return alert("Accès réservé aux admi
 /* ===== Authentification et rôles : couche ajoutée sans modifier les fonctions métier ===== */
 const INITIAL_ADMIN={username:"Aissahabbouni",password:"202020",role:"admin",doctor:"Administrateur initial"};
 if(!Array.isArray(state.accounts)) state.accounts=[];
+const SUPABASE_URL="https://hoxaqlefmdctjyauwymj.supabase.co";
+const SUPABASE_KEY="sb_publishable_pjXtMOX-VOFMhp8PkIQ7hQ_Fb011ct6";
+function supaHeaders(extra={}){return Object.assign({"apikey":SUPABASE_KEY,"Content-Type":"application/json","Accept":"application/json"},extra)}
+function cloudToken(){return localStorage.getItem("toxGardeCloudToken")||sessionStorage.getItem("toxGardeCloudToken")||""}
+async function supaRpc(name,body){const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`,{method:"POST",headers:supaHeaders({"Prefer":"return=representation"}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json()}
+async function cloudLoad(token){const rows=await supaRpc("toxgarde_get_data",{p_token:token});return rows}
+function cleanStateForCloud(){const copy=JSON.parse(JSON.stringify(state));delete copy.accounts;return copy}
+async function cloudSave(){const token=cloudToken();if(!token)return;await supaRpc("toxgarde_save_data",{p_token:token,p_data:cleanStateForCloud()});}
 function authStorage(){return JSON.parse(localStorage.getItem("toxGardeSession")||"null")}
 function persistSession(session,keep){(keep?localStorage:sessionStorage).setItem("toxGardeSession",JSON.stringify(session)); if(keep) sessionStorage.removeItem("toxGardeSession"); else localStorage.removeItem("toxGardeSession")}
 function currentSession(){return JSON.parse(sessionStorage.getItem("toxGardeSession")||localStorage.getItem("toxGardeSession")||"null")}
 function isAdmin(){return currentSession()?.role==="admin"}
 function normalizeUser(v){return String(v||"").trim().toLowerCase()}
-function findAccount(username){const u=normalizeUser(username);if(normalizeUser(INITIAL_ADMIN.username)===u)return INITIAL_ADMIN;return state.accounts.find(a=>normalizeUser(a.username)===u)}
-function login(ev){ev.preventDefault();const u=document.getElementById("loginUsername").value.trim(),pw=document.getElementById("loginPassword").value;const a=findAccount(u);const err=document.getElementById("authError");if(!a||a.password!==pw){err.textContent="Identifiant ou mot de passe incorrect.";err.style.display="block";return;}persistSession({username:a.username,role:a.role,doctor:a.doctor||""},document.getElementById("keepConnected").checked);document.getElementById("loginPassword").value="";if(document.getElementById("rememberIdentifier")!==null){}localStorage.setItem("toxGardeRememberedUsername",u);applyAuthUI()}
-function logout(){localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");applyAuthUI()}
+async function login(ev){ev.preventDefault();const u=document.getElementById("loginUsername").value.trim(),pw=document.getElementById("loginPassword").value,err=document.getElementById("authError");err.style.display="none";try{const result=await supaRpc("toxgarde_login",{p_username:u,p_password:pw});const a=Array.isArray(result)?result[0]:result;if(!a?.token)throw new Error("Identifiant ou mot de passe incorrect.");const keep=document.getElementById("keepConnected").checked;persistSession({username:a.username,role:a.role,doctor:a.doctor||""},keep);(keep?localStorage:sessionStorage).setItem("toxGardeCloudToken",a.token);if(keep)sessionStorage.removeItem("toxGardeCloudToken");else localStorage.removeItem("toxGardeCloudToken");document.getElementById("loginPassword").value="";localStorage.setItem("toxGardeRememberedUsername",u);
+  const remote=await cloudLoad(a.token);
+  if(remote&&Object.keys(remote).length){state=Object.assign(state,remote);state.accounts=[];}
+  else if(a.role==="admin"){
+    const localAccounts=Array.isArray(state.accounts)?JSON.parse(JSON.stringify(state.accounts)):[];
+    for(const acc of localAccounts){if(acc?.username&&acc?.password&&normalizeUser(acc.username)!==normalizeUser(INITIAL_ADMIN.username)){await supaRpc("toxgarde_upsert_account",{p_token:a.token,p_doctor:acc.doctor||"",p_username:acc.username,p_password:acc.password,p_role:acc.role||"doctor"});}}
+    await cloudSave();
+  }
+  state.accounts=[];applyAuthUI();
+}catch(e){err.textContent=e.message.includes("Identifiant")?e.message:"Connexion impossible. Vérifiez votre connexion Internet.";err.style.display="block";}}
+async function logout(){const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
+async function save(){localStorage.setItem("gardeMed",JSON.stringify(state));try{await cloudSave()}catch(e){console.error("Synchronisation Supabase:",e);alert("Données enregistrées localement, mais la synchronisation en ligne a échoué. Vérifiez Internet.");}renderAll()}
 function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";return;}
 const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.getElementById("authUserInfo").innerHTML=`${ses.username} — ${admin?"Administrateur":"Médecin"}<button class="btn small" onclick="logout()">Déconnexion</button>`;
 if(!admin){
@@ -1583,9 +1600,10 @@ if(!admin){
 }
 renderAccountOptions();renderAccounts();renderAll();}
 function renderAccountOptions(){const el=document.getElementById("accountDoctor");if(!el)return;el.innerHTML='<option value="">-- Choisir un médecin --</option>'+state.doctors.map(d=>`<option value="${String(d.name).replaceAll('"','&quot;')}">${d.name}</option>`).join("")}
-function renderAccounts(){const el=document.getElementById("accountsBody");if(!el)return;el.innerHTML=state.accounts.map((a,i)=>`<tr><td>${a.doctor||"—"}</td><td>${a.username}</td><td>${a.role==="admin"?"Administrateur":"Médecin"}</td><td><button class="btn small danger" onclick="deleteDoctorAccount(${i})">Supprimer</button></td></tr>`).join("")||'<tr><td colspan="4" class="hint">Aucun compte médecin créé.</td></tr>'}
-function saveDoctorAccount(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");const doctor=document.getElementById("accountDoctor").value,username=document.getElementById("accountUsername").value.trim(),password=document.getElementById("accountPassword").value,role=document.getElementById("accountRole").value;if(!doctor||!username||!password)return alert("Veuillez renseigner le médecin, l’identifiant et le mot de passe.");if(normalizeUser(username)===normalizeUser(INITIAL_ADMIN.username))return alert("Cet identifiant est réservé à l’administrateur initial.");const i=state.accounts.findIndex(a=>normalizeUser(a.username)===normalizeUser(username));const account={doctor,username,password,role};if(i>=0)state.accounts[i]=account;else state.accounts.push(account);save();document.getElementById("accountUsername").value="";document.getElementById("accountPassword").value="";renderAccounts();const m=document.getElementById("accountFormMessage");if(m){m.textContent=i>=0?"Compte mis à jour avec succès.":"Compte médecin créé avec succès.";m.style.display="block";}}
-function deleteDoctorAccount(i){if(!isAdmin())return alert("Accès réservé aux administrateurs.");if(!isAdmin())return;state.accounts.splice(i,1);save();renderAccounts()}
+async function loadCloudAccounts(){if(!isAdmin())return [];const token=cloudToken();if(!token)return [];try{return await supaRpc("toxgarde_list_accounts",{p_token:token})}catch(e){console.error(e);return []}}
+async function renderAccounts(){const el=document.getElementById("accountsBody");if(!el)return;if(!isAdmin()){el.innerHTML='<tr><td colspan="4" class="hint">Accès administrateur.</td></tr>';return;}const accounts=await loadCloudAccounts();el.innerHTML=accounts.map((a,i)=>`<tr><td>${a.doctor||"—"}</td><td>${a.username}</td><td>${a.role==="admin"?"Administrateur":"Médecin"}</td><td>${a.username!==INITIAL_ADMIN.username?`<button class="btn small danger" onclick="deleteDoctorAccount(${i},'${String(a.username).replaceAll("'","\\'")}')">Supprimer</button>`:""}</td></tr>`).join("")||'<tr><td colspan="4" class="hint">Aucun compte médecin créé.</td></tr>'}
+async function saveDoctorAccount(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");const doctor=document.getElementById("accountDoctor").value,username=document.getElementById("accountUsername").value.trim(),password=document.getElementById("accountPassword").value,role=document.getElementById("accountRole").value;if(!doctor||!username||!password)return alert("Veuillez renseigner le médecin, l’identifiant et le mot de passe.");if(normalizeUser(username)===normalizeUser(INITIAL_ADMIN.username))return alert("Cet identifiant est réservé à l’administrateur initial.");try{await supaRpc("toxgarde_upsert_account",{p_token:cloudToken(),p_doctor:doctor,p_username:username,p_password:password,p_role:role});document.getElementById("accountUsername").value="";document.getElementById("accountPassword").value="";await renderAccounts();const m=document.getElementById("accountFormMessage");if(m){m.textContent="Compte médecin créé/mis à jour avec succès.";m.style.display="block";}}catch(e){alert("Impossible d'enregistrer le compte : "+e.message)}}
+async function deleteDoctorAccount(i,username){if(!isAdmin())return alert("Accès réservé aux administrateurs.");if(!confirm("Supprimer ce compte ?"))return;try{await supaRpc("toxgarde_delete_account",{p_token:cloudToken(),p_username:username});await renderAccounts()}catch(e){alert("Impossible de supprimer le compte : "+e.message)}}
 function clearDoctorAccountForm(){
   const d=document.getElementById("accountDoctor"),u=document.getElementById("accountUsername"),p=document.getElementById("accountPassword"),r=document.getElementById("accountRole"),m=document.getElementById("accountFormMessage");
   if(d)d.value="";
@@ -1605,7 +1623,7 @@ function addDoctorRecovery(){
   const date=document.getElementById("doctorRecoveryDate")?.value; if(!date)return alert("Sélectionnez une date de récupération.");
   if(state.absences.some(a=>a.doctor===ses.doctor&&a.start===date&&a.end===date&&a.type==="RÉCUP"))return alert("Cette récupération existe déjà.");
   state.absences.push({doctor:ses.doctor,start:date,end:date,type:"RÉCUP"}); rebuildRecoveryLedger();
-  localStorage.setItem("gardeMed",JSON.stringify(state));
+  save();
   const msg=document.getElementById("doctorRecoveryMessage"); if(msg){msg.textContent="Récupération enregistrée.";msg.style.display="block";}
   renderAll();
 }
