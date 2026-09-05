@@ -288,7 +288,7 @@ months.forEach((m,i)=>document.getElementById("month").innerHTML+=`<option value
 document.getElementById("month").value=8;
 if(document.getElementById("weekStart"))document.getElementById("weekStart").value="2026-09-01";
 let activePlanningView={type:"current",key:null};
-function save(){localStorage.setItem("gardeMed",JSON.stringify(state));renderAll()}
+function save(){save();renderAll()}
 function openTab(id){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.tab===id))}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 function addDoctor(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let n=document.getElementById("newDoctor").value.trim();if(!n)return;if(state.doctors.some(d=>d.name.toLowerCase()===n.toLowerCase()))return alert("Ce médecin existe déjà.");state.doctors.push({name:n,active:true,shift:"BOTH"});document.getElementById("newDoctor").value="";save()}
@@ -757,7 +757,7 @@ function generate(){
   state.planningHistory[per.key]={planning:JSON.parse(JSON.stringify(planning)),fixed:JSON.parse(JSON.stringify(state.fixed)),absences:JSON.parse(JSON.stringify(state.absences)),period:{start:iso(per.start),end:iso(per.end),type:per.type,weeks:per.weeks||1},includeInEquity:false,confirmed:false,label:`Généré le ${generationAt}`,generatedAt:generationAt,generatedAtISO:Date.now()};
   state.planning=planning;
   state.planningGeneratedAt=Date.now();
-  localStorage.setItem('gardeMed',JSON.stringify(state));
+  save();
   const cfinal=counts();
   const loadsFinal=active.map(d=>workload(cfinal[d.name]||{}));
   const spread=loadsFinal.length?Math.max(...loadsFinal)-Math.min(...loadsFinal):0;
@@ -963,7 +963,7 @@ function deleteHistoryBlock(k){
   delete state.confirmedPlanningKeys[k];
   if(activePlanningView?.type==="history" && activePlanningView.key===k)activePlanningView={type:"current",key:null};
   rebuildRecoveryLedger();
-  localStorage.setItem("gardeMed",JSON.stringify(state));
+  save();
   renderAll();
   renderPlanning();
 }
@@ -1061,7 +1061,7 @@ function addDoctorRecovery(){
   if(state.absences.some(a=>a.doctor===ses.doctor&&a.start===date&&a.end===date&&["RÉCUP","RECUP"].includes(String(a.type).toUpperCase())))
     return alert("Une récupération est déjà enregistrée à cette date.");
   state.absences.push({doctor:ses.doctor,start:date,end:date,type:"RÉCUP",createdAt:Date.now(),createdBy:ses.username});
-  localStorage.setItem("gardeMed",JSON.stringify(state));
+  save();
   const m=document.getElementById("doctorRecoveryMessage");
   if(m){m.textContent=`Récupération du ${date} enregistrée pour ${ses.doctor}.`;m.style.display="block";}
   document.getElementById("doctorRecoveryDate").value="";
@@ -1169,7 +1169,7 @@ function applyInlineEdit(name,date,raw){
   }else if(["CONGÉ","RÉCUP","INDISP"].includes(value)){
     state.absences.push({doctor:name,start:date,end:date,type:value});
   }
-  localStorage.setItem("gardeMed",JSON.stringify(state)); renderAll();
+  save(); renderAll();
 }
 function manualEditPlanning(){alert("Pour modifier le planning, cliquez directement sur la cellule souhaitée.");}
 function imageToDataURL(file,maxW,maxH,quality){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{const scale=Math.min(1,maxW/img.width,maxH/img.height);const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext("2d").drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL("image/jpeg",quality));};img.onerror=reject;img.src=reader.result;};reader.onerror=reject;reader.readAsDataURL(file);});}
@@ -1183,10 +1183,10 @@ async function saveAppearance(){
     persistAppearance();
   }catch(e){alert("Impossible d’enregistrer une image. Choisissez une image plus légère.");}
 }
-function persistAppearance(){try{localStorage.setItem("gardeMed",JSON.stringify(state));applyAppearance();}catch(e){alert("Le stockage du navigateur est insuffisant. Choisissez des images plus légères.");}}
+function persistAppearance(){try{save();applyAppearance();}catch(e){alert("Le stockage du navigateur est insuffisant. Choisissez des images plus légères.");}}
 function removeOneImage(key,fileId){state.settings=Object.assign({appLogo:"",centerLogo:"",homeImage:"",bgImage:""},state.settings||{});state.settings[key]="";const f=document.getElementById(fileId);if(f)f.value="";persistAppearance();}
 function removeImages(){state.settings.appLogo="";state.settings.centerLogo="";state.settings.homeImage="";state.settings.bgImage="";["appLogoFile","centerLogoFile","homeImageFile","bgImageFile"].forEach(id=>{const f=document.getElementById(id);if(f)f.value="";});persistAppearance();}
-function resetAppearance(){state.settings={title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:""};localStorage.setItem("gardeMed",JSON.stringify(state));applyAppearance();}
+function resetAppearance(){state.settings={title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:""};save();applyAppearance();}
 function applyAppearance(){
   state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:""},state.settings||{});
   document.getElementById("appTitleDisplay").textContent=state.settings.title||"Tox-Garde"; document.getElementById("appSubtitleDisplay").textContent=state.settings.subtitle||"Simple. Équitable. Intelligent";
@@ -1227,7 +1227,7 @@ function deleteHistoryPlanning(){
     activePlanningView={type:"current",key:null};
   }
   rebuildRecoveryLedger();
-  localStorage.setItem("gardeMed",JSON.stringify(state));
+  save();
   renderAll();
   renderPlanning();
 }
@@ -1245,7 +1245,7 @@ function deleteDisplayedPlanning(){
     delete state.confirmedPlanningKeys[k];
     activePlanningView={type:"current",key:null};
     rebuildRecoveryLedger();
-    localStorage.setItem("gardeMed",JSON.stringify(state));
+    save();
     renderAll();
     renderPlanning();
     return;
@@ -1267,7 +1267,7 @@ function deleteDisplayedPlanning(){
   state.planningGeneratedAt=null;
   activePlanningView={type:"current",key:null};
   rebuildRecoveryLedger();
-  localStorage.setItem("gardeMed",JSON.stringify(state));
+  save();
   renderAll();
   renderPlanning();
 }
@@ -1435,7 +1435,7 @@ function confirmCurrentPlanning(){
   }
   state.confirmedPlanningKeys[per.key]=true;
   // Le score temporaire du tableau est réinitialisé : le solde est désormais porté par recoveryLedger.
-  localStorage.setItem('gardeMed',JSON.stringify(state));
+  save();
   document.getElementById('genMessage').innerHTML='<div class="ok"><b>Planning validé.</b><br>Les récupérations ont été enregistrées et le score temporaire a été réinitialisé.</div>';
   renderAll();
 }
@@ -1443,7 +1443,7 @@ function resetAllRecoveryScores(){
   if(!confirm("Remettre à 0 tous les scores de récupération ? Cette action ne supprimera pas les plannings ni l’historique."))return;
   state.recoveryLedger={};
   state.doctors.forEach(d=>{state.recoveryLedger[d.name]={solde:0,totalAcquise:0,totalPrise:0,updatedAt:new Date().toISOString()};});
-  localStorage.setItem("gardeMed",JSON.stringify(state));
+  save();
   renderAll();
   alert("Tous les scores de récupération ont été remis à 0.");
 }
@@ -1453,7 +1453,7 @@ function resetAllEquityCounters(){
   state.equityResetAt=now;
   state.recoveryLedger={};
   state.doctors.forEach(d=>{state.recoveryLedger[d.name]={solde:0,totalAcquise:0,totalPrise:0,updatedAt:new Date(now).toISOString()};});
-  localStorage.setItem("gardeMed",JSON.stringify(state));
+  save();
   renderAll();
   alert("Tous les compteurs J/N/G/F et les scores de récupération ont été remis à 0. Les plannings restent conservés pour consultation.");
 }
@@ -1585,7 +1585,14 @@ async function supaRpc(name,body){
 }
 async function cloudLoad(token){const rows=await supaRpc("toxgarde_get_data",{p_token:token});return rows}
 function cleanStateForCloud(){const copy=JSON.parse(JSON.stringify(state));delete copy.accounts;return copy}
-async function cloudSave(){const token=cloudToken();if(!token)return;await supaRpc("toxgarde_save_data",{p_token:token,p_data:cleanStateForCloud()});}
+let cloudSaveQueue=Promise.resolve();
+async function cloudSave(){
+  const token=cloudToken();
+  if(!token)return;
+  const snapshot=cleanStateForCloud();
+  cloudSaveQueue=cloudSaveQueue.catch(()=>{}).then(()=>supaRpc("toxgarde_save_data",{p_token:token,p_data:snapshot}));
+  await cloudSaveQueue;
+}
 function authStorage(){return JSON.parse(localStorage.getItem("toxGardeSession")||"null")}
 function persistSession(session,keep){(keep?localStorage:sessionStorage).setItem("toxGardeSession",JSON.stringify(session)); if(keep) sessionStorage.removeItem("toxGardeSession"); else localStorage.removeItem("toxGardeSession")}
 function currentSession(){return JSON.parse(sessionStorage.getItem("toxGardeSession")||localStorage.getItem("toxGardeSession")||"null")}
@@ -1650,6 +1657,22 @@ async function login(ev){
 }
 async function logout(){const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
 async function save(){localStorage.setItem("gardeMed",JSON.stringify(state));try{await cloudSave()}catch(e){console.error("Synchronisation Supabase:",e);alert("Données enregistrées localement, mais la synchronisation en ligne a échoué. Vérifiez Internet.");}renderAll()}
+async function refreshCloudOnStartup(){
+  const ses=currentSession(), token=cloudToken();
+  if(!ses||!token)return;
+  try{
+    const remote=await cloudLoad(token);
+    if(remote&&typeof remote==="object"&&Object.keys(remote).length){
+      state=Object.assign(state,remote);
+      state.accounts=[];
+      localStorage.setItem("gardeMed",JSON.stringify(state));
+      renderAll();
+      if(ses.role!=="admin")showDoctorValidatedPlanning();
+    }
+  }catch(e){
+    console.error("Tox-Garde / actualisation Supabase :",e);
+  }
+}
 function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";return;}
 const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.getElementById("authUserInfo").innerHTML=`${ses.username} — ${admin?"Administrateur":"Médecin"}<button class="btn small" onclick="logout()">Déconnexion</button>`;
 if(!admin){
@@ -1697,10 +1720,11 @@ const _addAbsence=addAbsence;addAbsence=function(){const ses=currentSession();if
 const _renderAll=renderAll;renderAll=function(){_renderAll();renderHistorySelect();const ses=currentSession();if(ses&&ses.role!=="admin"){const sel=document.getElementById("absDoctor");if(sel){sel.innerHTML=`<option>${ses.doctor||""}</option>`;sel.value=ses.doctor||"";sel.disabled=true;}const t=document.getElementById("absType");if(t){[...t.options].forEach(o=>o.disabled=!( ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(o.value.toUpperCase())));if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(t.value.toUpperCase()))t.value="CONGÉ";}renderAccounts();}else renderAccountOptions();};
 const remembered=localStorage.getItem("toxGardeRememberedUsername");if(remembered){const lu=document.getElementById("loginUsername");if(lu)lu.value=remembered;}
 rebuildRecoveryLedger();
-localStorage.setItem("gardeMed",JSON.stringify(state));
+save();
 applyAuthUI();
 renderAll();
 applyAppearance();
+refreshCloudOnStartup();
 </script>
 </body>
 </html>
