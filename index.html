@@ -1563,7 +1563,26 @@ const SUPABASE_URL="https://hoxaqlefmdctjyauwymj.supabase.co";
 const SUPABASE_KEY="sb_publishable_pjXtMOX-VOFMhp8PkIQ7hQ_Fb011ct6";
 function supaHeaders(extra={}){return Object.assign({"apikey":SUPABASE_KEY,"Content-Type":"application/json","Accept":"application/json"},extra)}
 function cloudToken(){return localStorage.getItem("toxGardeCloudToken")||sessionStorage.getItem("toxGardeCloudToken")||""}
-async function supaRpc(name,body){const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`,{method:"POST",headers:supaHeaders({"Prefer":"return=representation"}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json()}
+async function supaRpc(name,body){
+  let r;
+  try{
+    r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`,{
+      method:"POST",
+      headers:supaHeaders({"Prefer":"return=representation"}),
+      body:JSON.stringify(body)
+    });
+  }catch(e){
+    throw new Error(`Supabase inaccessible (${e?.message||"erreur réseau"}). Vérifiez l’URL du projet et votre connexion Internet.`);
+  }
+  const text=await r.text();
+  let payload=null;
+  try{payload=text?JSON.parse(text):null}catch(_){payload=text}
+  if(!r.ok){
+    const msg=typeof payload==="string"?payload:(payload?.message||payload?.hint||payload?.details||payload?.error||"Erreur Supabase");
+    throw new Error(`Supabase ${r.status} — ${msg}`);
+  }
+  return payload;
+}
 async function cloudLoad(token){const rows=await supaRpc("toxgarde_get_data",{p_token:token});return rows}
 function cleanStateForCloud(){const copy=JSON.parse(JSON.stringify(state));delete copy.accounts;return copy}
 async function cloudSave(){const token=cloudToken();if(!token)return;await supaRpc("toxgarde_save_data",{p_token:token,p_data:cleanStateForCloud()});}
@@ -1572,16 +1591,63 @@ function persistSession(session,keep){(keep?localStorage:sessionStorage).setItem
 function currentSession(){return JSON.parse(sessionStorage.getItem("toxGardeSession")||localStorage.getItem("toxGardeSession")||"null")}
 function isAdmin(){return currentSession()?.role==="admin"}
 function normalizeUser(v){return String(v||"").trim().toLowerCase()}
-async function login(ev){ev.preventDefault();const u=document.getElementById("loginUsername").value.trim(),pw=document.getElementById("loginPassword").value,err=document.getElementById("authError");err.style.display="none";try{const result=await supaRpc("toxgarde_login",{p_username:u,p_password:pw});const a=Array.isArray(result)?result[0]:result;if(!a?.token)throw new Error("Identifiant ou mot de passe incorrect.");const keep=document.getElementById("keepConnected").checked;persistSession({username:a.username,role:a.role,doctor:a.doctor||""},keep);(keep?localStorage:sessionStorage).setItem("toxGardeCloudToken",a.token);if(keep)sessionStorage.removeItem("toxGardeCloudToken");else localStorage.removeItem("toxGardeCloudToken");document.getElementById("loginPassword").value="";localStorage.setItem("toxGardeRememberedUsername",u);
-  const remote=await cloudLoad(a.token);
-  if(remote&&Object.keys(remote).length){state=Object.assign(state,remote);state.accounts=[];}
-  else if(a.role==="admin"){
-    const localAccounts=Array.isArray(state.accounts)?JSON.parse(JSON.stringify(state.accounts)):[];
-    for(const acc of localAccounts){if(acc?.username&&acc?.password&&normalizeUser(acc.username)!==normalizeUser(INITIAL_ADMIN.username)){await supaRpc("toxgarde_upsert_account",{p_token:a.token,p_doctor:acc.doctor||"",p_username:acc.username,p_password:acc.password,p_role:acc.role||"doctor"});}}
-    await cloudSave();
+async function login(ev){
+  ev.preventDefault();
+  const u=document.getElementById("loginUsername").value.trim();
+  const pw=document.getElementById("loginPassword").value;
+  const err=document.getElementById("authError");
+  err.style.display="none";
+  try{
+    const result=await supaRpc("toxgarde_login",{p_username:u,p_password:pw});
+    const a=Array.isArray(result)?result[0]:result;
+    if(!a?.token)throw new Error("Identifiant ou mot de passe incorrect.");
+
+    const keep=document.getElementById("keepConnected").checked;
+
+    // Vérifier la lecture des données AVANT d'enregistrer la session.
+    // Cela évite de laisser une session partiellement connectée si un RPC suivant échoue.
+    let remote;
+    try{
+      remote=await cloudLoad(a.token);
+    }catch(e){
+      throw new Error(`Connexion au compte réussie, mais récupération des données Tox-Garde impossible. ${e.message}`);
+    }
+
+    // La session n'est mémorisée qu'après authentification + lecture cloud réussies.
+    persistSession({username:a.username,role:a.role,doctor:a.doctor||""},keep);
+    (keep?localStorage:sessionStorage).setItem("toxGardeCloudToken",a.token);
+    if(keep)sessionStorage.removeItem("toxGardeCloudToken");
+    else localStorage.removeItem("toxGardeCloudToken");
+    document.getElementById("loginPassword").value="";
+    localStorage.setItem("toxGardeRememberedUsername",u);
+
+    if(remote&&typeof remote==="object"&&Object.keys(remote).length){
+      state=Object.assign(state,remote);
+      state.accounts=[];
+    }else if(a.role==="admin"){
+      const localAccounts=Array.isArray(state.accounts)?JSON.parse(JSON.stringify(state.accounts)):[];
+      for(const acc of localAccounts){
+        if(acc?.username&&acc?.password&&normalizeUser(acc.username)!==normalizeUser(INITIAL_ADMIN.username)){
+          await supaRpc("toxgarde_upsert_account",{
+            p_token:a.token,
+            p_doctor:acc.doctor||"",
+            p_username:acc.username,
+            p_password:acc.password,
+            p_role:acc.role||"doctor"
+          });
+        }
+      }
+      await cloudSave();
+    }
+
+    state.accounts=[];
+    applyAuthUI();
+  }catch(e){
+    console.error("Tox-Garde / connexion Supabase :",e);
+    err.textContent=e?.message||"Connexion impossible.";
+    err.style.display="block";
   }
-  state.accounts=[];applyAuthUI();
-}catch(e){err.textContent=e.message.includes("Identifiant")?e.message:"Connexion impossible. Vérifiez votre connexion Internet.";err.style.display="block";}}
+}
 async function logout(){const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
 async function save(){localStorage.setItem("gardeMed",JSON.stringify(state));try{await cloudSave()}catch(e){console.error("Synchronisation Supabase:",e);alert("Données enregistrées localement, mais la synchronisation en ligne a échoué. Vérifiez Internet.");}renderAll()}
 function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";return;}
