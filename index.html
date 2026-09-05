@@ -1656,13 +1656,26 @@ async function login(ev){
   }
 }
 async function logout(){const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
-async function save(){localStorage.setItem("gardeMed",JSON.stringify(state));try{await cloudSave()}catch(e){console.error("Synchronisation Supabase:",e);alert("Données enregistrées localement, mais la synchronisation en ligne a échoué. Vérifiez Internet.");}renderAll()}
+async function save(){
+  localStorage.setItem("gardeMed",JSON.stringify(state));
+  cloudSyncBusy=true;
+  try{await cloudSave();lastCloudSnapshot=JSON.stringify(cleanStateForCloud());}
+  catch(e){console.error("Synchronisation Supabase:",e);alert("Données enregistrées localement, mais la synchronisation en ligne a échoué. Vérifiez Internet.");}
+  finally{cloudSyncBusy=false;}
+  renderAll();
+}
+let cloudSyncBusy=false;
+let cloudPollTimer=null;
+let lastCloudSnapshot="";
+
 async function refreshCloudOnStartup(){
   const ses=currentSession(), token=cloudToken();
   if(!ses||!token)return;
   try{
     const remote=await cloudLoad(token);
     if(remote&&typeof remote==="object"&&Object.keys(remote).length){
+      const incoming=JSON.stringify(remote);
+      lastCloudSnapshot=incoming;
       state=Object.assign(state,remote);
       state.accounts=[];
       localStorage.setItem("gardeMed",JSON.stringify(state));
@@ -1672,6 +1685,31 @@ async function refreshCloudOnStartup(){
   }catch(e){
     console.error("Tox-Garde / actualisation Supabase :",e);
   }
+}
+
+async function pollCloudChanges(){
+  const ses=currentSession(), token=cloudToken();
+  if(!ses||!token||cloudSyncBusy)return;
+  try{
+    const remote=await cloudLoad(token);
+    if(!remote||typeof remote!=="object"||!Object.keys(remote).length)return;
+    const incoming=JSON.stringify(remote);
+    if(incoming===lastCloudSnapshot)return;
+    lastCloudSnapshot=incoming;
+    state=Object.assign(state,remote);
+    state.accounts=[];
+    localStorage.setItem("gardeMed",JSON.stringify(state));
+    renderAll();
+    if(ses.role!=="admin")showDoctorValidatedPlanning();
+    console.log("Tox-Garde : données Supabase actualisées automatiquement.");
+  }catch(e){
+    console.error("Tox-Garde / synchronisation automatique :",e);
+  }
+}
+
+function startCloudPolling(){
+  if(cloudPollTimer)clearInterval(cloudPollTimer);
+  cloudPollTimer=setInterval(pollCloudChanges,5000);
 }
 function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";return;}
 const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.getElementById("authUserInfo").innerHTML=`${ses.username} — ${admin?"Administrateur":"Médecin"}<button class="btn small" onclick="logout()">Déconnexion</button>`;
@@ -1720,11 +1758,10 @@ const _addAbsence=addAbsence;addAbsence=function(){const ses=currentSession();if
 const _renderAll=renderAll;renderAll=function(){_renderAll();renderHistorySelect();const ses=currentSession();if(ses&&ses.role!=="admin"){const sel=document.getElementById("absDoctor");if(sel){sel.innerHTML=`<option>${ses.doctor||""}</option>`;sel.value=ses.doctor||"";sel.disabled=true;}const t=document.getElementById("absType");if(t){[...t.options].forEach(o=>o.disabled=!( ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(o.value.toUpperCase())));if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(t.value.toUpperCase()))t.value="CONGÉ";}renderAccounts();}else renderAccountOptions();};
 const remembered=localStorage.getItem("toxGardeRememberedUsername");if(remembered){const lu=document.getElementById("loginUsername");if(lu)lu.value=remembered;}
 rebuildRecoveryLedger();
-save();
 applyAuthUI();
 renderAll();
 applyAppearance();
-refreshCloudOnStartup();
+refreshCloudOnStartup().finally(startCloudPolling);
 </script>
 </body>
 </html>
