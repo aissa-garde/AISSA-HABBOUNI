@@ -171,6 +171,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <button data-tab="absences">Congés / indisponibilités</button>
 <button class="admin-only" data-tab="generate">Génération</button>
 <button data-tab="planning">Planning</button>
+<button id="myGuardsTab" data-tab="myGuards" style="display:none">📅 Mes gardes</button>
 <button data-tab="stats">Recuperation</button>
 <button class="admin-only" data-tab="accounts">Comptes</button>
 </nav>
@@ -268,6 +269,10 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <br><button class="btn primary" type="button" onclick="addDoctorRecovery()">Ajouter la récupération</button>
 <div id="doctorRecoveryMessage" class="ok" style="display:none;margin-top:12px"></div>
 </div>
+</section>
+
+<section id="myGuards" class="panel">
+<div class="card"><h2>📅 Mes gardes</h2><div id="myGuardsContent"></div></div>
 </section>
 
 <section id="stats" class="panel">
@@ -1725,8 +1730,34 @@ function startCloudPolling(){
   if(cloudPollTimer)clearInterval(cloudPollTimer);
   cloudPollTimer=setInterval(pollCloudChanges,5000);
 }
+function renderMyGuards(){
+  const el=document.getElementById("myGuardsContent");
+  if(!el)return;
+  const ses=currentSession();
+  if(!ses || ses.role==="admin"){el.innerHTML='<div class="hint">Cette rubrique est réservée aux comptes Médecin.</div>';return;}
+  const doctor=ses.doctor, today=iso(new Date()), byKey=new Map();
+  Object.entries(state.planningHistory||{}).forEach(([key,raw])=>{
+    const h=historyData(key);
+    if(!h || !isHistoryConfirmed(key,raw))return;
+    Object.entries(h.planning||{}).forEach(([date,items])=>{
+      if(date<today)return;
+      const item=(items||[]).find(x=>x.doctor===doctor && ["J","N"].includes(x.type));
+      if(item)byKey.set(date,{date,type:item.type});
+    });
+    (h.fixed||[]).forEach(x=>{
+      if(x.doctor===doctor && x.date>=today && ["G","F"].includes(x.type))byKey.set(x.date,{date:x.date,type:x.type});
+    });
+  });
+  const guards=[...byKey.values()].sort((a,b)=>a.date.localeCompare(b.date)).slice(0,10);
+  const fmt=d=>{const dt=dateFromISO(d);return {date:dt.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"}),day:dt.toLocaleDateString("fr-FR",{weekday:"long"})};};
+  const typeLabel=t=>({J:"☀️ J",N:"🌙 N",G:"🟢 G",F:"🟣 F"}[t]||t);
+  if(!guards.length){el.innerHTML='<div class="hint">Aucune prochaine garde dans les plannings validés.</div>';return;}
+  const first=guards[0], f=fmt(first.date), days=Math.max(0,Math.round((dateFromISO(first.date)-dateFromISO(today))/86400000));
+  const when=days===0?"Aujourd’hui":days===1?"Demain":`Dans ${days} jours`;
+  el.innerHTML=`<div style="border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;background:#f8fafc"><div class="hint">⏰ Prochaine garde</div><div style="font-size:20px;font-weight:800;margin-top:4px">${f.day} ${f.date}</div><div style="margin-top:5px;font-weight:700">${typeLabel(first.type)} — ${when}</div></div><table><thead><tr><th>Date</th><th>Jour</th><th>Type</th></tr></thead><tbody>${guards.map(g=>{const x=fmt(g.date);return `<tr><td>${x.date}</td><td>${x.day}</td><td><b>${typeLabel(g.type)}</b></td></tr>`}).join("")}</tbody></table>`;
+}
 function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";return;}
-const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.getElementById("authUserInfo").innerHTML=`${ses.username} — ${admin?"Administrateur":"Médecin"}<button class="btn small" onclick="logout()">Déconnexion</button>`;
+const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display=admin?"none":"block";document.getElementById("authUserInfo").innerHTML=`${ses.username} — ${admin?"Administrateur":"Médecin"}<button class="btn small" onclick="logout()">Déconnexion</button>`;
 if(!admin){
   document.getElementById("doctorAbsenceHint").style.display="block";
   const absDoctor=document.getElementById("absDoctor");
@@ -1758,7 +1789,7 @@ function toggleAccountPassword(){
   p.type=p.type==="password"?"text":"password";
 }
 
-const _openTab=openTab;openTab=function(id){if(!isAdmin()&&!["dashboard","planning","absences","stats"].includes(id))id="planning";_openTab(id)};
+const _openTab=openTab;openTab=function(id){if(!isAdmin()&&!['dashboard','planning','absences','stats','myGuards'].includes(id))id="planning";if(isAdmin()&&id==="myGuards")id="dashboard";_openTab(id);if(id==="myGuards")renderMyGuards();};
 function addDoctorRecovery(){
   const ses=currentSession(); if(!ses||ses.role==="admin")return alert("Cette saisie est destinée aux comptes Médecin.");
   const date=document.getElementById("doctorRecoveryDate")?.value; if(!date)return alert("Sélectionnez une date de récupération.");
@@ -1769,7 +1800,7 @@ function addDoctorRecovery(){
   renderAll();
 }
 const _addAbsence=addAbsence;addAbsence=function(){const ses=currentSession();if(ses?.role!=="admin"){const sel=document.getElementById("absDoctor");sel.value=ses.doctor||"";const type=document.getElementById("absType").value.toUpperCase();if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(type))return alert("Un médecin peut saisir uniquement un congé, une indisponibilité ou une récupération.");}return _addAbsence()};
-const _renderAll=renderAll;renderAll=function(){_renderAll();renderHistorySelect();const ses=currentSession();if(ses&&ses.role!=="admin"){const sel=document.getElementById("absDoctor");if(sel){sel.innerHTML=`<option>${ses.doctor||""}</option>`;sel.value=ses.doctor||"";sel.disabled=true;}const t=document.getElementById("absType");if(t){[...t.options].forEach(o=>o.disabled=!( ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(o.value.toUpperCase())));if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(t.value.toUpperCase()))t.value="CONGÉ";}renderAccounts();}else renderAccountOptions();};
+const _renderAll=renderAll;renderAll=function(){_renderAll();renderHistorySelect();renderMyGuards();const ses=currentSession();if(ses&&ses.role!=="admin"){const sel=document.getElementById("absDoctor");if(sel){sel.innerHTML=`<option>${ses.doctor||""}</option>`;sel.value=ses.doctor||"";sel.disabled=true;}const t=document.getElementById("absType");if(t){[...t.options].forEach(o=>o.disabled=!( ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(o.value.toUpperCase())));if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(t.value.toUpperCase()))t.value="CONGÉ";}renderAccounts();}else renderAccountOptions();};
 const remembered=localStorage.getItem("toxGardeRememberedUsername");if(remembered){const lu=document.getElementById("loginUsername");if(lu)lu.value=remembered;}
 rebuildRecoveryLedger();
 applyAuthUI();
