@@ -79,9 +79,9 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 @media(max-width:700px){.today-status-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.today-status-box{padding:6px}.today-status-title{font-size:11px}.today-status-person{font-size:10px}.today-status-empty{font-size:9px}}
 .history-planning-card{position:relative;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between;gap:10px;width:100%;box-sizing:border-box}
 .history-planning-info{display:flex;flex-direction:column;align-items:flex-start;min-width:0}.history-planning-info strong{font-size:13px}.history-planning-info span{font-size:11px;color:#667085;margin-top:3px}
-.history-delete-btn{flex:0 0 auto;border:1px solid #f1b5b5;border-radius:7px;background:#fff5f5;color:#b42318;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer}.history-delete-btn:hover{background:#fee4e2}.history-delete-btn:disabled{opacity:.55;cursor:not-allowed}
+.history-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto}.history-view-btn,.history-delete-btn{flex:0 0 auto;border:1px solid #f1b5b5;border-radius:7px;background:#fff5f5;color:#b42318;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer}.history-view-btn{border:1px solid #b8d2ea;border-radius:7px;background:#f4f9ff;color:#24608f;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer}.history-view-btn:hover{background:#e8f3ff}.history-delete-btn:hover{background:#fee4e2}.history-delete-btn:disabled{opacity:.55;cursor:not-allowed}
 .history-current-card{border-color:#8bb8df;background:#f7fbff}.history-current-empty{cursor:default}
-@media(max-width:560px){.history-planning-card{flex-direction:column!important;align-items:stretch!important}.history-delete-btn{width:100%}}
+@media(max-width:560px){.history-planning-card{flex-direction:row!important;align-items:center!important}.history-actions{align-self:center}.history-view-btn,.history-delete-btn{width:22px!important}}
 </style>
 
 <style>
@@ -117,9 +117,9 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 .history-planning-info{min-width:0;max-width:calc(100% - 24px)}
 .history-planning-info strong{font-size:11px!important;line-height:1.1!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .history-planning-info span{font-size:9px!important;line-height:1.1!important;margin-top:2px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-.history-delete-btn{width:22px!important;height:22px!important;min-width:22px!important;padding:0!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;font-size:12px!important;line-height:1!important}
+.history-actions{gap:4px}.history-view-btn,.history-delete-btn{width:22px!important;height:22px!important;min-width:22px!important;padding:0!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;font-size:12px!important;line-height:1!important}
 @media(max-width:1100px){.history-month-button strong{font-size:10px!important}.history-month-button span{font-size:8px!important}}
-@media(max-width:650px){.history-groups{grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:2px!important}.history-month-button{min-height:48px!important}.history-month-button strong{font-size:8px!important}.history-month-button span{font-size:7px!important}.history-planning-card{padding:5px!important}.history-planning-info strong{font-size:9px!important}.history-planning-info span{font-size:8px!important}.history-delete-btn{width:19px!important;height:19px!important;min-width:19px!important;font-size:10px!important}}
+@media(max-width:650px){.history-groups{grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:2px!important}.history-month-button{min-height:48px!important}.history-month-button strong{font-size:8px!important}.history-month-button span{font-size:7px!important}.history-planning-card{padding:5px!important}.history-planning-info strong{font-size:9px!important}.history-planning-info span{font-size:8px!important}.history-view-btn,.history-delete-btn{width:19px!important;height:19px!important;min-width:19px!important;font-size:10px!important}}
 </style>
 
 <style>
@@ -219,7 +219,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <p class="hint">Le fichier Excel doit utiliser les colonnes <b>Médecin | Date début | Date fin | Type</b>. Types acceptés : <b>CONGÉ, INDISPONIBLE, RÉCUP, G, F</b>. Pour une saisie sur une seule journée, Date début = Date fin.</p>
 <div class="admin-only"><input type="file" id="excelFile" accept=".xlsx,.xls,.csv" onchange="importExcel(event)"></div>
 <div class="actions admin-only"><button class="btn" onclick="downloadTemplate()">Télécharger un modèle Excel</button><button class="btn danger" onclick="clearFixed()">Effacer toutes les saisies</button></div>
-<table style="margin-top:15px"><thead><tr><th class="name">Médecin</th><th>Du</th><th>Au</th><th>Type</th><th></th></tr></thead><tbody id="absBody"></tbody></table>
+<table style="margin-top:15px"><thead><tr><th class="name">Médecin</th><th>Du</th><th>Au</th><th>Type</th><th>Date de saisie</th><th></th></tr></thead><tbody id="absBody"></tbody></table>
 </div></section>
 
 <section id="generate" class="panel">
@@ -353,7 +353,7 @@ function addAbsence(){
     const now=Date.now();dates.forEach(date=>state.fixed.push({doctor,date,type,createdAt:now}));
   }else{
     if(state.absences.some(a=>a.doctor===doctor&&a.start===start&&a.end===end&&a.type===type))return alert("Cette saisie existe déjà.");
-    state.absences.push({doctor,start,end,type});
+    state.absences.push({doctor,start,end,type,createdAt:Date.now()});
   }
   rebuildRecoveryLedger();save();
 }
@@ -417,7 +417,7 @@ function importExcel(ev){if(!isAdmin())return alert("Cette action est réservée
         }else{
           const duplicate=state.absences.some(x=>x.doctor===doctor&&x.start===s&&x.end===(en||s)&&x.type===type);
           if(duplicate){skipped++;return;}
-          state.absences.push({doctor,start:s,end:en||s,type}); added++;
+          state.absences.push({doctor,start:s,end:en||s,type,createdAt:Date.now()}); added++;
         }
       });
       save();
@@ -884,12 +884,15 @@ function renderHistorySelect(){
           ? generatedAgeText(x.h?.generatedAtISO || x.h?.generatedAt)
           : generatedAge(x.h);
         const label=x.current ? `${months[currentPer.start.getMonth()]} ${currentPer.start.getFullYear()}` : historyPeriodLabel(x.key,x.h);
+        const viewBtn=x.current
+          ? `<button type="button" class="history-view-btn" title="Voir le tableau" aria-label="Voir le tableau" onclick="event.stopPropagation();selectHistoryBlock('',true)">👁</button>`
+          : `<button type="button" class="history-view-btn" title="Voir le tableau" aria-label="Voir le tableau" onclick="event.stopPropagation();selectHistoryBlock('${escapeHtml(x.key)}',false)">👁</button>`;
         const deleteBtn=x.current
           ? `<button type="button" class="history-delete-btn" title="Supprimer ce planning" aria-label="Supprimer ce planning" onclick="event.stopPropagation();deleteDisplayedPlanning()">🗑</button>`
           : `<button type="button" class="history-delete-btn" title="Supprimer ce planning" aria-label="Supprimer ce planning" onclick="event.stopPropagation();deleteHistoryBlock('${escapeHtml(x.key)}')">🗑</button>`;
         return `<div class="history-planning-card ${x.current?'history-current-card':''}" role="button" tabindex="0" onclick="selectHistoryBlock('${escapeHtml(x.key)}',${x.current})" onkeydown="if(event.key==='Enter'||event.key===' ')selectHistoryBlock('${escapeHtml(x.key)}',${x.current})">
           <div class="history-planning-info"><strong>${escapeHtml(label)}${x.current?' — Actuel':''}</strong><span>${age?`Généré ${x.current?'':'il y a '}${escapeHtml(age)}`:(x.current?'Planning actuel':'Date de génération inconnue')}</span></div>
-          ${deleteBtn}
+          <div class="history-actions">${viewBtn}${deleteBtn}</div>
         </div>`;
       }).join("");
       return `<div class="history-year-card"><button type="button" class="history-year-button" onclick="toggleHistoryPanel('${yid}')"><strong>${y}</strong><span>${yi.length} planning${yi.length>1?'s':''}</span><b>▾</b></button><div id="${yid}" class="history-planning-list" hidden>${list}</div></div>`;
@@ -1355,9 +1358,9 @@ table.planning th,table.planning td{mso-fit-shrink:1;}
 .history-month-head{display:flex;align-items:stretch}.history-month-button{flex:1}
 .history-planning-card{position:relative;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between;gap:10px;width:100%;box-sizing:border-box}
 .history-planning-info{display:flex;flex-direction:column;align-items:flex-start;min-width:0}.history-planning-info strong{font-size:13px}.history-planning-info span{font-size:11px;color:#667085;margin-top:3px}
-.history-delete-btn{flex:0 0 auto;border:1px solid #f1b5b5;border-radius:7px;background:#fff5f5;color:#b42318;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer}.history-delete-btn:hover{background:#fee4e2}.history-delete-btn:disabled{opacity:.55;cursor:not-allowed}
+.history-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto}.history-view-btn,.history-delete-btn{flex:0 0 auto;border:1px solid #f1b5b5;border-radius:7px;background:#fff5f5;color:#b42318;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer}.history-view-btn{border:1px solid #b8d2ea;border-radius:7px;background:#f4f9ff;color:#24608f;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer}.history-view-btn:hover{background:#e8f3ff}.history-delete-btn:hover{background:#fee4e2}.history-delete-btn:disabled{opacity:.55;cursor:not-allowed}
 .history-current-card{border-color:#8bb8df;background:#f7fbff}.history-current-empty{cursor:default}
-@media(max-width:560px){.history-planning-card{flex-direction:column!important;align-items:stretch!important}.history-delete-btn{width:100%}}
+@media(max-width:560px){.history-planning-card{flex-direction:row!important;align-items:center!important}.history-actions{align-self:center}.history-view-btn,.history-delete-btn{width:22px!important}}
 </style>
 
 <style>
@@ -1549,10 +1552,16 @@ function renderTodayGuards(){
       ${listHtml("Indisponible",indisponibles,"Aucun médecin indisponible")}
     </div>`;
 }
+function formatEntryCreatedAt(ts){
+  if(!ts)return "Non renseignée";
+  const d=typeof ts==="number"?new Date(ts):new Date(ts);
+  if(isNaN(d))return "Non renseignée";
+  return d.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+}
 function renderAll(){let body=document.getElementById("teamBody");let c=counts();body.innerHTML=state.doctors.map((d,i)=>`<tr><td class='name'><input value="${d.name.replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td>${c[d.name]?.J||0}</td><td>${c[d.name]?.N||0}</td><td>${c[d.name]?.G||0}</td><td>${c[d.name]?.F||0}</td><td>${c[d.name]?.total||0}</td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`).join("");
 let opts=state.doctors.map(d=>`<option>${d.name}</option>`).join("");document.getElementById("absDoctor").innerHTML=opts;
-const mergedEntries=[...state.absences.map((a,i)=>({kind:"abs",index:i,doctor:a.doctor,start:a.start,end:a.end,type:a.type})),...state.fixed.map((x,i)=>({kind:"fixed",index:i,doctor:x.doctor,start:x.date,end:x.date,type:x.type}))].sort((a,b)=>(a.start||"").localeCompare(b.start||"")||a.doctor.localeCompare(b.doctor));
-document.getElementById("absBody").innerHTML=mergedEntries.map(a=>{const ses=currentSession();const canDelete=ses?.role==="admin" || (a.kind==="abs" && a.doctor===ses?.doctor && !["G","F"].includes(a.type));const action=canDelete?`<button class="btn small danger" onclick='deleteMergedEntry("${a.kind}",${a.index})'>Supprimer</button>`:`<span class="hint">Consultation</span>`;return `<tr><td class="name">${a.doctor}</td><td>${a.start}</td><td>${a.end}</td><td>${["G","F"].includes(a.type)?`<span class="badge ${a.type==="G"?"bG":"bF"}">${a.type}</span>`:a.type}</td><td>${action}</td></tr>`}).join("");
+const mergedEntries=[...state.absences.map((a,i)=>({kind:"abs",index:i,doctor:a.doctor,start:a.start,end:a.end,type:a.type,createdAt:a.createdAt})),...state.fixed.map((x,i)=>({kind:"fixed",index:i,doctor:x.doctor,start:x.date,end:x.date,type:x.type,createdAt:x.createdAt}))].sort((a,b)=>(a.start||"").localeCompare(b.start||"")||a.doctor.localeCompare(b.doctor));
+document.getElementById("absBody").innerHTML=mergedEntries.map(a=>{const ses=currentSession();const canDelete=ses?.role==="admin" || (a.kind==="abs" && a.doctor===ses?.doctor && !["G","F"].includes(a.type));const action=canDelete?`<button class="btn small danger" onclick='deleteMergedEntry("${a.kind}",${a.index})'>Supprimer</button>`:`<span class="hint">Consultation</span>`;return `<tr><td class="name">${a.doctor}</td><td>${a.start}</td><td>${a.end}</td><td>${["G","F"].includes(a.type)?`<span class="badge ${a.type==="G"?"bG":"bF"}">${a.type}</span>`:a.type}</td><td>${formatEntryCreatedAt(a.createdAt)}</td><td>${action}</td></tr>`}).join("");
 document.getElementById("dashStats").innerHTML=`<div class='stat'><span>Médecins actifs</span><b>${state.doctors.filter(d=>d.active).length}</b></div>`;renderTodayGuards(); if(isAdmin())renderPlanning(); else {renderDoctorHistorySelect(); const k=activePlanningView?.type==="history"?activePlanningView.key:document.getElementById("doctorHistorySelect")?.value; if(k)showDoctorValidatedPlanning(k);}}
 function renameDoctor(i,v){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let old=state.doctors[i].name;v=v.trim();if(!v)return;state.doctors[i].name=v;state.absences.forEach(a=>{if(a.doctor===old)a.doctor=v});state.fixed.forEach(a=>{if(a.doctor===old)a.doctor=v});if(state.accounts){state.accounts.forEach(a=>{if(a.doctor===old)a.doctor=v})};save()}
 
@@ -1749,7 +1758,7 @@ function addDoctorRecovery(){
   const ses=currentSession(); if(!ses||ses.role==="admin")return alert("Cette saisie est destinée aux comptes Médecin.");
   const date=document.getElementById("doctorRecoveryDate")?.value; if(!date)return alert("Sélectionnez une date de récupération.");
   if(state.absences.some(a=>a.doctor===ses.doctor&&a.start===date&&a.end===date&&a.type==="RÉCUP"))return alert("Cette récupération existe déjà.");
-  state.absences.push({doctor:ses.doctor,start:date,end:date,type:"RÉCUP"}); rebuildRecoveryLedger();
+  state.absences.push({doctor:ses.doctor,start:date,end:date,type:"RÉCUP",createdAt:Date.now()}); rebuildRecoveryLedger();
   save();
   const msg=document.getElementById("doctorRecoveryMessage"); if(msg){msg.textContent="Récupération enregistrée.";msg.style.display="block";}
   renderAll();
