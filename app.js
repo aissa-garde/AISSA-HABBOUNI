@@ -9,7 +9,7 @@ state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. In
 if(!state.planningHistory) state.planningHistory={};
 if(!state.settings) state.settings={title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:""};
 if(!state.generationOffset) state.generationOffset=0;
-if(!state.doctors.length) state.doctors=demoDoctors.map(name=>({name,active:true,shift:"BOTH"}));
+if(!state.doctors.length) state.doctors=demoDoctors.map(name=>({name,active:true,shift:"BOTH",weekend:true}));
 state.doctors.forEach(d=>{if(!d.shift)d.shift="BOTH";});
 const months=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const monthShort=["Jan","Fév","Mar","Avr","Mai","Jui","Jul","Aoû","Sep","Oct","Nov","Déc"];
@@ -20,8 +20,8 @@ let activePlanningView={type:"current",key:null};
 function save(){localStorage.setItem("gardeMed",JSON.stringify(state));renderAll()}
 function openTab(id){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.tab===id))}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
-function addDoctor(){let n=document.getElementById("newDoctor").value.trim();if(!n)return;if(state.doctors.some(d=>d.name.toLowerCase()===n.toLowerCase()))return alert("Ce médecin existe déjà.");state.doctors.push({name:n,active:true,shift:"BOTH"});document.getElementById("newDoctor").value="";save()}
-function loadDemo(){state.doctors=demoDoctors.map(name=>({name,active:true,shift:"BOTH"}));save()}
+function addDoctor(){let n=document.getElementById("newDoctor").value.trim();if(!n)return;if(state.doctors.some(d=>d.name.toLowerCase()===n.toLowerCase()))return alert("Ce médecin existe déjà.");state.doctors.push({name:n,active:true,shift:"BOTH",weekend:true});document.getElementById("newDoctor").value="";save()}
+function loadDemo(){state.doctors=demoDoctors.map(name=>({name,active:true,shift:"BOTH",weekend:true}));save()}
 function importTeamFile(ev){
   const f=ev.target.files?.[0]; if(!f)return;
   const r=new FileReader();
@@ -41,6 +41,7 @@ function importTeamFile(ev){
         if(!name){skipped++;return;}
         const activeKey=findKey(keys,["actif","active","disponible"]);
         const shiftKey=findKey(keys,["type de garde","type garde","garde","shift","service"]);
+        const weekendKey=findKey(keys,["habilité week-end","habilite week-end","week-end","weekend","garde week-end","garde weekend"]);
         let active=true;
         if(activeKey){const v=norm(row[activeKey]); if(["non","no","0","false","inactif","inactive"].includes(v))active=false;}
         let raw=shiftKey?norm(row[shiftKey]):"both";
@@ -52,8 +53,13 @@ function importTeamFile(ev){
           if(raw.includes("nuit")&&!raw.includes("jour"))shift="N";
           else if(raw.includes("jour")&&!raw.includes("nuit"))shift="J";
         }
+        let weekend=true;
+        if(weekendKey){
+          const w=norm(row[weekendKey]);
+          if(["non","no","0","false","inactif","inactive"].includes(w)) weekend=false;
+        }
         if(doctors.some(d=>d.name.toLowerCase()===name.toLowerCase())){skipped++;return;}
-        doctors.push({name,active,shift});
+        doctors.push({name,active,shift,weekend});
       });
       if(!doctors.length){alert("Aucun médecin valide trouvé dans le fichier.");return;}
       if(!confirm(`Importer ${doctors.length} médecin(s) et remplacer l'équipe actuelle ?`))return;
@@ -65,11 +71,31 @@ function importTeamFile(ev){
   r.readAsArrayBuffer(f);
 }
 function downloadTeamTemplate(){
-  const rows=[["Médecin","Actif","Type de garde"],["Dr Exemple 1","Oui","J"],["Dr Exemple 2","Oui","N"],["Dr Exemple 3","Oui","J+N"]];
+  const rows=[["Médecin","Actif","Type de garde","Habilité week-end"],["Dr Exemple 1","Oui","J","Oui"],["Dr Exemple 2","Oui","N","Oui"],["Dr Exemple 3","Oui","J+N","Oui"]];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Equipe"); XLSX.writeFile(wb,"modele_equipe_tox-garde.xlsx");
 }
 function delDoctor(i){if(confirm("Supprimer ce médecin ?")){state.doctors.splice(i,1);save()}}
-function addAbsence(){let doctor=document.getElementById("absDoctor").value,s=document.getElementById("absStart").value,e=document.getElementById("absEnd").value,type=document.getElementById("absType").value;if(!doctor||!s||!e||e<s)return alert("Vérifie les dates.");state.absences.push({doctor,start:s,end:e,type});save()}
+function addAbsence(){
+  let doctor=document.getElementById("absDoctor").value,s=document.getElementById("absStart").value,e=document.getElementById("absEnd").value,type=document.getElementById("absType").value;
+  if(!doctor||!s||!e||e<s)return alert("Vérifie les dates.");
+  state.absences.push({doctor,start:s,end:e,type});
+  save();
+  // Une absence ajoutée après validation ne modifie jamais le planning validé.
+  // Si elle chevauche une garde déjà validée, signaler le conflit sans masquer la garde.
+  const per=getPeriodDates(), h=state.planningHistory?.[per.key];
+  if(h?.confirmed && h.planning){
+    const conflicts=[];
+    for(const x of Object.values(h.planning).flat()){
+      if(x?.doctor!==doctor || !["J","N"].includes(x.type)) continue;
+      const d=x.date;
+      if(d>=s && d<=e) conflicts.push(`${d} ${x.type}`);
+    }
+    if(conflicts.length){
+      const msg=document.getElementById("genMessage");
+      if(msg) msg.innerHTML=`<div class="warn"><b>Attention : absence ajoutée après validation.</b><br>Le planning validé reste inchangé et ses gardes restent visibles.<br><small>Conflit détecté : ${escapeHtml(conflicts.join(" • "))}. Régénérez puis validez à nouveau si cette absence doit être prise en compte.</small></div>`;
+    }
+  }
+}
 function delAbs(i){state.absences.splice(i,1);save()}
 function isWeekend(d){let x=d.getDay();return x===0||x===6}
 function iso(d){
@@ -212,12 +238,10 @@ function canAssign(doc,date,type,planning){
   if(absOn(doc,date))return false;
   if(fixedOn(doc,date))return false;
   if(specialFixedBlock(doc,date))return false;
-  // Après la fin du dernier congé/indisponibilité, imposer 48 h complètes avant toute nouvelle garde.
-  const endedAbs=state.absences.filter(a=>a.doctor===doc.name && (a.type==="CONGÉ"||a.type==="INDISPONIBLE"||a.type==="INDISP") && dateFromISO(a.end)<date);
-  if(endedAbs.length){
-    const end=endedAbs.reduce((latest,a)=>{const d=dateFromISO(a.end);return d>latest?d:latest;},dateFromISO(endedAbs[0].end));
-    if((date-end)/36e5<48)return false;
-  }
+  // Un congé / une indisponibilité interdit uniquement les dates couvertes par
+  // cette période. Il ne faut PAS créer artificiellement 48 h supplémentaires
+  // après la fin d'un congé ou d'une indisponibilité : cela pouvait éliminer
+  // inutilement les seuls candidats capables de compléter un J/N.
   let prev=new Date(date); prev.setDate(prev.getDate()-1);
   if(planning[iso(prev)]?.some(x=>x.doctor===doc.name) || fixedOn(doc,prev))return false;
   const last=lastGuardDate(doc,date,planning);
@@ -225,10 +249,12 @@ function canAssign(doc,date,type,planning){
   return true;
 }
 function validateFixedGuard(doctor,date){
+  const doc=state.doctors.find(d=>d.name===doctor);
+  if(doc && doc.weekend===false) return `Le médecin ${doctor} n'est pas habilité aux gardes week-end G/F.`;
   const a=state.absences.find(x=>x.doctor===doctor&&date>=dateFromISO(x.start)&&date<=dateFromISO(x.end));
   if(a) return `Le médecin est en ${a.type.toLowerCase()} le ${date}.`;
-  const endAbs=state.absences.filter(x=>x.doctor===doctor&&(x.type==="CONGÉ"||x.type==="INDISPONIBLE"||x.type==="INDISP")&&dateFromISO(x.end)<date).sort((a,b)=>dateFromISO(b.end)-dateFromISO(a.end))[0];
-  if(endAbs && (dateFromISO(date)-dateFromISO(endAbs.end))/36e5<48) return `Le médecin reprend après ${endAbs.type.toLowerCase()} le ${endAbs.end} : 48 h de repos sont nécessaires.`;
+  // La fin d'un congé/indisponibilité ne crée pas de blocage automatique
+  // supplémentaire : seule la période d'absence elle-même est interdite.
   if(specialFixedBlock(state.doctors.find(d=>d.name===doctor)||{name:doctor},dateFromISO(date))) return `Le médecin est protégé par la règle de repos de 7 jours avant/après un week-end complet ou deux jours fériés consécutifs.`;
   return "";
 }
@@ -287,6 +313,8 @@ function counts(){
     if(["N","G","F"].includes(x.type) && isConfirmedCurrentPlanningEntry(x)) c[x.doctor].recupAcquise+=2;
     c[x.doctor].total++;
   }
+  // Les deux cellules samedi+dimanche d'un même G/F sont UNE garde week-end.
+  applyWeekendUnits(c,all);
   // Le solde enregistré est la seule valeur de référence avant toute nouvelle confirmation.
   // Aucun brouillon courant n'est ajouté ici.
   state.doctors.forEach(d=>{
@@ -299,11 +327,93 @@ function counts(){
   });
   return c;
 }
-function candidateScore(doc,type,c){let x=c[doc.name];
-  // Équité pondérée : J = 1 unité, N = 2 unités, G = 2 unités, F = 2 unités.
-  const charge=x.J + (2*x.N) + (2*x.G) + (2*x.F);
-  const shiftCharge=(type==="J"?x.J:2*x.N);
-  return charge*1000 + shiftCharge*50 + x.G*20+x.F*20;
+function guardPoints(type){
+  return ({J:1,N:2,G:4,F:4}[type]||0);
+}
+function isEligibleForType(doc,type){
+  if(!doc || !doc.active) return false;
+  const s=String(doc.shift||"BOTH").toUpperCase();
+  if(type==="J") return s==="J" || s==="BOTH";
+  if(type==="N") return s==="N" || s==="BOTH";
+  // G/F are weekend guards. They are normally entered manually/fixed;
+  // if a doctor has an explicit weekend=false flag, he is not eligible.
+  return doc.weekend !== false;
+}
+// Charge pondérée : un week-end G/F complet (samedi + dimanche)
+// constitue UNE garde week-end = 4 points, même si deux cellules G/F sont
+// affichées dans le planning. Les compteurs J/N/G/F restent inchangés pour
+// l'affichage ; les points utilisent les unités de garde.
+function weekendUnits(c,type){
+  if(!c) return 0;
+  const meta=type==='G' ? c._weekendUnitsG : c._weekendUnitsF;
+  if(meta!==undefined) return Number(meta)||0;
+  // Fallback pour les anciens états : deux cellules correspondent à un week-end.
+  return Math.ceil(Number(c[type]||0)/2);
+}
+function computeWeekendUnitsFromEntries(entries){
+  const out={};
+  const seen=new Set();
+  const byKey=new Map();
+  for(const x of entries||[]){
+    if(!x?.doctor || !x?.date || !['G','F'].includes(x.type)) continue;
+    const d=dateFromISO(x.date); if(!d) continue;
+    const key=`${x.doctor}|${x.type}|${x.date}`;
+    if(seen.has(key)) continue; seen.add(key);
+    byKey.set(key,x);
+  }
+  for(const x of byKey.values()){
+    const d=dateFromISO(x.date);
+    const y=new Date(d);
+    if(d.getDay()===6){
+      y.setDate(y.getDate()+1);
+      const sunday=`${x.doctor}|${x.type}|${iso(y)}`;
+      if(byKey.has(sunday)){
+        const u=out[x.doctor]||(out[x.doctor]={G:0,F:0});
+        u[x.type]++;
+      }
+    }else if(d.getDay()!==0){
+      // A standalone G/F entry is still one guard unit.
+      const u=out[x.doctor]||(out[x.doctor]={G:0,F:0});
+      u[x.type]++;
+    }
+  }
+  return out;
+}
+function applyWeekendUnits(countObj,entries){
+  const units=computeWeekendUnitsFromEntries(entries);
+  for(const name of Object.keys(countObj||{})){
+    const u=units[name]||{};
+    countObj[name]._weekendUnitsG=Number(u.G||0);
+    countObj[name]._weekendUnitsF=Number(u.F||0);
+  }
+  return countObj;
+}
+function workload(c){
+  return (c?.J||0)*1 + (c?.N||0)*2 + weekendUnits(c,'G')*4 + weekendUnits(c,'F')*4;
+}
+function candidateScore(doc,type,c,monthly){
+  const x=c[doc.name]||{J:0,N:0,G:0,F:0};
+  const m=(monthly&&monthly[doc.name])||{J:0,N:0,G:0,F:0};
+  const total=workload(x);
+  const month=workload(m);
+
+  // Pour N : un médecin avec la contrainte N uniquement est prioritaire
+  // par rapport à un médecin J+N. Les médecins N uniquement n'ont aucune
+  // possibilité de recevoir J ; il faut donc utiliser prioritairement leur
+  // capacité N, puis départager ces médecins par leur charge.
+  const shift=String(doc.shift||'BOTH').toUpperCase();
+  const nOnlyPriority=(type==='N' && shift==='N') ? 1 : 0;
+  const priorityPenalty=nOnlyPriority ? 0 : 1;
+
+  // Pour J+N, préférence douce pour le poste encore absent, sans jamais
+  // passer devant une contrainte obligatoire ni l'équité de charge.
+  const shiftBalance=type==='J' ? (x.J||0) : (x.N||0)*2;
+  const opposite=type==='J' ? (x.N||0)*2 : (x.J||0);
+  const imbalance=Math.max(0,shiftBalance-opposite);
+
+  // La priorité N-only est forte mais reste une priorité de sélection :
+  // entre plusieurs N-only, la charge cumulée puis mensuelle départage.
+  return priorityPenalty*1000000000 + total*100000 + month*1000 + shiftBalance*20 + imbalance*5 + (weekendUnits(x,'G')*2) + (weekendUnits(x,'F')*2);
 }
 function recoveryDeltaFor(planning, absences){
   const delta={};
@@ -360,137 +470,329 @@ function undoConfirmedPeriod(h){
 function generate(){
   const per=getPeriodDates();
   const generationAt=new Date().toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
-  if(state.planningHistory[per.key]){
-    const old=historyData(per.key);
-    // Si la même période était déjà confirmée, on annule sa contribution
-    // avant de la remplacer par un nouveau brouillon. Les gardes et scores
-    // de cette période redeviennent donc inexistants jusqu'à confirmation.
-    undoConfirmedPeriod(old);
-    const archiveKey=`${per.key}_historique_${Date.now()}`;
-    state.planningHistory[archiveKey]={...JSON.parse(JSON.stringify(old)),includeInEquity:false,confirmed:false,label:`Généré le ${old.generatedAt||'date inconnue'}`,generatedAt:old.generatedAt||'',period:old.period||{start:iso(per.start),end:iso(per.end),type:per.type,weeks:per.weeks||1}};
-    delete state.planningHistory[per.key];
-  }
+
   const active=state.doctors.filter(d=>d.active);
   const baseCounts=counts();
-  // Les G/F de la période en cours sont déjà imposées manuellement.
-  // Elles restent un BROUILLON (donc ne modifient jamais les compteurs confirmés),
-  // mais leur charge doit être prise en compte pour alléger automatiquement
-  // les médecins qui assurent un week-end complet ou plusieurs F consécutifs.
-  const currentStart=per.start, currentEnd=per.end;
+
+  // Fixed guards are hard constraints and contribute to the workload.
   for(const fx of (state.fixed||[])){
     const fd=dateFromISO(fx.date);
-    if(fd>=currentStart && fd<=currentEnd && active.some(d=>d.name===fx.doctor) && ["G","F"].includes(fx.type)){
+    if(fd>=per.start && fd<=per.end && active.some(d=>d.name===fx.doctor) && ["J","N","G","F"].includes(fx.type)){
       baseCounts[fx.doctor][fx.type]=(baseCounts[fx.doctor][fx.type]||0)+1;
       baseCounts[fx.doctor].total=(baseCounts[fx.doctor].total||0)+1;
     }
   }
-  let best=null, bestMetric=Infinity, bestErrors=Infinity;
-  const trials=Math.min(120,Math.max(30,active.length*6));
-  const cloneCounts=o=>JSON.parse(JSON.stringify(o));
-  const workload=x=>(x?.J||0)+2*(x?.N||0)+2*(x?.G||0)+2*(x?.F||0);
-  for(let trial=0;trial<trials;trial++){
-    let planning={}, c=cloneCounts(baseCounts), errors=[];
-    const order=[...active].sort(()=>Math.random()-0.5);
-    const rank=new Map(order.map((d,i)=>[d.name,i]));
-    for(const date of datesBetween(per.start,per.end)){
-      const k=iso(date); planning[k]=[];
-      if(isWeekend(date)||fixedAny(date).length)continue;
-      const types=[];
-      if(document.getElementById('makeJ').value!=='Non')types.push('J');
-      if(document.getElementById('makeN').value!=='Non')types.push('N');
-      // Randomise which shift is allocated first to avoid a systematic J-then-N bias.
-      if(Math.random()<0.5)types.reverse();
-      for(const type of types){
-        let candidates=active.filter(d=>canAssign(d,date,type,planning)).sort((a,b)=>{
-          const ca=workload(c[a.name]), cb=workload(c[b.name]);
-          if(ca!==cb)return ca-cb;
-          const sa=(type==='J'?c[a.name].J:2*c[a.name].N), sb=(type==='J'?c[b.name].J:2*c[b.name].N);
-          if(sa!==sb)return sa-sb;
-          return (rank.get(a.name)||0)-(rank.get(b.name)||0);
-        });
-        if(!candidates.length){errors.push(`${k} : impossible d'attribuer ${type}`);continue;}
-        // Among the least-loaded candidates, randomise the choice so regeneration can differ.
-        const minLoad=workload(c[candidates[0].name]);
-        const tied=candidates.filter(d=>workload(c[d.name])===minLoad);
-        const chosen=tied[Math.floor(Math.random()*tied.length)];
-        planning[k].push({doctor:chosen.name,type,date:k});
-        c[chosen.name][type]=(c[chosen.name][type]||0)+1;
-        c[chosen.name].total=(c[chosen.name].total||0)+1;
+
+  // Recalcul précis des unités G/F après ajout des gardes fixes du nouveau planning.
+  const currentFixedEntries=(state.fixed||[]).filter(f=>active.some(d=>d.name===f.doctor)&&['G','F'].includes(f.type));
+  // counts() contient déjà les gardes confirmées historiques ; on conserve ses unités
+  // puis on ajoute les unités des week-ends fixes du planning courant sans doubler.
+  const fixedUnits=computeWeekendUnitsFromEntries(currentFixedEntries);
+  active.forEach(d=>{
+    const u=fixedUnits[d.name]||{};
+    baseCounts[d.name]._weekendUnitsG=(baseCounts[d.name]._weekendUnitsG||0)+Number(u.G||0);
+    baseCounts[d.name]._weekendUnitsF=(baseCounts[d.name]._weekendUnitsF||0)+Number(u.F||0);
+  });
+
+  // Confirmed workload in the calendar month of the period start.
+  const targetMonth=per.start.getMonth(), targetYear=per.start.getFullYear();
+  const monthly={};
+  active.forEach(d=>monthly[d.name]={J:0,N:0,G:0,F:0});
+  Object.values(state.planningHistory||{}).forEach(h=>{
+    if(!h || h.confirmed!==true || h.includeInEquity===false) return;
+    if(!equityEntryIsAfterReset(h.generatedAtISO)) return;
+    Object.values(h.planning||{}).flat().forEach(x=>{
+      if(!x?.doctor || !monthly[x.doctor] || !x.date) return;
+      const dt=dateFromISO(x.date);
+      if(dt && dt.getMonth()===targetMonth && dt.getFullYear()===targetYear && monthly[x.doctor][x.type]!==undefined) monthly[x.doctor][x.type]++;
+    });
+    (h.fixed||[]).forEach(x=>{
+      if(!x?.doctor || !monthly[x.doctor] || !x.date || !["J","N","G","F"].includes(x.type)) return;
+      const dt=dateFromISO(x.date);
+      if(dt && dt.getMonth()===targetMonth && dt.getFullYear()===targetYear) monthly[x.doctor][x.type]++;
+    });
+  });
+  for(const fx of (state.fixed||[])){
+    const fd=dateFromISO(fx.date);
+    if(fd && fd.getMonth()===targetMonth && fd.getFullYear()===targetYear && monthly[fx.doctor] && ["J","N","G","F"].includes(fx.type)) monthly[fx.doctor][fx.type]++;
+  }
+  // Pour le mois courant, G/F sont comptés par week-end complet, pas par cellule.
+  const monthFixedEntries=(state.fixed||[]).filter(f=>{
+    const d=dateFromISO(f.date);
+    return d && d.getMonth()===targetMonth && d.getFullYear()===targetYear && ['G','F'].includes(f.type);
+  });
+  const monthFixedUnits=computeWeekendUnitsFromEntries(monthFixedEntries);
+  active.forEach(d=>{
+    const u=monthFixedUnits[d.name]||{};
+    monthly[d.name]._weekendUnitsG=Number(u.G||0);
+    monthly[d.name]._weekendUnitsF=Number(u.F||0);
+  });
+
+  const dates=datesBetween(per.start,per.end).filter(d=>!isWeekend(d));
+  const errors=[];
+  const initial={planning:{},counts:JSON.parse(JSON.stringify(baseCounts)),monthly:JSON.parse(JSON.stringify(monthly)),score:0,missing:[]};
+  // Recherche globale plus large : on conserve davantage d'états candidats
+  // afin qu'un choix équilibré au début du mois ne rende pas impossible une
+  // couverture plus loin dans le mois (congés/indisponibilités compris).
+  const BEAM_WIDTH=Math.min(360,Math.max(120,active.length*18));
+  const clone=o=>JSON.parse(JSON.stringify(o));
+  const rand=()=>Math.random();
+
+  function addAssignment(st,date,type,doc){
+    const k=iso(date);
+    if(!st.planning[k]) st.planning[k]=[];
+    st.planning[k].push({doctor:doc.name,type,date:k});
+    if(!st.counts[doc.name]) st.counts[doc.name]={J:0,N:0,G:0,F:0,total:0};
+    st.counts[doc.name][type]=(st.counts[doc.name][type]||0)+1;
+    st.counts[doc.name].total=(st.counts[doc.name].total||0)+1;
+    if(!st.monthly[doc.name]) st.monthly[doc.name]={J:0,N:0,G:0,F:0};
+    st.monthly[doc.name][type]=(st.monthly[doc.name][type]||0)+1;
+    st.score += candidateScore(doc,type,st.counts,st.monthly);
+  }
+
+  function eligibleCandidates(st,date,type){
+    const list=active.filter(doc=>{
+      if(!isEligibleForType(doc,type)) return false;
+      if(!canAssign(doc,date,type,st.planning)) return false;
+      if((st.planning[iso(date)]||[]).some(x=>x.doctor===doc.name)) return false;
+      return true;
+    });
+    // Randomness is deliberately applied only among candidates that satisfy
+    // all hard constraints. The score remains the main ranking criterion.
+    return list.sort((a,b)=>{
+      const sa=candidateScore(a,type,st.counts,st.monthly);
+      const sb=candidateScore(b,type,st.counts,st.monthly);
+      return (sa-sb)+(rand()-0.5)*Math.max(1000,Math.min(sa+sb,100000)*0.015);
+    });
+  }
+
+  function dayFixed(date,type){
+    return (state.fixed||[]).find(x=>x.date===iso(date)&&x.type===type);
+  }
+
+  // Build each day as a J+N pair. This is the key correction:
+  // a day is considered covered only when BOTH posts have been found.
+  function expandDay(states,date){
+    const fixedJ=dayFixed(date,"J"), fixedN=dayFixed(date,"N");
+    const next=[];
+    for(const st of states){
+      const k=iso(date);
+      const js=fixedJ ? [active.find(d=>d.name===fixedJ.doctor)].filter(Boolean) : eligibleCandidates(st,date,"J");
+      const ns=fixedN ? [active.find(d=>d.name===fixedN.doctor)].filter(Boolean) : eligibleCandidates(st,date,"N");
+
+      // A fixed J/N is authoritative: validate only the basic data/absence
+      // constraints here. Do not pass it through canAssign(), because
+      // canAssign() intentionally rejects a doctor already fixed on that date.
+      if(fixedJ && (!js[0] || !isEligibleForType(js[0],"J") || absOn(js[0],date))) continue;
+      if(fixedN && (!ns[0] || !isEligibleForType(ns[0],"N") || absOn(ns[0],date))) continue;
+      if(fixedJ && fixedN && fixedJ.doctor===fixedN.doctor) continue;
+
+      // Keep a reasonably broad random shortlist. If either post has no
+      // candidate in this state, this state is not allowed to contaminate a
+      // state that still has a complete J+N solution.
+      if(!js.length || !ns.length){
+        const ns0=clone(st);
+        ns0.missing=(ns0.missing||[]).concat(`${iso(date)} : ${!js.length?"J":"N"}`);
+        ns0.score+=1e15;
+        next.push(ns0);
+        continue;
+      }
+
+      const jList=js.slice(0,Math.min(18,js.length));
+      const nList=ns.slice(0,Math.min(18,ns.length));
+      const pairs=[];
+      for(const j of jList){
+        for(const n of nList){
+          if(j.name===n.name) continue;
+          // Re-check N after the J assignment because same-day and rest rules
+          // must be evaluated against the exact partial state.
+          const tmp=clone(st);
+          if(!fixedJ) addAssignment(tmp,date,"J",j);
+          else {
+            tmp.planning[k]=tmp.planning[k]||[];
+            tmp.planning[k].push({doctor:j.name,type:"J",date:k});
+          }
+          if(!fixedN && !canAssign(n,date,"N",tmp.planning)) continue;
+          if(fixedN && !canAssign(n,date,"N",st.planning)) continue;
+          if(fixedN && n.name===j.name) continue;
+          if(!fixedJ && fixedN){ /* handled below */ }
+          const score=tmp.score + candidateScore(n,"N",tmp.counts,tmp.monthly);
+          pairs.push({j,n,score,jitter:rand()});
+        }
+      }
+      pairs.sort((a,b)=>(a.score-b.score)+(a.jitter-b.jitter)*Math.max(1,Math.min(5000,a.score*0.002)));
+      const keep=pairs.slice(0,Math.min(24,pairs.length));
+      for(const p of keep){
+        const out=clone(st);
+        if(fixedJ){
+          out.planning[k]=out.planning[k]||[];
+          out.planning[k].push({doctor:p.j.name,type:"J",date:k});
+        }else addAssignment(out,date,"J",p.j);
+        if(fixedN){
+          out.planning[k]=out.planning[k]||[];
+          out.planning[k].push({doctor:p.n.name,type:"N",date:k});
+        }else addAssignment(out,date,"N",p.n);
+        next.push(out);
       }
     }
-    const loads=active.map(d=>workload(c[d.name]||{}));
-    const js=active.map(d=>(c[d.name]?.J||0));
-    const ns=active.map(d=>(c[d.name]?.N||0));
-    const gfs=active.map(d=>(c[d.name]?.G||0)+(c[d.name]?.F||0));
-    const min=Math.min(...loads,0), max=Math.max(...loads,0);
-    const mean=loads.length?loads.reduce((a,b)=>a+b,0)/loads.length:0;
-    const variance=loads.reduce((a,b)=>a+(b-mean)**2,0);
-    const meanJ=js.length?js.reduce((a,b)=>a+b,0)/js.length:0;
-    const meanN=ns.length?ns.reduce((a,b)=>a+b,0)/ns.length:0;
-    const meanGF=gfs.length?gfs.reduce((a,b)=>a+b,0)/gfs.length:0;
-    const varJ=js.reduce((a,b)=>a+(b-meanJ)**2,0);
-    const varN=ns.reduce((a,b)=>a+(b-meanN)**2,0);
-    const varGF=gfs.reduce((a,b)=>a+(b-meanGF)**2,0);
-    // Equité globale : charge pondérée ET équilibre J/N/G/F.
-    // L'objectif évite qu'un médecin reçoive presque exclusivement des N
-    // pendant qu'un autre reçoit presque exclusivement des J, lorsque les
-    // contraintes permettent une répartition plus équilibrée.
-    const typeImbalance=varJ*900+varN*1600+varGF*700;
-    // Pénalisation supplémentaire des déséquilibres J/N : à charge pondérée
-    // égale, on privilégie une distribution plus homogène des postes.
-    const shiftSpread=(Math.max(...js,0)-Math.min(...js,0))+(Math.max(...ns,0)-Math.min(...ns,0));
-    const metric=variance*10000+typeImbalance+shiftSpread*900+(max-min)*100+errors.length*100000;
-    if(metric<bestMetric){bestMetric=metric;best={planning,c,loads};bestErrors=errors.length;}
+
+    // Prefer complete states. Missing coverage is retained only when no
+    // complete state exists for this day among the current beam.
+    const complete=next.filter(st=>!(st.missing||[]).some(x=>x.startsWith(iso(date))));
+    let out=complete.length?complete:next;
+    const seen=new Map();
+    for(const st of out){
+      const sig=Object.entries(st.planning).sort().map(([k,v])=>k+":"+v.map(x=>x.doctor+x.type).sort().join(",")).join("|")+"|m:"+(st.missing||[]).join(",");
+      if(!seen.has(sig) || st.score<seen.get(sig).score) seen.set(sig,st);
+    }
+    return [...seen.values()].sort((a,b)=>a.score-b.score).slice(0,BEAM_WIDTH);
   }
-  const planning=best?.planning||{};
-  // Nouveau planning = BROUILLON. Il ne contribue à aucun score avant confirmation.
-  state.planningHistory[per.key]={planning:JSON.parse(JSON.stringify(planning)),fixed:JSON.parse(JSON.stringify(state.fixed)),absences:JSON.parse(JSON.stringify(state.absences)),period:{start:iso(per.start),end:iso(per.end),type:per.type,weeks:per.weeks||1},includeInEquity:false,confirmed:false,label:`Généré le ${generationAt}`,generatedAt:generationAt,generatedAtISO:Date.now()};
+
+  let beam=[initial];
+  for(const date of dates){
+    beam=expandDay(beam,date);
+    if(!beam.length){
+      errors.push(`Aucune solution partielle pour ${iso(date)}`);
+      beam=[initial];
+    }
+  }
+
+  function finalMetric(st){
+    const missing=(st.missing||[]).length;
+    let metric=missing*1e15;
+    const loads=active.map(d=>workload(st.counts[d.name]||{}));
+    const monthLoads=active.map(d=>workload(st.monthly[d.name]||{}));
+    const mean=loads.length?loads.reduce((a,b)=>a+b,0)/loads.length:0;
+    const meanM=monthLoads.length?monthLoads.reduce((a,b)=>a+b,0)/monthLoads.length:0;
+    metric += loads.reduce((s,x)=>s+(x-mean)**2,0)*10000;
+    metric += monthLoads.reduce((s,x)=>s+(x-meanM)**2,0)*500;
+
+    // Preference for 1 J + 1 N for BOTH/J+N doctors, but never above
+    // the hard constraints, coverage, rest, or charge equity.
+    for(const d of active){
+      const s=String(d.shift||"BOTH").toUpperCase();
+      const x=st.counts[d.name]||{};
+      // Si un médecin est N uniquement, il doit être utilisé prioritairement
+      // pour couvrir les N avant de solliciter les médecins J+N.
+      if(s==="N" && (x.N||0)===0) metric-=5000000;
+      if(s==="N" && (x.N||0)>0) metric+=0;
+      if(s!=="BOTH" && s!=="J+N") continue;
+      if((x.J||0)===0) metric+=1e7;
+      if((x.N||0)===0) metric+=2e7;
+    }
+    return metric;
+  }
+
+  beam.sort((a,b)=>finalMetric(a)-finalMetric(b));
+  const best=beam[0]||initial;
+  const planning=best.planning||{};
+
+  // VALIDATION FINALE OBLIGATOIRE : aucune génération partielle ne peut être
+  // enregistrée. Pour chaque jour ouvrable, il faut exactement un J et un N.
+  // Les gardes fixes J/N comptent comme couverture et les affectations générées
+  // complètent le poste manquant. Cette vérification intervient après le moteur
+  // aléatoire afin de garantir qu'un résultat incomplet ne soit jamais accepté.
+  const coverageErrors=[];
+  for(const date of dates){
+    const k=iso(date);
+    const entries=planning[k]||[];
+    const hasJ=!!(state.fixed||[]).some(x=>x.date===k&&x.type==='J') || entries.some(x=>x.type==='J');
+    const hasN=!!(state.fixed||[]).some(x=>x.date===k&&x.type==='N') || entries.some(x=>x.type==='N');
+    if(!hasJ) coverageErrors.push(`${k} : J`);
+    if(!hasN) coverageErrors.push(`${k} : N`);
+    const doctors=new Set();
+    for(const x of entries){
+      if(doctors.has(x.doctor)) coverageErrors.push(`${k} : ${x.doctor} affecté deux fois`);
+      doctors.add(x.doctor);
+    }
+  }
+  // Validation dure des affectations générées : aucune garde ne peut être
+  // placée pendant une absence, ni deux fois le même jour, et la règle de
+  // repos de 48 h entre deux gardes reste appliquée aux gardes réelles.
+  const hardErrors=[];
+  const byDoctor=new Map();
+  for(const d of active) byDoctor.set(d.name,[]);
+  for(const fx of (state.fixed||[])){
+    if(!byDoctor.has(fx.doctor)) continue;
+    byDoctor.get(fx.doctor).push({date:fx.date,type:fx.type,fixed:true});
+  }
+  for(const [k,arr] of Object.entries(planning)){
+    for(const x of (arr||[])){
+      if(!byDoctor.has(x.doctor)) continue;
+      if(absOn(x.doctor,dateFromISO(x.date))) hardErrors.push(`${x.date} : ${x.doctor} pendant une absence`);
+      byDoctor.get(x.doctor).push({date:x.date,type:x.type,fixed:false});
+    }
+  }
+  for(const [doctor,arr] of byDoctor){
+    const sorted=arr.map(x=>dateFromISO(x.date)).filter(Boolean).sort((a,b)=>a-b);
+    for(let i=1;i<sorted.length;i++){
+      if((sorted[i]-sorted[i-1])/86400000<2) hardErrors.push(`${iso(sorted[i])} : repos insuffisant pour ${doctor}`);
+    }
+  }
+  const missing=[...coverageErrors,...hardErrors];
+
+  // Une génération incomplète est refusée : on conserve le planning précédent
+  // et on n'archive rien tant qu'une solution complète n'a pas été trouvée.
+  if(missing.length){
+    const datesText=missing.slice(0,30).join(' • ');
+    document.getElementById('genMessage').innerHTML=
+      `<div class="warn"><b>Génération refusée : couverture incomplète.</b><br>`+
+      `${datesText}${missing.length>30?' • …':''}<br>`+
+      `<small>Aucun planning partiel n'est enregistré. Vérifiez les habilitations, congés, indisponibilités, récupérations et gardes fixes.</small></div>`;
+    renderAll();
+    renderPlanning();
+    try{showPage('planning');}catch(e){
+      document.querySelectorAll('.page').forEach(x=>x.style.display='none');
+      const p=document.getElementById('page-planning'); if(p)p.style.display='block';
+    }
+    return;
+  }
+
+  // La génération est maintenant validée à 100 %. Seulement à ce moment,
+  // l'ancien planning de la même période est archivé/remplacé.
+  if(state.planningHistory[per.key]){
+    const old=historyData(per.key);
+    if(old?.confirmed) undoConfirmedPeriod(old);
+    const archiveKey=`${per.key}_historique_${Date.now()}`;
+    state.planningHistory[archiveKey]={...JSON.parse(JSON.stringify(old)),
+      includeInEquity:false,confirmed:false,
+      label:`Généré le ${old.generatedAt||'date inconnue'}`,
+      generatedAt:old.generatedAt||'',
+      period:old.period||{start:iso(per.start),end:iso(per.end),type:per.type,weeks:per.weeks||1}};
+    delete state.planningHistory[per.key];
+  }
+
+  state.planningHistory[per.key]={
+    planning:JSON.parse(JSON.stringify(planning)),
+    fixed:JSON.parse(JSON.stringify(state.fixed)),
+    absences:JSON.parse(JSON.stringify(state.absences)),
+    period:{start:iso(per.start),end:iso(per.end),type:per.type,weeks:per.weeks||1},
+    includeInEquity:false,confirmed:false,
+    label:`Généré le ${generationAt}`,generatedAt:generationAt,generatedAtISO:Date.now()
+  };
   state.planning=planning;
   state.planningGeneratedAt=Date.now();
   localStorage.setItem('gardeMed',JSON.stringify(state));
-  const cfinal=counts();
-  const loadsFinal=active.map(d=>workload(cfinal[d.name]||{}));
+
+  const loadsFinal=active.map(d=>workload(best.counts[d.name]||{}));
   const spread=loadsFinal.length?Math.max(...loadsFinal)-Math.min(...loadsFinal):0;
-  document.getElementById('genMessage').innerHTML=bestErrors?`<div class="warn"><b>Planning généré avec ${bestErrors} conflit(s).</b><br>Écart de charge pondérée : ${spread} unité(s).</div>`:`<div class="ok"><b>Planning généré ${generatedAgeText(Date.now())}.</b><br>Équité pondérée : J = 1, N = 2, G = 2, F = 2. Écart de charge : ${spread} unité(s).<br>Vous pouvez utiliser « Régénérer » pour obtenir une autre répartition.</div>`;
-  renderAll(); openTab('planning');
-}
-
-function cellFor(doc,date){
-  let k=iso(date),fx=fixedOn(doc,date);
-  if(fx)return fx.type;
-  let a=state.absences.find(x=>x.doctor===doc&&date>=dateFromISO(x.start)&&date<=dateFromISO(x.end));
-  if(a)return a.type==="CONGÉ"?"CONGÉ":(a.type==="RÉCUP"?"RÉCUP":"INDISP");
-  let p=(state.planning[k]||[]).find(x=>x.doctor===doc);
-  if(p)return p.type;
-  return "";
-}
-function isHoliday(date){return fixedAny(date).some(x=>x.type==="F")}
-function cls(v){return {J:"cellJ",N:"cellN","CONGÉ":"cellC","INDISP":"cellI","RÉCUP":"cellR",G:"cellG",F:"cellF"}[v]||""}
-function generatedAgeText(value){
-  if(value==null || value==='') return '';
-  let t=null;
-  if(typeof value==='number') t=value;
-  else if(/^\d{1,2}\/\d{1,2}\/\d{4}(?: \d{1,2}:\d{2}(?::\d{2})?)?$/.test(String(value))){
-    const m=String(value).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?: (\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
-    if(m){ t=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),Number(m[4]||0),Number(m[5]||0),Number(m[6]||0)).getTime(); }
+  if(missing.length){
+    document.getElementById('genMessage').innerHTML=
+      `<div class="warn"><b>Planning généré avec ${missing.length} poste(s) non couvert(s).</b><br>`+
+      `${missing.join(" • ")}<br><small>Les contraintes saisies rendent ces postes impossibles à attribuer dans cette génération.</small></div>`;
+  }else{
+    document.getElementById('genMessage').innerHTML=
+      `<div class="ok"><b>Planning généré sans conflit.</b><br>`+
+      `Chaque jour ouvrable comporte 1 J + 1 N. Écart de charge pondérée : ${spread} point(s).<br>`+
+      `<small>J=1 • N=2 • G=4 • F=4. Le planning reste un brouillon jusqu'à validation.</small></div>`;
   }
-  if(!t || Number.isNaN(t)) return '';
-  const diff=Math.max(0,Date.now()-t);
-  const min=Math.floor(diff/60000);
-  if(min<1) return 'à l’instant';
-  if(min<60) return `${min} min`;
-  const h=Math.floor(min/60);
-  if(h<24) return `${h} h`;
-  const d=Math.floor(h/24);
-  if(d<30) return `${d} j`;
-  const mo=Math.floor(d/30);
-  if(mo<12) return `${mo} mois`;
-  return `${Math.floor(mo/12)} an${Math.floor(mo/12)>1?'s':''}`;
-}
-
-function generatedAge(h){
-  if(!h) return '';
-  return generatedAgeText(h.generatedAtISO || h.generatedAt);
+  renderAll();
+  renderPlanning();
+  // Always show the freshly generated planning immediately.
+  try{showPage('planning');}catch(e){
+    document.querySelectorAll('.page').forEach(x=>x.style.display='none');
+    const p=document.getElementById('page-planning'); if(p)p.style.display='block';
+  }
 }
 
 function historyData(key){
@@ -500,12 +802,14 @@ function historyData(key){
 }
 function cellFor(doc,date,source){
   const src=source||{planning:state.planning,fixed:state.fixed,absences:state.absences};
-  let k=iso(date),fx=(src.fixed||[]).find(x=>x.doctor===doc&&x.date===k);
+  const k=iso(date);
+  const fx=(src.fixed||[]).find(x=>x.doctor===doc&&x.date===k);
   if(fx)return fx.type;
-  let a=(src.absences||[]).find(x=>x.doctor===doc&&date>=dateFromISO(x.start)&&date<=dateFromISO(x.end));
+  const p=(src.planning?.[k]||[]).find(x=>x.doctor===doc);
+  if(p)return p.type;
+  const a=(src.absences||[]).find(x=>x.doctor===doc&&date>=dateFromISO(x.start)&&date<=dateFromISO(x.end));
   if(a)return a.type==="CONGÉ"?"CONGÉ":(a.type==="RÉCUP"?"RÉCUP":"INDISP");
-  let p=(src.planning?.[k]||[]).find(x=>x.doctor===doc);
-  return p?p.type:"";
+  return "";
 }
 function isHoliday(date){return state.fixed.some(x=>x.date===iso(date)&&x.type==="F")}
 function cls(v){return {J:"cellJ",N:"cellN","CONGÉ":"cellC","INDISP":"cellI","RÉCUP":"cellR",G:"cellG",F:"cellF"}[v]||""}
@@ -886,7 +1190,7 @@ function renderTodayGuards(){
     : `<div class="today-empty">Aucune garde J, G ou F enregistrée pour aujourd’hui (${dateLabel}).</div>`;
 }
 
-function renderAll(){let body=document.getElementById("teamBody");let c=counts();body.innerHTML=state.doctors.map((d,i)=>`<tr><td class='name'><input value="${d.name.replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td>${c[d.name]?.J||0}</td><td>${c[d.name]?.N||0}</td><td>${c[d.name]?.G||0}</td><td>${c[d.name]?.F||0}</td><td>${c[d.name]?.total||0}</td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`).join("");
+function renderAll(){let body=document.getElementById("teamBody");let c=counts();body.innerHTML=state.doctors.map((d,i)=>`<tr><td class='name'><input value="${d.name.replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td><input type="checkbox" ${d.weekend!==false?"checked":""} onchange="state.doctors[${i}].weekend=this.checked;save()"></td><td>${c[d.name]?.J||0}</td><td>${c[d.name]?.N||0}</td><td>${c[d.name]?.G||0}</td><td>${c[d.name]?.F||0}</td><td>${c[d.name]?.total||0}</td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`).join("");
 let opts=state.doctors.map(d=>`<option>${d.name}</option>`).join("");document.getElementById("absDoctor").innerHTML=opts;document.getElementById("fixedDoctor").innerHTML=opts;
 document.getElementById("absBody").innerHTML=state.absences.map((a,i)=>`<tr><td class='name'>${a.doctor}</td><td>${a.start}</td><td>${a.end}</td><td>${a.type}</td><td><button class='btn small danger' onclick='delAbs(${i})'>Supprimer</button></td></tr>`).join("");
 document.getElementById("fixedBody").innerHTML=state.fixed.map((x,i)=>`<tr><td class='name'>${x.doctor}</td><td>${x.date}</td><td><span class='badge ${x.type==="G"?"bG":"bF"}'>${x.type}</span></td><td><button class='btn small danger' onclick='state.fixed.splice(${i},1);save()'>×</button></td></tr>`).join("");
