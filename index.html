@@ -432,8 +432,33 @@ function iso(d){
   return "";
 }
 function dateFromISO(s){let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
-function absOn(doc,date){return state.absences.some(a=>a.doctor===doc&&date>=dateFromISO(a.start)&&date<=dateFromISO(a.end))}
-function fixedOn(doc,date){return state.fixed.find(x=>x.doctor===doc&&x.date===iso(date))}
+function normalizeDateKey(v){
+  if(v instanceof Date && !Number.isNaN(v.getTime())) return iso(v);
+  const s=String(v??"").trim();
+  const m=s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if(m)return m[1];
+  return "";
+}
+function absOn(doc,date){
+  const dk=normalizeDateKey(date);
+  const doctorName=typeof doc==='string' ? doc.trim() : String(doc?.name??'').trim();
+  if(!dk || !doctorName)return false;
+  const normName=v=>String(v??'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const target=normName(doctorName);
+  return (state.absences||[]).some(a=>{
+    if(!a || normName(a.doctor)!==target)return false;
+    const start=normalizeDateKey(a.start), end=normalizeDateKey(a.end);
+    if(!start||!end)return false;
+    return dk>=start && dk<=end;
+  });
+}
+function fixedOn(doc,date){
+  const doctorName=typeof doc==='string' ? doc.trim() : String(doc?.name??'').trim();
+  const dk=normalizeDateKey(date);
+  if(!doctorName||!dk)return undefined;
+  const normName=v=>String(v??'').trim().toLowerCase();
+  return (state.fixed||[]).find(x=>normName(x.doctor)===normName(doctorName)&&normalizeDateKey(x.date)===dk);
+}
 function fixedAny(date){return state.fixed.filter(x=>x.date===iso(date))}
 function parseExcelDate(v){
   if(v instanceof Date && !isNaN(v)) return iso(v);
@@ -692,7 +717,33 @@ function isEligibleForType(doc,type){
 function workload(c){
   return (c?.J||0)*1 + (c?.N||0)*2 + (c?.G||0)*4 + (c?.F||0)*4;
 }
-function candidateScore(doc,type,c,monthly){
+function weeklyRepeatPenalty(doc,date,type,planning){
+  // Préférence souple : éviter au maximum 2 J ou 2 N du même médecin
+  // dans la même semaine ouvrable (lundi→vendredi). Ce n'est JAMAIS
+  // une contrainte bloquante : la couverture J+N et les contraintes du
+  // médecin restent prioritaires.
+  if(!doc || !date || !["J","N"].includes(type)) return 0;
+  const d=new Date(date);
+  const day=d.getDay();
+  const monday=new Date(d);
+  monday.setDate(d.getDate()-(day===0?6:day-1));
+  monday.setHours(0,0,0,0);
+  const friday=new Date(monday); friday.setDate(monday.getDate()+4); friday.setHours(23,59,59,999);
+  let count=0;
+  for(const x of Object.values(planning||{}).flat()){
+    if(x?.doctor!==doc.name || x.type!==type || !x.date) continue;
+    const xd=dateFromISO(x.date);
+    if(xd>=monday && xd<=friday) count++;
+  }
+  // Les J/N fixes saisis manuellement font également partie de la semaine.
+  for(const x of (state.fixed||[])){
+    if(x?.doctor!==doc.name || x.type!==type || !x.date) continue;
+    const xd=dateFromISO(x.date);
+    if(xd>=monday && xd<=friday) count++;
+  }
+  return count>=1 ? 1 : 0;
+}
+function candidateScore(doc,type,c,monthly,date,planning){
   const x=c[doc.name]||{J:0,N:0,G:0,F:0};
   const m=(monthly&&monthly[doc.name])||{J:0,N:0,G:0,F:0};
   // EQUITE PRIORITAIRE : la charge pondérée cumulée est l'objectif
@@ -702,10 +753,13 @@ function candidateScore(doc,type,c,monthly){
   // attribués ensuite à un médecin déjà très chargé.
   const total=workload(x);
   const month=workload(m);
+  const weeklyRepeat=weeklyRepeatPenalty(doc,date,type,planning);
   const shiftBalance=type==="J" ? (x.J||0) : (x.N||0)*2;
   const opposite=type==="J" ? (x.N||0)*2 : (x.J||0);
   const imbalance=Math.max(0,shiftBalance-opposite);
-  return total*100000 + month*1000 + shiftBalance*20 + imbalance*5;
+  // La répétition J/J ou N/N est une préférence, pas une interdiction.
+  // Elle n'écrase donc jamais la charge pondérée ni la charge mensuelle.
+  return total*100000 + month*1000 + weeklyRepeat*100 + shiftBalance*20 + imbalance*5;
 }
 function recoveryDeltaFor(planning, absences){
   const delta={};
@@ -850,18 +904,27 @@ function generate(){
     });
   }
 
-  function randomPick(candidates,st,type){
+  function randomPick(candidates,st,type,date){
     if(!candidates.length)return null;
     // EQUITE AVANT L'OBJECTIF J/N : un médecin ayant déjà reçu un G/F
     // doit être naturellement moins prioritaire pour J/N, puisque G/F
     // portent déjà 4 points chacun. L'objectif 1 J + 1 N reste un objectif
     // souple, jamais une priorité qui pourrait surcharger un médecin.
-    const ranked=candidates.map(doc=>{
+    // Neutralité de l'ordre des médecins : on mélange AVANT le tri.
+    // Ainsi, lorsque plusieurs candidats ont un score identique (ou très
+    // proche), l'ordre de la liste des médecins ne donne aucun avantage
+    // systématique aux premiers médecins.
+    const randomized=candidates.slice();
+    for(let i=randomized.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [randomized[i],randomized[j]]=[randomized[j],randomized[i]];
+    }
+    const ranked=randomized.map(doc=>{
       const x=st.counts[doc.name]||{};
       const m=st.monthly[doc.name]||{};
       const both=String(doc.shift||"BOTH").toUpperCase()==="BOTH";
       const missingShift=both && (m[type]||0)===0;
-      const score=candidateScore(doc,type,st.counts,st.monthly);
+      const score=candidateScore(doc,type,st.counts,st.monthly,date,st.planning);
       return {doc,missingShift,score,total:workload(x),month:workload(m)};
     }).sort((a,b)=>a.score-b.score);
 
@@ -912,7 +975,7 @@ function generate(){
           st.missing=(st.missing||[]).concat(`${k} : ${type}`);
           continue;
         }
-        const chosen=randomPick(candidates,st,type);
+        const chosen=randomPick(candidates,st,type,date);
         addAssignment(st,date,type,chosen);
       }
     }
@@ -936,7 +999,29 @@ function generate(){
       }
     }
     const restCount=Object.values(restSeen).reduce((a,b)=>a+b,0);
-    let metric=missing*1e15 + restCount*1e14;
+    // Préférence d'équilibrage : pénaliser les 2e J et 2e N d'un même
+    // médecin dans une même semaine ouvrable. Cette pénalité reste très
+    // inférieure aux contraintes absolues et à l'équité de charge.
+    let weeklyRepeats=0;
+    const weekBuckets={};
+    for(const x of Object.values(st.planning||{}).flat()){
+      if(!x?.doctor || !x.date || !["J","N"].includes(x.type)) continue;
+      const dt=dateFromISO(x.date), wd=dt.getDay();
+      if(wd===0 || wd===6) continue;
+      const monday=new Date(dt); monday.setDate(dt.getDate()-(wd-1)); monday.setHours(0,0,0,0);
+      const key=`${x.doctor}|${iso(monday)}|${x.type}`;
+      weekBuckets[key]=(weekBuckets[key]||0)+1;
+    }
+    for(const x of (state.fixed||[])){
+      if(!x?.doctor || !x.date || !["J","N"].includes(x.type)) continue;
+      const dt=dateFromISO(x.date), wd=dt.getDay();
+      if(wd===0 || wd===6) continue;
+      const monday=new Date(dt); monday.setDate(dt.getDate()-(wd-1)); monday.setHours(0,0,0,0);
+      const key=`${x.doctor}|${iso(monday)}|${x.type}`;
+      weekBuckets[key]=(weekBuckets[key]||0)+1;
+    }
+    Object.values(weekBuckets).forEach(n=>{if(n>1) weeklyRepeats+=n-1;});
+    let metric=missing*1e15 + restCount*1e14 + weeklyRepeats*100;
     const loads=active.map(d=>workload(st.counts[d.name]||{}));
     const monthLoads=active.map(d=>workload(st.monthly[d.name]||{}));
     const mean=loads.length?loads.reduce((a,b)=>a+b,0)/loads.length:0;
@@ -999,6 +1084,31 @@ function generate(){
   const planning=chosen.planning||{};
   const missing=chosen.missing||[];
 
+  // CONTRAINTE DURE ABSENCE/RÉCUPÉRATION :
+  // aucune garde générée ne peut coïncider avec un CONGÉ, une INDISPONIBILITÉ
+  // ou une RÉCUPÉRATION. Cette vérification finale est indépendante du moteur
+  // de sélection et empêche qu'un poste soit enregistré par erreur.
+  const absenceViolations=[];
+  for(const x of Object.values(planning||{}).flat()){
+    if(!x?.doctor || !x?.date || !["J","N"].includes(x.type)) continue;
+    if(absOn(x.doctor,dateFromISO(x.date))){
+      const a=(state.absences||[]).find(v=>v?.doctor===x.doctor &&
+        normalizeDateKey(x.date)>=normalizeDateKey(v.start) &&
+        normalizeDateKey(x.date)<=normalizeDateKey(v.end));
+      absenceViolations.push(`${x.date} : ${x.doctor} → ${x.type} pendant ${a?.type||"une absence"}`);
+    }
+  }
+  // Les gardes J/N fixes sont également contrôlées.
+  for(const x of (state.fixed||[])){
+    if(!x?.doctor || !x?.date || !["J","N"].includes(x.type)) continue;
+    if(absOn(x.doctor,dateFromISO(x.date))){
+      const a=(state.absences||[]).find(v=>v?.doctor===x.doctor &&
+        normalizeDateKey(x.date)>=normalizeDateKey(v.start) &&
+        normalizeDateKey(x.date)<=normalizeDateKey(v.end));
+      absenceViolations.push(`${x.date} : ${x.doctor} → garde fixe ${x.type} pendant ${a?.type||"une absence"}`);
+    }
+  }
+
   // Contrôle final de sécurité : aucune garde générée ne doit être
   // consécutive à une autre garde du même médecin. Cette vérification est
   // indépendante du tirage aléatoire et protège contre toute régression.
@@ -1019,6 +1129,25 @@ function generate(){
   }
   if(restViolations.length){
     missing.push(`Repos insuffisant : ${restViolations.slice(0,8).join(" • ")}`);
+  }
+  if(absenceViolations.length){
+    missing.push(`Conflit absence/récupération : ${absenceViolations.slice(0,12).join(" • ")}`);
+  }
+
+  // Une génération avec une garde pendant une absence/récupération ne doit
+  // jamais être enregistrée comme un planning valide.
+  if(missing.length){
+    document.getElementById('genMessage').innerHTML=
+      `<div class="warn"><b>Génération refusée : contraintes non respectées.</b><br>`+
+      `${missing.slice(0,20).join(" • ")}<br>`+
+      `<small>Le planning précédent est conservé. Vérifiez les congés, indisponibilités et récupérations puis régénérez.</small></div>`;
+    renderAll();
+    renderPlanning();
+    try{showPage('planning');}catch(e){
+      document.querySelectorAll('.page').forEach(x=>x.style.display='none');
+      const p=document.getElementById('page-planning'); if(p)p.style.display='block';
+    }
+    return;
   }
 
   state.planningHistory[per.key]={

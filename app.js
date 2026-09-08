@@ -109,8 +109,33 @@ function iso(d){
   return "";
 }
 function dateFromISO(s){let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
-function absOn(doc,date){return state.absences.some(a=>a.doctor===doc&&date>=dateFromISO(a.start)&&date<=dateFromISO(a.end))}
-function fixedOn(doc,date){return state.fixed.find(x=>x.doctor===doc&&x.date===iso(date))}
+function normalizeDateKey(v){
+  if(v instanceof Date && !Number.isNaN(v.getTime())) return iso(v);
+  const s=String(v??"").trim();
+  const m=s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if(m)return m[1];
+  return "";
+}
+function absOn(doc,date){
+  const dk=normalizeDateKey(date);
+  const doctorName=typeof doc==='string' ? doc.trim() : String(doc?.name??'').trim();
+  if(!dk || !doctorName)return false;
+  const normName=v=>String(v??'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const target=normName(doctorName);
+  return (state.absences||[]).some(a=>{
+    if(!a || normName(a.doctor)!==target)return false;
+    const start=normalizeDateKey(a.start), end=normalizeDateKey(a.end);
+    if(!start||!end)return false;
+    return dk>=start && dk<=end;
+  });
+}
+function fixedOn(doc,date){
+  const doctorName=typeof doc==='string' ? doc.trim() : String(doc?.name??'').trim();
+  const dk=normalizeDateKey(date);
+  if(!doctorName||!dk)return undefined;
+  const normName=v=>String(v??'').trim().toLowerCase();
+  return (state.fixed||[]).find(x=>normName(x.doctor)===normName(doctorName)&&normalizeDateKey(x.date)===dk);
+}
 function fixedAny(date){return state.fixed.filter(x=>x.date===iso(date))}
 function addFixed(){
   let doctor=document.getElementById("fixedDoctor").value,date=document.getElementById("fixedDate").value,type=document.getElementById("fixedType").value;

@@ -85,6 +85,56 @@ function addAbsence(){
     const now=Date.now();dates.forEach(date=>state.fixed.push({doctor,date,type,createdAt:now}));
   }else{
     if(state.absences.some(a=>a.doctor===doctor&&a.start===start&&a.end===end&&a.type===type))return alert("Cette saisie existe déjà.");
+
+    // Une absence (CONGÉ / INDISP / RÉCUP) interdit réellement toute garde J/N
+    // pendant toute sa période. Une récupération n'est donc jamais une simple
+    // étiquette visuelle : elle constitue une contrainte dure pour le générateur
+    // et pour les modifications manuelles.
+    const dates=[]; let d=dateFromISO(start), last=dateFromISO(end);
+    while(d<=last){dates.push(iso(d));d.setDate(d.getDate()+1);}
+    const overlapPlanning=[];
+    const overlapFixed=[];
+    for(const date of dates){
+      for(const x of (state.planning[date]||[])) if(x.doctor===doctor && ["J","N"].includes(x.type)) overlapPlanning.push({date,type:x.type});
+      for(const x of (state.fixed||[])) if(x.doctor===doctor && x.date===date && ["J","N","G","F"].includes(x.type)) overlapFixed.push({date,type:x.type});
+    }
+
+    const per=getPeriodDates();
+    const h=state.planningHistory?.[per.key];
+    const confirmed=!!(h?.confirmed || state.confirmedPlanningKeys?.[per.key]);
+
+    if(confirmed && (overlapPlanning.length||overlapFixed.length)){
+      // A validated planning is immutable. Keep its guards visible and only
+      // record the new absence, with an explicit conflict warning.
+      state.absences.push({doctor,start,end,type,createdAt:Date.now()});
+      rebuildRecoveryLedger(); save();
+      const conflicts=[...overlapPlanning,...overlapFixed].map(x=>`${x.date} ${x.type}`);
+      alert(`ABSENCE ENREGISTRÉE — CONFLIT AVEC LE PLANNING VALIDÉ.\n\n${doctor} a déjà : ${conflicts.join(" • ")}\n\nLe planning validé reste inchangé. Pour que cette absence soit prise en compte dans les gardes, régénérez puis validez un nouveau planning.`);
+      return;
+    }
+
+    if(overlapFixed.length){
+      alert(`CONFLIT : ${doctor} a déjà une garde fixe ${overlapFixed.map(x=>`${x.type} le ${x.date}`).join(" / ")} pendant cette période.\n\nL'absence n'a pas été enregistrée. Supprimez/modifiez d'abord la garde fixe ou choisissez une autre période.`);
+      return;
+    }
+
+    if(overlapPlanning.length){
+      // Planning non validé = brouillon : on retire les gardes J/N qui
+      // deviendraient invalides au moment où l'absence est saisie. Le prochain
+      // clic sur Générer/Régénérer reconstruira la couverture avec la nouvelle
+      // contrainte. On ne laisse donc jamais une absence et une garde J/N
+      // concurrentes dans le même brouillon.
+      for(const date of dates){
+        state.planning[date]=(state.planning[date]||[]).filter(x=>!(x.doctor===doctor&&["J","N"].includes(x.type)));
+      }
+      state.absences.push({doctor,start,end,type,createdAt:Date.now()});
+      rebuildRecoveryLedger(); save();
+      const conflicts=overlapPlanning.map(x=>`${x.date} ${x.type}`).join(" • ");
+      const msg=document.getElementById("genMessage");
+      if(msg)msg.innerHTML=`<div class="warn"><b>${type} enregistré(e).</b><br>Les gardes J/N incompatibles du brouillon ont été retirées (${escapeHtml(conflicts)}).<br><small>Régénérez le planning pour retrouver automatiquement la couverture 1 J + 1 N.</small></div>`;
+      return;
+    }
+
     state.absences.push({doctor,start,end,type,createdAt:Date.now()});
   }
   rebuildRecoveryLedger();save();
@@ -101,30 +151,21 @@ function dateFromISO(s){let [y,m,d]=s.split("-").map(Number);return new Date(y,m
 function normalizeDateKey(v){
   if(v instanceof Date && !Number.isNaN(v.getTime())) return iso(v);
   const s=String(v??"").trim();
-  const m=s.match(/^(\d{4}-\d{2}-\d{2})/);
+  const m=s.match(/^(\\d{4}-\\d{2}-\\d{2})/);
   if(m)return m[1];
   return "";
 }
 function absOn(doc,date){
   const dk=normalizeDateKey(date);
-  const doctorName=typeof doc==='string' ? doc.trim() : String(doc?.name??'').trim();
-  if(!dk || !doctorName)return false;
-  const normName=v=>String(v??'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  const target=normName(doctorName);
+  if(!dk)return false;
   return (state.absences||[]).some(a=>{
-    if(!a || normName(a.doctor)!==target)return false;
+    if(!a || a.doctor!==doc)return false;
     const start=normalizeDateKey(a.start), end=normalizeDateKey(a.end);
     if(!start||!end)return false;
     return dk>=start && dk<=end;
   });
 }
-function fixedOn(doc,date){
-  const doctorName=typeof doc==='string' ? doc.trim() : String(doc?.name??'').trim();
-  const dk=normalizeDateKey(date);
-  if(!doctorName||!dk)return undefined;
-  const normName=v=>String(v??'').trim().toLowerCase();
-  return (state.fixed||[]).find(x=>normName(x.doctor)===normName(doctorName)&&normalizeDateKey(x.date)===dk);
-}
+function fixedOn(doc,date){return state.fixed.find(x=>x.doctor===doc&&x.date===iso(date))}
 function fixedAny(date){return state.fixed.filter(x=>x.date===iso(date))}
 function parseExcelDate(v){
   if(v instanceof Date && !isNaN(v)) return iso(v);
@@ -750,6 +791,31 @@ function generate(){
   const planning=chosen.planning||{};
   const missing=chosen.missing||[];
 
+  // CONTRAINTE DURE ABSENCE/RÉCUPÉRATION :
+  // aucune garde générée ne peut coïncider avec un CONGÉ, une INDISPONIBILITÉ
+  // ou une RÉCUPÉRATION. Cette vérification finale est indépendante du moteur
+  // de sélection et empêche qu'un poste soit enregistré par erreur.
+  const absenceViolations=[];
+  for(const x of Object.values(planning||{}).flat()){
+    if(!x?.doctor || !x?.date || !["J","N"].includes(x.type)) continue;
+    if(absOn(x.doctor,dateFromISO(x.date))){
+      const a=(state.absences||[]).find(v=>v?.doctor===x.doctor &&
+        normalizeDateKey(x.date)>=normalizeDateKey(v.start) &&
+        normalizeDateKey(x.date)<=normalizeDateKey(v.end));
+      absenceViolations.push(`${x.date} : ${x.doctor} → ${x.type} pendant ${a?.type||"une absence"}`);
+    }
+  }
+  // Les gardes J/N fixes sont également contrôlées.
+  for(const x of (state.fixed||[])){
+    if(!x?.doctor || !x?.date || !["J","N"].includes(x.type)) continue;
+    if(absOn(x.doctor,dateFromISO(x.date))){
+      const a=(state.absences||[]).find(v=>v?.doctor===x.doctor &&
+        normalizeDateKey(x.date)>=normalizeDateKey(v.start) &&
+        normalizeDateKey(x.date)<=normalizeDateKey(v.end));
+      absenceViolations.push(`${x.date} : ${x.doctor} → garde fixe ${x.type} pendant ${a?.type||"une absence"}`);
+    }
+  }
+
   // Contrôle final de sécurité : aucune garde générée ne doit être
   // consécutive à une autre garde du même médecin. Cette vérification est
   // indépendante du tirage aléatoire et protège contre toute régression.
@@ -770,6 +836,25 @@ function generate(){
   }
   if(restViolations.length){
     missing.push(`Repos insuffisant : ${restViolations.slice(0,8).join(" • ")}`);
+  }
+  if(absenceViolations.length){
+    missing.push(`Conflit absence/récupération : ${absenceViolations.slice(0,12).join(" • ")}`);
+  }
+
+  // Une génération avec une garde pendant une absence/récupération ne doit
+  // jamais être enregistrée comme un planning valide.
+  if(missing.length){
+    document.getElementById('genMessage').innerHTML=
+      `<div class="warn"><b>Génération refusée : contraintes non respectées.</b><br>`+
+      `${missing.slice(0,20).join(" • ")}<br>`+
+      `<small>Le planning précédent est conservé. Vérifiez les congés, indisponibilités et récupérations puis régénérez.</small></div>`;
+    renderAll();
+    renderPlanning();
+    try{showPage('planning');}catch(e){
+      document.querySelectorAll('.page').forEach(x=>x.style.display='none');
+      const p=document.getElementById('page-planning'); if(p)p.style.display='block';
+    }
+    return;
   }
 
   state.planningHistory[per.key]={
@@ -855,12 +940,16 @@ function historyData(key){
 }
 function cellFor(doc,date,source){
   const src=source||{planning:state.planning,fixed:state.fixed,absences:state.absences};
-  let k=iso(date),fx=(src.fixed||[]).find(x=>x.doctor===doc&&x.date===k);
+  const k=iso(date);
+  // Une garde réelle ne doit jamais être masquée par une récupération/absence.
+  // Priorité : garde fixe -> garde du planning -> absence/récupération.
+  const fx=(src.fixed||[]).find(x=>x.doctor===doc&&x.date===k);
   if(fx)return fx.type;
-  let a=(src.absences||[]).find(x=>x.doctor===doc&&date>=dateFromISO(x.start)&&date<=dateFromISO(x.end));
+  const p=(src.planning?.[k]||[]).find(x=>x.doctor===doc);
+  if(p)return p.type;
+  const a=(src.absences||[]).find(x=>x.doctor===doc&&date>=dateFromISO(x.start)&&date<=dateFromISO(x.end));
   if(a)return a.type==="CONGÉ"?"CONGÉ":(a.type==="RÉCUP"?"RÉCUP":"INDISP");
-  let p=(src.planning?.[k]||[]).find(x=>x.doctor===doc);
-  return p?p.type:"";
+  return "";
 }
 function isHoliday(date){return state.fixed.some(x=>x.date===iso(date)&&x.type==="F")}
 function cls(v){return {J:"cellJ",N:"cellN","CONGÉ":"cellC","INDISP":"cellI","RÉCUP":"cellR",G:"cellG",F:"cellF"}[v]||""}
@@ -1875,8 +1964,15 @@ function toggleAccountPassword(){
 const _openTab=openTab;openTab=function(id){if(!isAdmin()&&!['dashboard','planning','absences','stats','myGuards'].includes(id))id="planning";if(isAdmin()&&id==="myGuards")id="dashboard";_openTab(id);if(id==="myGuards")renderMyGuards();};
 function addDoctorRecovery(){
   const ses=currentSession(); if(!ses||ses.role==="admin")return alert("Cette saisie est destinée aux comptes Médecin.");
-  const date=document.getElementById("doctorRecoveryDate")?.value; if(!date)return alert("Sélectionnez une date de récupération.");
+  const date=document.getElementById("doctorRecoveryDate")?.value; if(!date)return alert("Sélectionnez la date de récupération.");
   if(state.absences.some(a=>a.doctor===ses.doctor&&a.start===date&&a.end===date&&a.type==="RÉCUP"))return alert("Cette récupération existe déjà.");
+  // Une récupération ne peut pas chevaucher une garde déjà attribuée.
+  // Sinon elle rendrait la cellule ambiguë et pourrait donner l'impression
+  // qu'un poste J/N manque.
+  const planningGuard=(state.planning[date]||[]).find(x=>x.doctor===ses.doctor&&["J","N"].includes(x.type));
+  const fixedGuard=(state.fixed||[]).find(x=>x.doctor===ses.doctor&&x.date===date&&["J","N","G","F"].includes(x.type));
+  const guard=planningGuard||fixedGuard;
+  if(guard)return alert(`CONFLIT : ${ses.doctor} a déjà une garde ${guard.type} le ${date}.\n\nLa récupération n'a pas été enregistrée.`);
   state.absences.push({doctor:ses.doctor,start:date,end:date,type:"RÉCUP",createdAt:Date.now()}); rebuildRecoveryLedger();
   save();
   const msg=document.getElementById("doctorRecoveryMessage"); if(msg){msg.textContent="Récupération enregistrée.";msg.style.display="block";}
