@@ -553,7 +553,7 @@ function generate(){
     monthly[d.name]._weekendUnitsF=Number(u.F||0);
   });
 
-  const dates=datesBetween(per.start,per.end).filter(d=>!isWeekend(d));
+  const dates=datesBetween(per.start,per.end).filter(d=>!isWeekend(d) && !isHoliday(d));
   const errors=[];
   const initial={planning:{},counts:JSON.parse(JSON.stringify(baseCounts)),monthly:JSON.parse(JSON.stringify(monthly)),score:0,missing:[]};
   // Recherche globale plus large : on conserve davantage d'états candidats

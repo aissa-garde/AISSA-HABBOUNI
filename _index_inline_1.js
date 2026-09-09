@@ -580,7 +580,7 @@ function generate(){
     }
   }
 
-  const dates=datesBetween(per.start,per.end).filter(d=>!isWeekend(d));
+  const dates=datesBetween(per.start,per.end).filter(d=>!isWeekend(d) && !isHoliday(d));
   const requiredTypes=[];
   // The requested generator always seeks both daily posts.
   requiredTypes.push("J","N");

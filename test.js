@@ -1,288 +1,6 @@
-<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#3f83c5">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="manifest" href="./manifest.webmanifest">
-<link rel="apple-touch-icon" href="./icons/icon-192.png">
-<title>Tox-Garde — Générateur équitable des gardes</title>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js">applyAppearance();
-</script>
-<style>
-:root{--bg:#f5f7fb;--card:#fff;--line:#d8dee9;--text:#182230;--muted:#667085;--blue:#3f83c5;--blue2:#eaf3fb;--orange:#ffbf00;--green:#dff4e6;--red:#fde2e2;--gray:#e5e7eb}
-*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
-header{background:var(--header-bg,#3f83c5);color:white;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:20px}.brand-wrap{display:flex;align-items:center;gap:12px;min-width:0}.brand-logo{width:58px;height:58px;object-fit:contain;border-radius:8px;background:#ffffff22;padding:3px;display:none}.brand-logo.show{display:block}.home-image{width:calc(100% + 40px);max-width:none;height:clamp(180px,30vh,360px);object-fit:cover;border-radius:0;display:none;margin:28px -20px 0}.home-image.show{display:block}
-header h1{margin:0;font-size:25px} header p{margin:5px 0 0;opacity:.9}
-main{max-width:1450px;margin:auto;padding:20px}
-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
-nav button,.btn{border:1px solid var(--line);background:white;border-radius:8px;padding:10px 14px;cursor:pointer;font-weight:600}
-nav button.active,.btn.primary{background:var(--blue);color:white;border-color:var(--blue)}
-.btn.danger{background:#fff0f0;color:#a11;border-color:#f2b4b4}.btn.small{padding:7px 10px;font-size:12px}.btn:disabled{opacity:.6;cursor:not-allowed}.gen-wait{display:inline-flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;background:#eef6ff;color:#245b88;font-weight:600}.gen-spinner{width:16px;height:16px;border:3px solid #c9dff3;border-top-color:#3f83c5;border-radius:50%;animation:genSpin .8s linear infinite;display:inline-block}@keyframes genSpin{to{transform:rotate(360deg)}}
-.panel{display:none}.panel.active{display:block}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px;box-shadow:0 2px 8px #1018280d}
-.grid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px}
-label{font-size:13px;color:var(--muted);font-weight:600}input,select{width:100%;margin-top:5px;padding:10px;border:1px solid var(--line);border-radius:7px;background:white}
-h2{margin-top:0;font-size:19px}h3{font-size:16px}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid var(--line);padding:7px;text-align:center}th{background:#eef2f7}td.name,th.name{text-align:left;white-space:nowrap}
-.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.hint{font-size:12px;color:var(--muted)}
-.badge{display:inline-block;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700}
-.bJ{background:#ffd24d}.bN{background:#8fc0e8}.bC{background:#ffdede}.bR{background:#dff4e6}.bG{background:#d9d9d9}.bF{background:#c9c9c9}.bFree{background:#fff}
-.statgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}.stat b{font-size:24px;display:block}
-#planning{overflow-x:auto;overflow-y:visible}.schedule{width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse}.schedule th,.schedule td{min-width:0;width:auto;height:38px;padding:5px 2px;overflow:hidden}.schedule th:not(:first-child),.schedule td:not(:first-child){width:auto}.schedule td[data-edit-name]{cursor:pointer;user-select:none}.schedule td[data-edit-name]:hover{outline:2px solid #3f83c5;outline-offset:-2px}.cellEditBtn{display:block;width:100%;height:100%;min-height:36px;border:0;background:transparent;font:inherit;cursor:pointer;padding:4px}.settings-bar{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:18px;box-shadow:0 2px 8px #1018280d}.settings-bar summary{padding:12px 16px;cursor:pointer;font-weight:700;color:var(--text);list-style:none}.settings-bar summary::-webkit-details-marker{display:none}.settings-panel{padding:0 16px 16px;border-top:1px solid var(--line)}.today-guards{display:flex;flex-wrap:wrap;gap:10px}.today-guard{border:1px solid var(--line);border-radius:9px;padding:10px 14px;font-weight:700}.today-guard small{display:block;font-weight:600;color:var(--muted);margin-bottom:3px}.today-empty{color:var(--muted);padding:6px 0}.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.settings-grid input[type=text],.settings-grid input[type=color]{width:100%}.schedule th:first-child,.schedule td:first-child{width:160px;min-width:160px;position:sticky;left:0;z-index:2}.schedule th:first-child{background:#eef2f7}.schedule td:first-child{background:white}
-.dayhead{font-size:11px}.weekend{background:#d9d9d9!important}.holiday{background:#bfe8ff!important}
-.cellEdit{width:100%;height:30px;margin:0;padding:3px;text-align:center;font-weight:bold;border:1px solid #777;border-radius:4px}.cellJ{background:#b7e4c7;font-weight:bold}.cellN{background:#f4a6a6;font-weight:bold}.cellC,.cellR,.cellI{background:#ffe36e;font-weight:bold}.cellG{background:#d9d9d9;font-weight:bold}.cellF{background:#bfe8ff;font-weight:bold}
-.warn{background:#fff7d6;border:1px solid #e8c84a;padding:10px;border-radius:8px;margin-bottom:12px}.ok{background:#e7f7eb;border:1px solid #8ac99a;padding:10px;border-radius:8px}
-@media(max-width:1200px){.schedule th,.schedule td{font-size:12px}.schedule th:first-child,.schedule td:first-child{width:145px;min-width:145px}}@media(max-width:900px){.grid,.statgrid{grid-template-columns:1fr 1fr}.schedule th,.schedule td{font-size:11px}.schedule th:first-child,.schedule td:first-child{width:125px;min-width:125px}}@media(max-width:600px){.grid,.statgrid{grid-template-columns:1fr}main{padding:10px}.schedule th,.schedule td{font-size:10px;padding:4px 1px}.schedule th:first-child,.schedule td:first-child{width:105px;min-width:105px}.schedule .dayhead{font-size:9px}}
-.bottom-bars{margin-top:24px;display:flex;flex-direction:column;gap:10px}.bottom-bars .settings-bar{margin-bottom:0}.bottom-bars .settings-panel ul{margin:0;padding-left:22px}
+applyAppearance();
 
-.header-tools{display:flex;align-items:flex-start;justify-content:flex-end;gap:8px;position:relative;z-index:20}
-.header-settings{background:rgba(255,255,255,.96);color:var(--text);border:1px solid rgba(255,255,255,.55);border-radius:9px;box-shadow:0 3px 10px rgba(16,24,40,.14);min-width:110px}
-.header-settings summary{padding:9px 12px;cursor:pointer;font-weight:700;list-style:none;white-space:nowrap}
-.header-settings summary::-webkit-details-marker{display:none}
-.header-settings-panel{position:absolute;right:0;top:calc(100% + 7px);width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:0 8px 24px rgba(16,24,40,.18)}
-.header-settings-panel ul{margin:0;padding-left:22px}.header-settings-panel li{margin-bottom:6px;font-size:13px}
-@media(max-width:700px){.home-image{width:calc(100% + 24px);margin-left:-12px;height:clamp(150px,28vh,280px);margin-top:20px}header{padding:14px 12px;align-items:flex-start}.header-tools{gap:5px;flex-shrink:0}.header-settings{min-width:auto}.header-settings summary{padding:8px 9px;font-size:12px}.header-settings-panel{right:-5px;width:min(420px,calc(100vw - 20px))}header h1{font-size:20px}header p{font-size:12px}}
 
-/* Couche de connexion */
-#authOverlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#3f83c5,#1f4f7a)}
-.auth-card{width:min(420px,100%);background:#fff;border-radius:16px;padding:28px;box-shadow:0 18px 60px #0005}.auth-card h2{margin:0 0 8px}.auth-card p{color:#667085}.auth-card .remember-row{display:flex;align-items:center;gap:8px;margin:14px 0}.auth-card .remember-row input{width:auto;margin:0}.auth-error{display:none;margin-top:12px;padding:9px;border-radius:8px;background:#fff0f0;color:#a11;font-size:13px}.auth-user{color:#182230;font-size:13px;font-weight:700;white-space:nowrap}.auth-user button{margin-left:8px}
-body.auth-locked header,body.auth-locked main{display:none!important}.admin-only{display:block}.doctor-only{display:none}.doctor-hidden{display:none!important}
-</style>
-<style>
-.history-groups{display:flex;flex-direction:column;gap:10px;margin-top:10px}
-.history-month-group{border:1px solid #dbe3ec;border-radius:10px;background:#f8fafc;padding:10px}
-.history-month-title{font-weight:700;font-size:15px;margin-bottom:8px}
-.history-month-items{display:flex;flex-wrap:wrap;gap:8px}
-.history-block{display:flex;flex-direction:column;align-items:flex-start;min-width:170px;padding:10px 12px;border:1px solid #cfd9e5;border-radius:9px;background:#fff;cursor:pointer;text-align:left}
-.history-block:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);transform:translateY(-1px)}
-.history-block strong{font-size:14px}.history-block span{font-size:12px;color:#667085;margin-top:4px}
-.history-empty{padding:12px;border:1px dashed #cbd5e1;border-radius:9px;color:#667085;background:#f8fafc}
-</style>
-
-<style>
-.history-groups{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px;margin-top:10px}
-.history-month-card{border:1px solid #dbe3ec;border-radius:12px;background:#f8fafc;overflow:hidden}
-.history-month-button,.history-year-button{width:100%;border:0;background:#fff;cursor:pointer;text-align:left;padding:12px;display:grid;grid-template-columns:1fr auto;gap:3px 8px}
-.history-month-button strong{font-size:15px}.history-month-button span,.history-year-button span{font-size:12px;color:#667085}.history-month-button b,.history-year-button b{grid-row:1/3;grid-column:2;align-self:center}
-.history-year-panel{padding:7px;background:#f8fafc;border-top:1px solid #e5e7eb}.history-year-card{border:1px solid #dbe3ec;border-radius:9px;background:#fff;margin-bottom:7px;overflow:hidden}.history-year-card:last-child{margin-bottom:0}
-.history-year-button{padding:9px 10px;background:#f9fafb}.history-planning-list{padding:7px;display:flex;flex-direction:column;gap:6px}.history-planning-card{display:flex;flex-direction:column;align-items:flex-start;border:1px solid #cfd9e5;border-radius:8px;background:#fff;cursor:pointer;text-align:left;padding:9px 10px}.history-planning-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}.history-planning-card strong{font-size:13px}.history-planning-card span{font-size:11px;color:#667085;margin-top:3px}
-@media(max-width:800px){.history-groups{grid-template-columns:repeat(3,minmax(110px,1fr))}}
-@media(max-width:560px){.history-groups{grid-template-columns:repeat(2,minmax(120px,1fr))}}
-</style>
-<style>
-.history-month-head{display:flex;align-items:stretch}.history-month-button{flex:1}
-
-.today-status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px;width:100%}
-.today-status-box{border:1px solid #d8e0ea;border-radius:8px;padding:7px 9px;background:#fff;min-width:0}
-.today-status-title{font-weight:700;font-size:13px;display:flex;justify-content:space-between;gap:6px;margin-bottom:5px}
-.today-status-title span{font-weight:600;color:#64748b}
-.today-status-person{font-size:12px;padding:3px 0;border-top:1px solid #edf1f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.today-status-empty{font-size:11px;color:#64748b}
-@media(max-width:700px){.today-status-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.today-status-box{padding:6px}.today-status-title{font-size:11px}.today-status-person{font-size:10px}.today-status-empty{font-size:9px}}
-.history-planning-card{position:relative;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between;gap:10px;width:100%;box-sizing:border-box}
-.history-planning-info{display:flex;flex-direction:column;align-items:flex-start;min-width:0}.history-planning-info strong{font-size:13px}.history-planning-info span{font-size:11px;color:#667085;margin-top:3px}
-.history-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto}.history-view-btn,.history-delete-btn{flex:0 0 auto;border:1px solid #f1b5b5;border-radius:7px;background:#fff5f5;color:#b42318;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer}.history-view-btn{border:1px solid #b8d2ea;border-radius:7px;background:#f4f9ff;color:#24608f;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer}.history-view-btn:hover{background:#e8f3ff}.history-delete-btn:hover{background:#fee4e2}.history-delete-btn:disabled{opacity:.55;cursor:not-allowed}
-.history-current-card{border-color:#8bb8df;background:#f7fbff}.history-current-empty{cursor:default}
-@media(max-width:560px){.history-planning-card{flex-direction:row!important;align-items:center!important}.history-actions{align-self:center}.history-view-btn,.history-delete-btn{width:22px!important}}
-</style>
-
-<style>
-/* Historique : 12 mois compacts, adaptés à l'écran */
-.history-groups{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:3px;margin-top:8px;width:100%;box-sizing:border-box;align-items:start}
-.history-month-card{min-width:0}
-.history-month-button{padding:8px 5px!important;min-height:62px;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center!important}
-.history-month-button strong{font-size:12px!important;line-height:1.15;white-space:nowrap} .history-month-button strong .month-full{display:inline}.history-month-button strong .month-short{display:none}
-.history-month-button span{font-size:10px!important;line-height:1.1}
-.history-month-button b{position:absolute;right:4px;top:3px;font-size:10px}
-.history-month-card{position:relative}
-.history-current-month{border-width:2px}
-.history-year-panel{grid-column:1/-1}
-.history-planning-card{min-height:44px}
-@media(max-width:1100px){.history-groups{grid-template-columns:repeat(12,minmax(0,1fr));gap:3px}}
-@media(max-width:650px){.history-groups{grid-template-columns:repeat(12,minmax(0,1fr));gap:2px}.history-month-button{min-height:48px;padding:5px 1px!important}.history-month-button strong{font-size:9px!important;letter-spacing:-.25px}.history-month-button strong .month-full{display:none}.history-month-button strong .month-short{display:inline}.history-month-button span{font-size:8px!important}.history-month-button b{font-size:8px;right:1px;top:1px}}
-@media(max-width:430px){.history-groups{grid-template-columns:repeat(12,minmax(0,1fr));gap:1px}.history-month-button{min-height:42px;padding:4px 0!important}.history-month-button strong{font-size:8px!important;letter-spacing:-.35px}.history-month-button strong .month-full{display:none}.history-month-button strong .month-short{display:inline}.history-month-button span{font-size:7px!important}.history-month-button b{display:none}}
-</style>
-
-<style>
-/* Ajustements finaux : historique compact + export unique */
-.export-menu{position:relative;display:inline-block}.export-menu>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center}.export-menu>summary::-webkit-details-marker{display:none}
-.export-menu-panel{position:absolute;z-index:1000;top:calc(100% + 6px);left:0;display:flex;gap:6px;padding:7px;background:#fff;border:1px solid #dbe3ec;border-radius:9px;box-shadow:0 8px 20px rgba(16,24,40,.16)}
-.export-menu-panel .btn{white-space:nowrap;padding:8px 12px}
-.history-groups{grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:3px!important;overflow:visible!important}
-.history-month-card{min-width:0!important;width:100%;box-sizing:border-box}
-.history-month-button{min-width:0!important;padding:7px 2px!important;min-height:58px!important}
-.history-month-button strong{font-size:11px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block}
-.history-month-button span{font-size:9px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.history-month-button b{font-size:8px!important;right:2px!important;top:2px!important}
-.history-year-panel{padding:5px!important}.history-year-card{margin-bottom:5px!important}.history-year-button{padding:7px 8px!important}.history-planning-list{padding:5px!important;gap:4px!important}
-.history-planning-card{min-height:36px!important;padding:6px 7px!important;gap:5px!important;border-radius:7px!important}
-.history-planning-info{min-width:0;max-width:calc(100% - 24px)}
-.history-planning-info strong{font-size:11px!important;line-height:1.1!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-.history-planning-info span{font-size:9px!important;line-height:1.1!important;margin-top:2px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-.history-actions{gap:4px}.history-view-btn,.history-delete-btn{width:22px!important;height:22px!important;min-width:22px!important;padding:0!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;font-size:12px!important;line-height:1!important}
-@media(max-width:1100px){.history-month-button strong{font-size:10px!important}.history-month-button span{font-size:8px!important}}
-@media(max-width:650px){.history-groups{grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:2px!important}.history-month-button{min-height:48px!important}.history-month-button strong{font-size:8px!important}.history-month-button span{font-size:7px!important}.history-planning-card{padding:5px!important}.history-planning-info strong{font-size:9px!important}.history-planning-info span{font-size:8px!important}.history-view-btn,.history-delete-btn{width:19px!important;height:19px!important;min-width:19px!important;font-size:10px!important}}
-</style>
-
-<style>
-/* Tableau de bord : un seul bloc et cartes uniformes */
-.dashboard-card{width:100%;}
-.dashboard-card #dashStats{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:14px;}
-.dashboard-card .stat{min-height:82px;display:flex;flex-direction:column;justify-content:center;}
-.today-dashboard{border-top:1px solid var(--line);padding-top:12px;}
-.today-dashboard-title{font-size:14px;font-weight:700;margin-bottom:8px;}
-.today-guards-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%;}
-.today-guard,.today-status-box{min-height:68px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;}
-.today-guard{text-align:center;}
-.today-status-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
-@media(max-width:900px){.dashboard-card #dashStats{grid-template-columns:repeat(2,minmax(0,1fr));}.today-guards-list{grid-template-columns:repeat(2,minmax(0,1fr));}}
-@media(max-width:600px){.dashboard-card #dashStats{grid-template-columns:1fr 1fr;}.today-guards-list,.today-status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.today-guard,.today-status-box{min-height:60px;padding:6px;}}
-</style>
-</head>
-<body class="auth-locked">
-<div id="authOverlay" aria-live="polite"><form class="auth-card" onsubmit="login(event)"><h2>🔐 Connexion</h2><p>Accédez à Tox-Garde avec votre compte.</p><label>Identifiant<input id="loginUsername" autocomplete="username" required></label><label>Mot de passe<input id="loginPassword" type="password" autocomplete="current-password" required></label><label class="remember-row"><input id="keepConnected" type="checkbox"> Rester connecté sur cet appareil</label><button class="btn primary" type="submit" style="width:100%;margin-top:8px">Se connecter</button><div id="authError" class="auth-error"></div></form></div>
-
-<header>
-<div class="brand-wrap"><img id="appLogoDisplay" class="brand-logo" alt="Logo application"><div><h1 id="appTitleDisplay">GardeMed</h1><p id="appSubtitleDisplay">Générateur équitable des gardes médicales</p></div><img id="centerLogoDisplay" class="brand-logo" alt="Logo Centre Antipoison"></div>
-<div class="header-tools"><div id="authUserInfo" class="auth-user"></div>
-<details class="header-settings admin-only"><summary>📋 Règles</summary><div class="header-settings-panel"><ul>
-<li><b>Garde J :</b> de 09h00 à 16h00.</li>
-<li><b>Garde N :</b> de 16h00 à 09h00 le lendemain.</li>
-<li>Chaque médecin est affecté uniquement aux gardes correspondant à son habilitation : <b>J</b>, <b>N</b> ou <b>J + N</b>.</li>
-<li>L’algorithme évite les gardes consécutives et respecte au minimum <b>48 h entre deux gardes</b>, sauf les gardes fixes prévues par les règles spécifiques.</li>
-<li><b>Congés, indisponibilités et récupérations</b> sont des contraintes prises en compte avant l’attribution d’une garde.</li>
-<li><b>G</b> correspond aux gardes de week-end et <b>F</b> aux gardes des jours fériés.</li>
-<li>Un médecin ayant un <b>week-end complet G</b> bénéficie d’une protection de 7 jours avant et après.</li>
-<li>Deux <b>F consécutifs</b> entraînent également une protection de 7 jours avant et après.</li>
-<li>Charge pondérée : <b>J = 1, N = 2, G = 2, F = 2</b>.</li>
-<li>Les scores de <b>récupération</b> sont mis à jour uniquement lors de la <b>validation</b>.</li>
-<li>Après une modification manuelle d’un planning validé, celui-ci doit être <b>validé à nouveau</b>.</li>
-</ul></div></details>
-<details class="header-settings admin-only"><summary>⚙ Paramètres</summary><div class="header-settings-panel"><div class="settings-grid"><label>Nom / titre de l’application<input type="text" id="appTitle" placeholder="Tox-Garde"></label><label>Phrase sous le titre<input type="text" id="appSubtitle" placeholder="Simple. Équitable. Intelligent"></label><label>Arrière-plan de l’application<input type="color" id="appBg" value="#f5f7fb"></label><label>Couleur de l’en-tête<input type="color" id="headerBg" value="#3f83c5"></label><label>Arrière-plan des cartes<input type="color" id="cardBg" value="#ffffff"></label><label>Logo de l’application<input type="file" id="appLogoFile" accept="image/*"><small id="appLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('appLogo','appLogoFile')">🗑 Supprimer</button></label><label>Logo du Centre Antipoison<input type="file" id="centerLogoFile" accept="image/*"><small id="centerLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('centerLogo','centerLogoFile')">🗑 Supprimer</button></label><label>Image d’arrière-plan<input type="file" id="bgImageFile" accept="image/*"><small id="bgImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('bgImage','bgImageFile')">🗑 Supprimer</button></label><label>Image d’accueil<input type="file" id="homeImageFile" accept="image/*"><small id="homeImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('homeImage','homeImageFile')">🗑 Supprimer</button></label></div><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="saveAppearance()">Enregistrer l’apparence</button><button class="btn" onclick="removeImages()">Supprimer les images/logos</button><button class="btn" onclick="resetAppearance()">Réinitialiser</button></div><p class="hint">Les réglages sont conservés dans votre navigateur.</p></div></details>
-</div>
-</header>
-<main><img id="homeImageDisplay" class="home-image" alt="Image d’accueil">
-<nav>
-<button class="active" data-tab="dashboard">Tableau de bord</button>
-<button class="admin-only" data-tab="team">Equipe</button>
-<button data-tab="absences">Congés / indisponibilités</button>
-<button class="admin-only" data-tab="generate">Génération</button>
-<button data-tab="planning">Planning</button>
-<button id="myGuardsTab" data-tab="myGuards" style="display:none">📅 Mes gardes</button>
-<button data-tab="stats">Recuperation</button>
-<button class="admin-only" data-tab="accounts">Comptes</button>
-</nav>
-
-<section id="dashboard" class="panel active">
-<div class="card dashboard-card"><h2>Tableau de bord</h2><div class="statgrid" id="dashStats"></div><div id="todayGuards" class="today-dashboard"></div></div>
-</section>
-
-<section id="team" class="panel">
-<div class="card"><h2>Équipe</h2>
-<div class="actions"><input id="newDoctor" placeholder="Nom du médecin" style="max-width:320px"><button class="btn primary" onclick="addDoctor()">Ajouter</button><input type="file" id="teamFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="importTeamFile(event)"><button class="btn" onclick="document.getElementById('teamFile').click()">📥 Importer un fichier</button><button class="btn" onclick="downloadTeamTemplate()">Télécharger modèle équipe</button></div>
-<p class="hint">Importez votre équipe depuis Excel/CSV. Colonnes acceptées : <b>Médecin</b>, <b>Actif</b>, <b>Type de garde</b> (J, N ou J+N) et, facultativement, <b>Habilité week-end</b> (Oui/Non). Les données sont conservées dans le navigateur.</p>
-<table><thead><tr><th class="name">Médecin</th><th>Actif</th><th>Type de garde automatique</th><th>Habilité week-end</th><th>J</th><th>N</th><th>G</th><th>F</th><th>Total</th><th>POINTS</th><th></th></tr></thead><tbody id="teamBody"></tbody></table></div>
-
-</section>
-
-<section id="accounts" class="panel">
-<div class="card admin-only" id="accountsManager">
-<h2>🔐 Comptes</h2>
-<p class="hint">Depuis cette rubrique, l’administrateur peut créer, modifier ou supprimer les comptes. Un compte <b>Médecin</b> donne accès au planning et permet au médecin de saisir uniquement ses propres congés/indisponibilités. Un compte <b>Administrateur</b> donne accès à toute l’application.</p>
-<div class="grid">
-<label>Médecin<select id="accountDoctor"></select></label>
-<label>Identifiant<input id="accountUsername" autocomplete="off" placeholder="Ex. dr.daoudi"></label>
-<label>Mot de passe<input id="accountPassword" type="password" autocomplete="new-password" placeholder="Mot de passe"></label>
-<label>Niveau<select id="accountRole"><option value="doctor">Médecin</option><option value="admin">Administrateur</option></select></label>
-</div>
-<div class="actions" style="margin-top:12px">
-<button class="btn primary" type="button" onclick="saveDoctorAccount()">➕ Créer / mettre à jour le compte</button>
-<button class="btn" type="button" onclick="clearDoctorAccountForm()">↺ Nouveau compte</button>
-<button class="btn" type="button" onclick="toggleAccountPassword()">👁 Afficher le mot de passe</button>
-</div>
-<div id="accountFormMessage" class="ok" style="display:none;margin-top:12px"></div>
-<table style="margin-top:15px">
-<thead><tr><th>Médecin</th><th>Identifiant</th><th>Niveau</th><th>Action</th></tr></thead>
-<tbody id="accountsBody"></tbody>
-</table>
-
-</div>
-</section>
-
-<section id="absences" class="panel">
-<div class="card"><h2>Disponibilités &amp; gardes</h2><p id="doctorAbsenceHint" class="hint" style="display:none">Vous pouvez saisir uniquement vos propres congés et indisponibilités.</p>
-<div class="grid">
-<label>Médecin<select id="absDoctor"></select></label>
-<label>Du<input type="date" id="absStart"></label>
-<label>Au<input type="date" id="absEnd"></label>
-<label>Type<select id="absType"><option>CONGÉ</option><option>INDISPONIBLE</option><option>RÉCUP</option><option>G</option><option>F</option></select></label>
-</div><br><button class="btn primary" onclick="addAbsence()">Ajouter</button>
-<p class="hint" style="margin-top:10px">Pour <b>G</b> ou <b>F</b>, vous pouvez saisir une seule date ou une période de plusieurs jours consécutifs. Les gardes G/F restent manuelles et ne sont jamais générées automatiquement.</p>
-<hr style="margin:20px 0"><h3>Importation Excel</h3>
-<p class="hint">Le fichier Excel doit utiliser les colonnes <b>Médecin | Date début | Date fin | Type</b>. Types acceptés : <b>CONGÉ, INDISPONIBLE, RÉCUP, G, F</b>. Pour une saisie sur une seule journée, Date début = Date fin.</p>
-<div class="admin-only"><input type="file" id="excelFile" accept=".xlsx,.xls,.csv" onchange="importExcel(event)"></div>
-<div class="actions admin-only"><button class="btn" onclick="downloadTemplate()">Télécharger un modèle Excel</button><button class="btn danger" onclick="clearFixed()">Effacer toutes les saisies</button></div>
-<table style="margin-top:15px"><thead><tr><th class="name">Médecin</th><th>Du</th><th>Au</th><th>Type</th><th>Date de saisie</th><th></th></tr></thead><tbody id="absBody"></tbody></table>
-</div></section>
-
-<section id="generate" class="panel">
-<div class="card"><h2>Générer le planning</h2>
-<div class="grid">
-<label>Période<select id="periodType" onchange="togglePeriodInputs()"><option value="month">Mois</option><option value="week">Semaine</option><option value="weeks">Plusieurs semaines</option></select></label>
-<label>Année<input type="number" id="year" value="2026" min="2020" max="2100"></label>
-<label id="monthWrap">Mois<select id="month"></select></label>
-<label id="weekWrap" style="display:none">Début de période<input type="date" id="weekStart"></label><label id="weekCountWrap" style="display:none">Nombre de semaines<input type="number" id="weekCount" value="6" min="1" max="52"></label>
-<label>Garde de jour<select id="makeJ"><option>Oui</option><option>Non</option></select></label>
-<label>Garde de nuit<select id="makeN"><option>Oui</option><option>Non</option></select></label>
-</div><br>
-<button class="btn primary" onclick="generate()">⚙ Générer automatiquement</button>
-<button class="btn" onclick="generate()">↻ Régénérer (autre répartition)</button>
-<button class="btn" onclick="openTab('planning')">Voir le planning</button>
-<div id="genMessage" style="margin-top:15px"></div>
-</div>
-<div class="card"><h2>Principe d'attribution</h2>
-<p>Le générateur fonctionne en 4 étapes : 1) contraintes et habilitations, 2) couverture obligatoire 1 J + 1 N chaque jour ouvrable, 3) équité par charge pondérée J=1, N=2, G=2, F=2 en tenant compte de la charge cumulée et du mois courant, 4) équilibre J/N pour les médecins J+N avec objectif souple d'au moins 1 J et 1 N lorsque cela est possible <b>sans surcharger un médecin déjà chargé par des G/F</b>. Les G/F imposés sont intégrés à la charge et réduisent donc naturellement la priorité pour les J/N. Les contraintes de repos, congés et indisponibilités restent prioritaires.</p></div>
-</section>
-
-<section id="planning" class="panel">
-<div class="card"><h2>Planning</h2><div class="actions"><span id="planningTitle"></span>
-<button class="btn primary admin-only" onclick="manualEditPlanning()">✎ Modifier manuellement</button>
-<details class="export-menu admin-only">
-  <summary class="btn primary">Exporter ▾</summary>
-  <div class="export-menu-panel">
-    <button type="button" class="btn" onclick="exportPlanning();this.closest('details').open=false">Excel</button>
-    <button type="button" class="btn" onclick="exportPlanningWord();this.closest('details').open=false">Word (paysage)</button>
-  </div>
-</details>
-<button class="btn admin-only" onclick="window.print()">Imprimer</button>
-<button class="btn primary admin-only" onclick="confirmCurrentPlanning()">✓ Valider le planning</button></div>
-<div class="actions admin-only" style="margin-top:10px"><select id="historySelect" onchange="showHistoryPlanning()" style="display:none"></select><button class="btn" onclick="showCurrentPlanning()">Planning actuel</button></div><div id="historyBlocks" class="history-groups"></div>
-<div class="actions doctor-only" style="margin-top:10px"><label style="min-width:360px">Plannings validés<select id="doctorHistorySelect" onchange="showDoctorValidatedPlanning()"></select></label><button class="btn primary" onclick="showDoctorValidatedPlanning()">Afficher</button></div>
-<div id="doctorPlanningNotice" class="hint doctor-only" style="margin-top:10px"></div>
-<div id="planningTable" style="margin-top:15px"></div></div>
-<div class="card doctor-only"><h2>➕ Ajouter une récupération</h2>
-<p class="hint">Vous pouvez enregistrer uniquement vos propres jours de récupération. Cette action ne modifie pas le planning et ne permet pas de le valider.</p>
-<div class="grid"><label>Date de récupération<input type="date" id="doctorRecoveryDate"></label></div>
-<br><button class="btn primary" type="button" onclick="addDoctorRecovery()">Ajouter la récupération</button>
-<div id="doctorRecoveryMessage" class="ok" style="display:none;margin-top:12px"></div>
-</div>
-</section>
-
-<section id="myGuards" class="panel">
-<div class="card"><h2>📅 Mes gardes</h2><div id="myGuardsContent"></div></div>
-</section>
-
-<section id="stats" class="panel">
-<div class="card"><h2>Recuperation</h2><div class="actions admin-only" style="margin-bottom:12px"><button class="btn danger" onclick="resetAllEquityCounters()">↺ RESET</button><button class="btn primary" onclick="recalculateRecoveryScores()">🔄 AFFICHER SCORE</button></div><div id="statsTable"></div></div>
-</section>
-</main>
-
-<datalist id="guardValues"><option value="J"><option value="N"><option value="G"><option value="F"><option value="CONGÉ"><option value="RÉCUP"><option value="INDISP"></datalist>
-
-<script>
 const demoDoctors=["Dr Daoudi","Dr Daghouane","Dr El Hariri","Dr Ennakhassi","Dr Benarina","Dr Faouzi","Dr Habbouni","Dr Mourabiti","Dr El Mrabet","Dr Belkhadir","Dr El Azher"];
 let state=JSON.parse(localStorage.getItem("gardeMed")||"null")||{doctors:[],absences:[],fixed:[],planning:{},planningHistory:{},generationOffset:0,settings:{title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:""}};
 if(!state.recoveryLedger) state.recoveryLedger={};
@@ -732,7 +450,7 @@ function counts(){
   return calculateRecovery();
 }
 function guardPoints(type){
-  return ({J:1,N:2,G:2,F:2}[type]||0);
+  return ({J:1,N:2,G:4,F:4}[type]||0);
 }
 function isEligibleForType(doc,type){
   if(!doc || !doc.active) return false;
@@ -744,7 +462,7 @@ function isEligibleForType(doc,type){
   return doc.weekend !== false;
 }
 function workload(c){
-  return (c?.J||0)*1 + (c?.N||0)*2 + (c?.G||0)*2 + (c?.F||0)*2;
+  return (c?.J||0)*1 + (c?.N||0)*2 + (c?.G||0)*4 + (c?.F||0)*4;
 }
 function weeklyRepeatPenalty(doc,date,type,planning){
   // Préférence souple : éviter au maximum 2 J ou 2 N du même médecin
@@ -777,8 +495,8 @@ function candidateScore(doc,type,c,monthly,date,planning){
   const m=(monthly&&monthly[doc.name])||{J:0,N:0,G:0,F:0};
   // EQUITE PRIORITAIRE : la charge pondérée cumulée est l'objectif
   // principal. La charge du mois courant vient ensuite.
-  // Important : chaque cellule G/F représente un jour de garde et vaut 2 points.
-  // Ainsi G+G = 4 points et F+F = 4 points. Ils réduisent naturellement les J/N
+  // Important : les G/F fixes sont déjà inclus avec leur vrai poids
+  // (G=4, F=4). Ils doivent donc naturellement réduire les J/N
   // attribués ensuite à un médecin déjà très chargé.
   const total=workload(x);
   const month=workload(m);
@@ -952,8 +670,8 @@ function generateCore(){
   function randomPick(candidates,st,type,date){
     if(!candidates.length)return null;
     // EQUITE AVANT L'OBJECTIF J/N : un médecin ayant déjà reçu un G/F
-    // doit être naturellement moins prioritaire pour J/N, puisque chaque
-    // cellule G/F porte 2 points (G+G ou F+F = 4 points). L'objectif 1 J + 1 N reste un objectif
+    // doit être naturellement moins prioritaire pour J/N, puisque G/F
+    // portent déjà 4 points chacun. L'objectif 1 J + 1 N reste un objectif
     // souple, jamais une priorité qui pourrait surcharger un médecin.
     // Neutralité de l'ordre des médecins : on mélange AVANT le tri.
     // Ainsi, lorsque plusieurs candidats ont un score identique (ou très
@@ -974,7 +692,7 @@ function generateCore(){
     }).sort((a,b)=>a.score-b.score);
 
     // On ne donne le petit bonus J/N qu'aux candidats proches du meilleur
-    // niveau de charge. Ainsi un médecin avec un week-end G+G (4 points)
+    // niveau de charge. Ainsi un médecin avec un week-end G+G (8 points)
     // ne reçoit pas automatiquement J+N simplement parce qu'il lui manque
     // ces deux types.
     const best=ranked[0];
@@ -1217,7 +935,7 @@ function generateCore(){
     document.getElementById('genMessage').innerHTML=
       `<div class="ok"><b>Planning généré sans conflit.</b><br>`+
       `Chaque jour ouvrable comporte 1 J + 1 N. Écart de charge pondérée : ${spread} point(s).<br>`+
-      `<small>J=1 • N=2 • G=2 • F=2. Le planning reste un brouillon jusqu'à validation.</small></div>`;
+      `<small>J=1 • N=2 • G=4 • F=4. Le planning reste un brouillon jusqu'à validation.</small></div>`;
   }
   // Affichage automatique du planning nouvellement généré.
   // On fixe d'abord la vue courante, puis on rafraîchit les composants.
@@ -2069,7 +1787,7 @@ function formatEntryCreatedAt(ts){
   if(isNaN(d))return "Non renseignée";
   return d.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
 }
-function renderAll(){let body=document.getElementById("teamBody");let c=counts();body.innerHTML=state.doctors.map((d,i)=>`<tr><td class='name'><input value="${d.name.replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td><input type="checkbox" ${d.weekend!==false?"checked":""} onchange="state.doctors[${i}].weekend=this.checked;save()"></td><td>${c[d.name]?.J||0}</td><td>${c[d.name]?.N||0}</td><td>${c[d.name]?.G||0}</td><td>${c[d.name]?.F||0}</td><td>${c[d.name]?.total||0}</td><td><b>${workload(c[d.name]||{})}</b></td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`).join("");
+function renderAll(){let body=document.getElementById("teamBody");let c=counts();body.innerHTML=state.doctors.map((d,i)=>`<tr><td class='name'><input value="${d.name.replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td><input type="checkbox" ${d.weekend!==false?"checked":""} onchange="state.doctors[${i}].weekend=this.checked;save()"></td><td>${c[d.name]?.J||0}</td><td>${c[d.name]?.N||0}</td><td>${c[d.name]?.G||0}</td><td>${c[d.name]?.F||0}</td><td>${c[d.name]?.total||0}</td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`).join("");
 let opts=state.doctors.map(d=>`<option>${d.name}</option>`).join("");document.getElementById("absDoctor").innerHTML=opts;
 const mergedEntries=[...state.absences.map((a,i)=>({kind:"abs",index:i,doctor:a.doctor,start:a.start,end:a.end,type:a.type,createdAt:a.createdAt})),...state.fixed.map((x,i)=>({kind:"fixed",index:i,doctor:x.doctor,start:x.date,end:x.date,type:x.type,createdAt:x.createdAt}))].sort((a,b)=>(a.start||"").localeCompare(b.start||"")||a.doctor.localeCompare(b.doctor));
 document.getElementById("absBody").innerHTML=mergedEntries.map(a=>{const ses=currentSession();const canDelete=ses?.role==="admin" || (a.kind==="abs" && a.doctor===ses?.doctor && !["G","F"].includes(a.type));const action=canDelete?`<button class="btn small danger" onclick='deleteMergedEntry("${a.kind}",${a.index})'>Supprimer</button>`:`<span class="hint">Consultation</span>`;return `<tr><td class="name">${a.doctor}</td><td>${a.start}</td><td>${a.end}</td><td>${["G","F"].includes(a.type)?`<span class="badge ${a.type==="G"?"bG":"bF"}">${a.type}</span>`:a.type}</td><td>${formatEntryCreatedAt(a.createdAt)}</td><td>${action}</td></tr>`}).join("");
@@ -2315,13 +2033,10 @@ applyAuthUI();
 renderAll();
 applyAppearance();
 refreshCloudOnStartup().finally(startCloudPolling);
-</script>
-<script>
+
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js', {scope:'./'}).catch(err => console.warn('PWA service worker:', err));
   });
 }
-</script>
-</body>
-</html>
