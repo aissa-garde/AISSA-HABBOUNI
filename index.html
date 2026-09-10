@@ -143,6 +143,85 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 @media(max-width:900px){.dashboard-card #dashStats{grid-template-columns:repeat(2,minmax(0,1fr));}.today-guards-list{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:600px){.dashboard-card #dashStats{grid-template-columns:1fr 1fr;}.today-guards-list,.today-status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.today-guard,.today-status-box{min-height:60px;padding:6px;}}
 </style>
+
+<style id="mobile-content-layout">
+/* Optimisation du contenu des rubriques sur petits écrans — sans modifier la logique */
+@media (max-width: 700px){
+  body{overflow-x:hidden;}
+  main{width:100%;max-width:100%;padding:10px;}
+  nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:12px;}
+  nav button{width:100%;min-height:44px;padding:9px 6px;font-size:13px;white-space:normal;line-height:1.15;}
+  .card{width:100%;padding:14px;margin-bottom:12px;border-radius:12px;overflow-x:hidden;}
+  .card h2{font-size:19px;margin-bottom:12px;}
+  .card h3{font-size:15px;}
+  .actions{gap:7px;}
+  .actions>.btn,.actions>button{min-height:42px;}
+  .grid{grid-template-columns:1fr!important;gap:9px;}
+  label{font-size:12px;}
+  input,select{font-size:15px;min-height:42px;padding:9px;}
+
+  /* Tableaux : défilement horizontal propre plutôt que compression illisible */
+  #team .card,#absences .card,#accounts .card{overflow-x:auto;}
+  #teamTable,#absences table,#accounts table{width:max-content;min-width:620px;}
+  #teamTable th,#teamTable td,#absences table th,#absences table td,#accounts table th,#accounts table td{font-size:11px;padding:7px 6px;}
+  #teamTable th:first-child,#teamTable td:first-child{min-width:125px;}
+  #teamTable input,#teamTable select{font-size:12px;min-height:34px;padding:5px;}
+  #teamTable .btn{min-height:34px;padding:6px 8px;font-size:11px;}
+  #absences table{min-width:590px;}
+  #accounts table{min-width:500px;}
+
+  /* Planning : tableau lisible avec défilement horizontal */
+  #planning .card:first-child{overflow-x:hidden;}
+  #planningTable{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  #planningTable .schedule{width:max-content;min-width:850px;}
+  #planningTable .schedule th,#planningTable .schedule td{height:38px;font-size:10px;padding:4px 2px;}
+  #planningTable .schedule th:first-child,#planningTable .schedule td:first-child{width:110px;min-width:110px;position:sticky;left:0;z-index:3;}
+  #planningTable .cellEditBtn{min-height:34px;padding:3px 1px;}
+
+  /* Génération / récupération : commandes empilées et lisibles */
+  #generate .actions,.export-menu-panel{width:100%;}
+  #generate .actions .btn,#generate .actions button{width:100%;}
+  #generate .card br{display:none;}
+  #stats .actions{display:grid;grid-template-columns:1fr 1fr;}
+  #stats .actions .btn{width:100%;font-size:12px;padding:9px 5px;}
+
+  /* Planning : boutons d'export et d'actions adaptés à la largeur */
+  #planning .actions{width:100%;align-items:stretch;}
+  #planning .actions>.btn,#planning .actions>button{flex:1 1 145px;}
+  #planning .export-menu{flex:1 1 145px;min-width:0;}
+  #planning .export-menu>summary{width:100%;text-align:center;min-height:42px;}
+  #planning .export-menu-panel{right:auto;left:0;width:min(280px,calc(100vw - 40px));}
+  #planning .export-menu-panel .btn{width:100%;}
+
+  /* Historique */
+  #historyBlocks{width:100%;overflow-x:auto;}
+  .history-groups{width:100%;}
+
+  /* Équipe : zone de consultation bien séparée du formulaire admin */
+  #teamAdminControls{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  #teamAdminControls input[type=text],#teamAdminControls .btn{width:100%;max-width:none!important;}
+  #teamAdminHint{line-height:1.4;}
+
+  /* Congés / indisponibilités */
+  #absences .actions{display:grid;grid-template-columns:1fr 1fr;}
+  #absences .actions .btn{width:100%;} 
+
+  /* Comptes */
+  #accounts .actions{display:grid;grid-template-columns:1fr;}
+  #accounts .actions .btn{width:100%;}
+}
+@media (max-width:430px){
+  main{padding:8px;}
+  nav{gap:6px;}
+  nav button{font-size:12px;min-height:42px;}
+  .card{padding:12px;}
+  .actions>.btn,#planning .export-menu>summary{font-size:12px;}
+  #teamAdminControls{grid-template-columns:1fr;}
+  #stats .actions{grid-template-columns:1fr;}
+  #planningTable .schedule{min-width:780px;}
+}
+</style>
+
 </head>
 <body class="auth-locked">
 <div id="authOverlay" aria-live="polite"><form class="auth-card" onsubmit="login(event)"><h2>🔐 Connexion</h2><p>Accédez à Tox-Garde avec votre compte.</p><label>Identifiant<input id="loginUsername" autocomplete="username" required></label><label>Mot de passe<input id="loginPassword" type="password" autocomplete="current-password" required></label><label class="remember-row"><input id="keepConnected" type="checkbox"> Rester connecté sur cet appareil</label><button class="btn primary" type="submit" style="width:100%;margin-top:8px">Se connecter</button><div id="authError" class="auth-error"></div></form></div>
@@ -1405,7 +1484,16 @@ function historyPeriodLabel(k,h){
 }
 function toggleHistoryPanel(id){
   const el=document.getElementById(id);
-  if(el)el.hidden=!el.hidden;
+  if(!el)return;
+  // Historique : un seul mois peut être ouvert à la fois.
+  // Lorsqu'on ouvre un autre mois, le mois précédemment ouvert se referme automatiquement.
+  const isMonthPanel=/^history-month-\d+$/.test(id);
+  if(isMonthPanel){
+    document.querySelectorAll('#historyBlocks .history-month-card > .history-year-panel').forEach(panel=>{
+      if(panel.id!==id) panel.hidden=true;
+    });
+  }
+  el.hidden=!el.hidden;
 }
 function selectHistoryBlock(k,isCurrent=false){
   // Pour un compte Médecin, le bloc « Actuel » doit utiliser le planning
@@ -2083,6 +2171,7 @@ function resetAllEquityCounters(){
 }
 function renderStats(){
   const el=document.getElementById("statsTable"); if(!el)return;
+  el.classList.toggle("doctor-recovery-view", !isAdmin());
   const c=state.recoveryDisplayReset
     ? Object.fromEntries(state.doctors.map(d=>[d.name,{J:0,N:0,G:0,F:0,total:0,recupAcquise:0,recupPrise:0,recupSolde:0}]))
     : calculateRecovery();
@@ -2454,4 +2543,112 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 </body>
-</html>
+</html><style>
+/* Optimisation mobile — conserve l'affichage desktop inchangé */
+@media (max-width:700px){
+  header{
+    padding:12px 12px 14px;
+    flex-direction:column;
+    align-items:stretch;
+    gap:10px;
+  }
+  .brand-wrap{
+    width:100%;
+    gap:10px;
+    align-items:center;
+    min-height:58px;
+  }
+  .brand-logo{width:52px;height:52px;flex:0 0 52px}
+  .brand-wrap>div{min-width:0;flex:1}
+  header h1{font-size:22px;line-height:1.05;white-space:normal}
+  header p{font-size:12px;line-height:1.2;margin-top:4px}
+  .header-tools{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+  .auth-user{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-size:12px;
+    max-width:100%;
+  }
+  .auth-user button{margin-left:0;padding:8px 10px;font-size:12px}
+  .header-settings summary{padding:8px 10px;font-size:12px}
+  nav{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+    margin-bottom:14px;
+  }
+  nav button{
+    width:100%;
+    min-height:44px;
+    padding:9px 7px;
+    font-size:13px;
+    line-height:1.15;
+  }
+  nav button[data-tab="absences"]{grid-column:1 / -1}
+  main{padding:8px 10px 16px}
+  .card{padding:14px;border-radius:12px;margin-bottom:12px}
+  .dashboard-card h2{font-size:19px}
+  .statgrid{grid-template-columns:1fr!important;gap:8px}
+  .stat{padding:12px}
+  .today-guards-list,.today-status-grid{grid-template-columns:1fr 1fr!important;gap:7px}
+  .today-guard,.today-status-box{min-height:64px;padding:8px}
+  .today-guard small{font-size:11px}
+  .today-guard{font-size:13px}
+  .today-status-title{font-size:11px}
+  .today-status-person{font-size:10px}
+}
+@media (max-width:430px){
+  .brand-logo{width:48px;height:48px;flex-basis:48px}
+  header h1{font-size:20px}
+  header p{font-size:11px}
+  .auth-user{font-size:11px}
+  .header-settings summary,.auth-user button{font-size:11px;padding:7px 8px}
+  nav button{font-size:12px;min-height:42px}
+  .today-guards-list,.today-status-grid{grid-template-columns:1fr!important}
+}
+
+/* Correction mobile ciblée : récupération médecin + historique des plannings */
+@media(max-width:650px){
+  /* Récupération : le médecin voit une fiche compacte ; l'administrateur
+     conserve le tableau complet avec défilement horizontal sur petit écran. */
+  #stats .card{overflow-x:hidden;}
+  #statsTable{width:100%;overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;}
+  #statsTable:not(.doctor-recovery-view) table{width:max-content;min-width:900px;}
+  #statsTable.doctor-recovery-view{overflow-x:hidden;}
+  #statsTable.doctor-recovery-view table{width:100%;min-width:0;border-collapse:separate;border-spacing:0 6px;}
+  #statsTable.doctor-recovery-view thead{display:none;}
+  #statsTable.doctor-recovery-view tbody,#statsTable.doctor-recovery-view tr{display:block;width:100%;}
+  #statsTable.doctor-recovery-view tr{border:1px solid #dbe3ec;border-radius:10px;background:#fff;padding:8px;box-sizing:border-box;}
+  #statsTable.doctor-recovery-view td{display:flex;align-items:center;justify-content:space-between;width:100%;box-sizing:border-box;padding:8px 4px;border:0;border-bottom:1px solid #eef2f6;font-size:13px;}
+  #statsTable.doctor-recovery-view td:last-child{border-bottom:0;}
+  #statsTable.doctor-recovery-view td::before{font-weight:600;color:#667085;margin-right:12px;}
+  #statsTable.doctor-recovery-view td:nth-child(1)::before{content:"Médecin";}
+  #statsTable.doctor-recovery-view td:nth-child(2)::before{content:"J";}
+  #statsTable.doctor-recovery-view td:nth-child(3)::before{content:"N";}
+  #statsTable.doctor-recovery-view td:nth-child(4)::before{content:"G";}
+  #statsTable.doctor-recovery-view td:nth-child(5)::before{content:"F";}
+  #statsTable.doctor-recovery-view td:nth-child(6)::before{content:"Total gardes";}
+  #statsTable.doctor-recovery-view td:nth-child(7)::before{content:"Récup acquise";}
+  #statsTable.doctor-recovery-view td:nth-child(8)::before{content:"Récup prise";}
+  #statsTable.doctor-recovery-view td:nth-child(9)::before{content:"Récupération restante";}
+  #statsTable.doctor-recovery-view td.name{font-weight:700;font-size:14px;}
+
+  /* Historique : lorsqu'un mois est ouvert, son contenu occupe toute la largeur. */
+  #historyBlocks{overflow:visible!important;}
+  .history-month-card:has(.history-year-panel:not([hidden])){grid-column:1 / -1!important;}
+  .history-month-card:has(.history-year-panel:not([hidden])) .history-year-panel{width:100%;box-sizing:border-box;}
+  .history-month-card:has(.history-year-panel:not([hidden])) .history-planning-list{width:100%;box-sizing:border-box;}
+  .history-planning-card{width:100%!important;box-sizing:border-box!important;}
+  .history-actions{display:flex!important;visibility:visible!important;opacity:1!important;flex:0 0 auto!important;}
+  .history-view-btn,.history-delete-btn{display:inline-flex!important;visibility:visible!important;opacity:1!important;flex:0 0 auto!important;}
+}
+
+</style>
