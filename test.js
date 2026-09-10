@@ -450,7 +450,7 @@ function counts(){
   return calculateRecovery();
 }
 function guardPoints(type){
-  return ({J:1,N:2,G:4,F:4}[type]||0);
+  return ({J:1,N:2,G:3,F:3}[type]||0);
 }
 function isEligibleForType(doc,type){
   if(!doc || !doc.active) return false;
@@ -462,7 +462,7 @@ function isEligibleForType(doc,type){
   return doc.weekend !== false;
 }
 function workload(c){
-  return (c?.J||0)*1 + (c?.N||0)*2 + (c?.G||0)*4 + (c?.F||0)*4;
+  return (c?.J||0)*1 + (c?.N||0)*2 + (c?.G||0)*3 + (c?.F||0)*3;
 }
 function weeklyRepeatPenalty(doc,date,type,planning){
   // Préférence souple : éviter au maximum 2 J ou 2 N du même médecin
@@ -496,7 +496,7 @@ function candidateScore(doc,type,c,monthly,date,planning){
   // EQUITE PRIORITAIRE : la charge pondérée cumulée est l'objectif
   // principal. La charge du mois courant vient ensuite.
   // Important : les G/F fixes sont déjà inclus avec leur vrai poids
-  // (G=4, F=4). Ils doivent donc naturellement réduire les J/N
+  // (G=3, F=3). Ils doivent donc naturellement réduire les J/N
   // attribués ensuite à un médecin déjà très chargé.
   const total=workload(x);
   const month=workload(m);
@@ -935,7 +935,7 @@ function generateCore(){
     document.getElementById('genMessage').innerHTML=
       `<div class="ok"><b>Planning généré sans conflit.</b><br>`+
       `Chaque jour ouvrable comporte 1 J + 1 N. Écart de charge pondérée : ${spread} point(s).<br>`+
-      `<small>J=1 • N=2 • G=4 • F=4. Le planning reste un brouillon jusqu'à validation.</small></div>`;
+      `<small>J=1 • N=2 • G=3 • F=3. Le planning reste un brouillon jusqu'à validation.</small></div>`;
   }
   // Affichage automatique du planning nouvellement généré.
   // On fixe d'abord la vue courante, puis on rafraîchit les composants.

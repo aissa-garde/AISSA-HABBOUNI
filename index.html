@@ -11,6 +11,8 @@
 <title>Tox-Garde — Générateur équitable des gardes</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js">applyAppearance();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{--bg:#f5f7fb;--card:#fff;--line:#d8dee9;--text:#182230;--muted:#667085;--blue:#3f83c5;--blue2:#eaf3fb;--orange:#ffbf00;--green:#dff4e6;--red:#fde2e2;--gray:#e5e7eb}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
@@ -148,26 +150,14 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <header>
 <div class="brand-wrap"><img id="appLogoDisplay" class="brand-logo" alt="Logo application"><div><h1 id="appTitleDisplay">GardeMed</h1><p id="appSubtitleDisplay">Générateur équitable des gardes médicales</p></div><img id="centerLogoDisplay" class="brand-logo" alt="Logo Centre Antipoison"></div>
 <div class="header-tools"><div id="authUserInfo" class="auth-user"></div>
-<details class="header-settings admin-only"><summary>📋 Règles</summary><div class="header-settings-panel"><ul>
-<li><b>Garde J :</b> de 09h00 à 16h00.</li>
-<li><b>Garde N :</b> de 16h00 à 09h00 le lendemain.</li>
-<li>Chaque médecin est affecté uniquement aux gardes correspondant à son habilitation : <b>J</b>, <b>N</b> ou <b>J + N</b>.</li>
-<li>L’algorithme évite les gardes consécutives et respecte au minimum <b>48 h entre deux gardes</b>, sauf les gardes fixes prévues par les règles spécifiques.</li>
-<li><b>Congés, indisponibilités et récupérations</b> sont des contraintes prises en compte avant l’attribution d’une garde.</li>
-<li><b>G</b> correspond aux gardes de week-end et <b>F</b> aux gardes des jours fériés.</li>
-<li>Un médecin ayant un <b>week-end complet G</b> bénéficie d’une protection de 7 jours avant et après.</li>
-<li>Deux <b>F consécutifs</b> entraînent également une protection de 7 jours avant et après.</li>
-<li>Charge pondérée : <b>J = 1, N = 2, G = 2, F = 2</b>.</li>
-<li>Les scores de <b>récupération</b> sont mis à jour uniquement lors de la <b>validation</b>.</li>
-<li>Après une modification manuelle d’un planning validé, celui-ci doit être <b>validé à nouveau</b>.</li>
-</ul></div></details>
+
 <details class="header-settings admin-only"><summary>⚙ Paramètres</summary><div class="header-settings-panel"><div class="settings-grid"><label>Nom / titre de l’application<input type="text" id="appTitle" placeholder="Tox-Garde"></label><label>Phrase sous le titre<input type="text" id="appSubtitle" placeholder="Simple. Équitable. Intelligent"></label><label>Arrière-plan de l’application<input type="color" id="appBg" value="#f5f7fb"></label><label>Couleur de l’en-tête<input type="color" id="headerBg" value="#3f83c5"></label><label>Arrière-plan des cartes<input type="color" id="cardBg" value="#ffffff"></label><label>Logo de l’application<input type="file" id="appLogoFile" accept="image/*"><small id="appLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('appLogo','appLogoFile')">🗑 Supprimer</button></label><label>Logo du Centre Antipoison<input type="file" id="centerLogoFile" accept="image/*"><small id="centerLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('centerLogo','centerLogoFile')">🗑 Supprimer</button></label><label>Image d’arrière-plan<input type="file" id="bgImageFile" accept="image/*"><small id="bgImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('bgImage','bgImageFile')">🗑 Supprimer</button></label><label>Image d’accueil<input type="file" id="homeImageFile" accept="image/*"><small id="homeImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('homeImage','homeImageFile')">🗑 Supprimer</button></label></div><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="saveAppearance()">Enregistrer l’apparence</button><button class="btn" onclick="removeImages()">Supprimer les images/logos</button><button class="btn" onclick="resetAppearance()">Réinitialiser</button></div><p class="hint">Les réglages sont conservés dans votre navigateur.</p></div></details>
 </div>
 </header>
 <main><img id="homeImageDisplay" class="home-image" alt="Image d’accueil">
 <nav>
 <button class="active" data-tab="dashboard">Tableau de bord</button>
-<button class="admin-only" data-tab="team">Equipe</button>
+<button data-tab="team">Equipe</button>
 <button data-tab="absences">Congés / indisponibilités</button>
 <button class="admin-only" data-tab="generate">Génération</button>
 <button data-tab="planning">Planning</button>
@@ -182,16 +172,16 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 
 <section id="team" class="panel">
 <div class="card"><h2>Équipe</h2>
-<div class="actions"><input id="newDoctor" placeholder="Nom du médecin" style="max-width:320px"><button class="btn primary" onclick="addDoctor()">Ajouter</button><input type="file" id="teamFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="importTeamFile(event)"><button class="btn" onclick="document.getElementById('teamFile').click()">📥 Importer un fichier</button><button class="btn" onclick="downloadTeamTemplate()">Télécharger modèle équipe</button></div>
-<p class="hint">Importez votre équipe depuis Excel/CSV. Colonnes acceptées : <b>Médecin</b>, <b>Actif</b>, <b>Type de garde</b> (J, N ou J+N) et, facultativement, <b>Habilité week-end</b> (Oui/Non). Les données sont conservées dans le navigateur.</p>
-<table><thead><tr><th class="name">Médecin</th><th>Actif</th><th>Type de garde automatique</th><th>Habilité week-end</th><th>J</th><th>N</th><th>G</th><th>F</th><th>Total</th><th>POINTS</th><th></th></tr></thead><tbody id="teamBody"></tbody></table></div>
+<div class="actions admin-only" id="teamAdminControls"><input id="newDoctor" placeholder="Nom du médecin" style="max-width:320px"><button class="btn primary" onclick="addDoctor()">Ajouter</button><input type="file" id="teamFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="importTeamFile(event)"><button class="btn" onclick="document.getElementById('teamFile').click()">📥 Importer un fichier</button><button class="btn" onclick="downloadTeamTemplate()">Télécharger modèle équipe</button></div>
+<p class="hint admin-only" id="teamAdminHint">Importez votre équipe depuis Excel/CSV. Colonnes acceptées : <b>Médecin</b>, <b>Actif</b>, <b>Type de garde</b> (J, N ou J+N) et, facultativement, <b>Habilité week-end</b> (Oui/Non). Les données sont conservées dans le navigateur.</p>
+<table id="teamTable"><thead><tr><th class="name">Médecin</th><th>Actif</th><th>Type de garde automatique</th><th>Habilité week-end</th><th>J</th><th>N</th><th>G</th><th>F</th><th>Total</th><th>POINTS</th><th></th></tr></thead><tbody id="teamBody"></tbody></table></div>
 
 </section>
 
 <section id="accounts" class="panel">
 <div class="card admin-only" id="accountsManager">
 <h2>🔐 Comptes</h2>
-<p class="hint">Depuis cette rubrique, l’administrateur peut créer, modifier ou supprimer les comptes. Un compte <b>Médecin</b> donne accès au planning et permet au médecin de saisir uniquement ses propres congés/indisponibilités. Un compte <b>Administrateur</b> donne accès à toute l’application.</p>
+
 <div class="grid">
 <label>Médecin<select id="accountDoctor"></select></label>
 <label>Identifiant<input id="accountUsername" autocomplete="off" placeholder="Ex. dr.daoudi"></label>
@@ -243,8 +233,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <button class="btn" onclick="openTab('planning')">Voir le planning</button>
 <div id="genMessage" style="margin-top:15px"></div>
 </div>
-<div class="card"><h2>Principe d'attribution</h2>
-<p>Le générateur fonctionne en 4 étapes : 1) contraintes et habilitations, 2) couverture obligatoire 1 J + 1 N chaque jour ouvrable, 3) équité par charge pondérée J=1, N=2, G=2, F=2 en tenant compte de la charge cumulée et du mois courant, 4) équilibre J/N pour les médecins J+N avec objectif souple d'au moins 1 J et 1 N lorsque cela est possible <b>sans surcharger un médecin déjà chargé par des G/F</b>. Les G/F imposés sont intégrés à la charge et réduisent donc naturellement la priorité pour les J/N. Les contraintes de repos, congés et indisponibilités restent prioritaires.</p></div>
+
 </section>
 
 <section id="planning" class="panel">
@@ -255,6 +244,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
   <div class="export-menu-panel">
     <button type="button" class="btn" onclick="exportPlanning();this.closest('details').open=false">Excel</button>
     <button type="button" class="btn" onclick="exportPlanningWord();this.closest('details').open=false">Word (paysage)</button>
+    <button type="button" class="btn" onclick="exportPlanningPDF();this.closest('details').open=false">PDF (paysage)</button>
   </div>
 </details>
 <button class="btn admin-only" onclick="window.print()">Imprimer</button>
@@ -383,16 +373,38 @@ function addAbsence(){
       for(const x of (state.fixed||[])) if(x.doctor===doctor && x.date===date && ["J","N","G","F"].includes(x.type)) overlapFixed.push({date,type:x.type});
     }
 
-    const per=getPeriodDates();
-    const h=state.planningHistory?.[per.key];
-    const confirmed=!!(h?.confirmed || state.confirmedPlanningKeys?.[per.key]);
+    // Vérifier les conflits avec TOUS les plannings validés, pas seulement
+    // avec la période actuellement sélectionnée. C'est important si l'administrateur
+    // saisit un congé pour une date appartenant à un autre mois déjà validé.
+    const validatedConflicts=[];
+    Object.entries(state.planningHistory||{}).forEach(([key,raw])=>{
+      const h=raw||{};
+      if(!(h.confirmed || state.confirmedPlanningKeys?.[key])) return;
+      const hp=historyPeriod(key,h);
+      const hpStart=hp?.start, hpEnd=hp?.end;
+      if(!hpStart || !hpEnd) return;
+      const periodOverlaps=iso(hpEnd)>=start && iso(hpStart)<=end;
+      if(!periodOverlaps) return;
+      const hpPlanning=historyData(key)||{};
+      Object.values(hpPlanning).flat().forEach(x=>{
+        if(x?.doctor!==doctor || !x?.date || !["J","N","G","F"].includes(x.type)) return;
+        if(x.date>=start && x.date<=end) validatedConflicts.push({date:x.date,type:x.type});
+      });
+    });
+    // Éviter les doublons lorsqu'une même garde existe aussi dans state.planning.
+    const uniqueValidated=[];
+    const seenValidated=new Set();
+    [...validatedConflicts,...overlapPlanning,...overlapFixed].forEach(x=>{
+      const k=`${x.date}|${x.type}`;
+      if(!seenValidated.has(k)){seenValidated.add(k);uniqueValidated.push(x);}
+    });
 
-    if(confirmed && (overlapPlanning.length||overlapFixed.length)){
-      // A validated planning is immutable. Keep its guards visible and only
-      // record the new absence, with an explicit conflict warning.
+    if(uniqueValidated.length){
+      // Un planning validé est immuable : l'absence est enregistrée, mais le
+      // planning reste inchangé et le conflit est explicitement signalé.
       state.absences.push({doctor,start,end,type,createdAt:Date.now()});
       rebuildRecoveryLedger(); save();
-      const conflicts=[...overlapPlanning,...overlapFixed].map(x=>`${x.date} ${x.type}`);
+      const conflicts=uniqueValidated.map(x=>`${x.date} ${x.type}`);
       alert(`ABSENCE ENREGISTRÉE — CONFLIT AVEC LE PLANNING VALIDÉ.\n\n${doctor} a déjà : ${conflicts.join(" • ")}\n\nLe planning validé reste inchangé. Pour que cette absence soit prise en compte dans les gardes, régénérez puis validez un nouveau planning.`);
       return;
     }
@@ -732,7 +744,7 @@ function counts(){
   return calculateRecovery();
 }
 function guardPoints(type){
-  return ({J:1,N:2,G:2,F:2}[type]||0);
+  return ({J:1,N:2,G:3,F:3}[type]||0);
 }
 function isEligibleForType(doc,type){
   if(!doc || !doc.active) return false;
@@ -744,7 +756,7 @@ function isEligibleForType(doc,type){
   return doc.weekend !== false;
 }
 function workload(c){
-  return (c?.J||0)*1 + (c?.N||0)*2 + (c?.G||0)*2 + (c?.F||0)*2;
+  return (c?.J||0)*1 + (c?.N||0)*2 + (c?.G||0)*3 + (c?.F||0)*3;
 }
 function weeklyRepeatPenalty(doc,date,type,planning){
   // Préférence souple : éviter au maximum 2 J ou 2 N du même médecin
@@ -777,8 +789,8 @@ function candidateScore(doc,type,c,monthly,date,planning){
   const m=(monthly&&monthly[doc.name])||{J:0,N:0,G:0,F:0};
   // EQUITE PRIORITAIRE : la charge pondérée cumulée est l'objectif
   // principal. La charge du mois courant vient ensuite.
-  // Important : chaque cellule G/F représente un jour de garde et vaut 2 points.
-  // Ainsi G+G = 4 points et F+F = 4 points. Ils réduisent naturellement les J/N
+  // Important : chaque cellule G/F représente un jour de garde et vaut 3 points.
+  // Ainsi G+G = 6 points et F+F = 6 points. Ils réduisent naturellement les J/N
   // attribués ensuite à un médecin déjà très chargé.
   const total=workload(x);
   const month=workload(m);
@@ -953,7 +965,7 @@ function generateCore(){
     if(!candidates.length)return null;
     // EQUITE AVANT L'OBJECTIF J/N : un médecin ayant déjà reçu un G/F
     // doit être naturellement moins prioritaire pour J/N, puisque chaque
-    // cellule G/F porte 2 points (G+G ou F+F = 4 points). L'objectif 1 J + 1 N reste un objectif
+    // cellule G/F porte 3 points (G+G ou F+F = 6 points). L'objectif 1 J + 1 N reste un objectif
     // souple, jamais une priorité qui pourrait surcharger un médecin.
     // Neutralité de l'ordre des médecins : on mélange AVANT le tri.
     // Ainsi, lorsque plusieurs candidats ont un score identique (ou très
@@ -974,7 +986,7 @@ function generateCore(){
     }).sort((a,b)=>a.score-b.score);
 
     // On ne donne le petit bonus J/N qu'aux candidats proches du meilleur
-    // niveau de charge. Ainsi un médecin avec un week-end G+G (4 points)
+    // niveau de charge. Ainsi un médecin avec un week-end G+G (6 points)
     // ne reçoit pas automatiquement J+N simplement parce qu'il lui manque
     // ces deux types.
     const best=ranked[0];
@@ -1797,6 +1809,9 @@ function deleteDisplayedPlanning(){
 
 function showCurrentPlanning(){activePlanningView={type:"current",key:null};renderPlanning();}
 function getExportContext(){
+  // L'export doit reprendre exactement le planning affiché/validé, y compris
+  // les gardes J/N. Certaines synchronisations peuvent laisser state.planning
+  // vide alors que le planning validé complet est conservé dans l'historique.
   if(activePlanningView?.type==="history" && activePlanningView.key){
     const h=historyData(activePlanningView.key);
     if(h){
@@ -1804,7 +1819,33 @@ function getExportContext(){
       return {per,source:h,history:true};
     }
   }
-  return {per:getPeriodDates(),source:{planning:state.planning,fixed:state.fixed,absences:state.absences},history:false};
+
+  const per=getPeriodDates();
+  const currentHistory=state.planningHistory?.[per.key];
+  if(currentHistory?.confirmed && currentHistory?.planning){
+    return {per,source:currentHistory,history:false};
+  }
+
+  // Secours : si le planning courant ne contient pas de J/N mais qu'un
+  // planning validé correspondant à la période les contient, utiliser ce
+  // snapshot pour éviter un PDF incomplet (F/G/congés seulement).
+  const currentPlanning=state.planning||{};
+  const hasJN=Object.values(currentPlanning).flat().some(x=>x?.type==="J"||x?.type==="N");
+  if(!hasJN){
+    const candidate=Object.entries(state.planningHistory||{})
+      .map(([key,h])=>({key,h}))
+      .filter(({key,h})=>isHistoryConfirmed(key,h))
+      .find(({key,h})=>{
+        const hp=historyPeriod(key,h);
+        return hp.type===per.type && iso(hp.start)===iso(per.start) && iso(hp.end)===iso(per.end) &&
+          Object.values(h?.planning||{}).flat().some(x=>x?.type==="J"||x?.type==="N");
+      });
+    if(candidate){
+      return {per,source:historyData(candidate.key),history:false};
+    }
+  }
+
+  return {per,source:{planning:state.planning,fixed:state.fixed,absences:state.absences},history:false};
 }
 
 function exportPlanning(){
@@ -1814,6 +1855,77 @@ function exportPlanning(){
   let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Planning"); XLSX.writeFile(wb,`planning_gardes_${ctx.history?"ancien_":""}${per.key}.xlsx`);
 }
 
+function exportPlanningPDF(){
+  const ctx=getExportContext(); const per=ctx.per; const src=ctx.source; const dates=datesBetween(per.start,per.end);
+  if(!window.jspdf || !window.jspdf.jsPDF)return alert("L’export PDF n’est pas disponible. Vérifiez votre connexion internet puis réessayez.");
+
+  // PDF volontairement construit avec les mêmes dimensions, titres, police,
+  // couleurs et proportions que l'export Word.
+  const doc=new window.jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+  const pageWidth=doc.internal.pageSize.getWidth();
+  const margin=6.35; // 18 pt : même marge que le document Word
+  const center=pageWidth/2;
+  const title=state.settings?.title||"Tox-Garde";
+  const subtitle=state.settings?.subtitle||"Planification des gardes médicales";
+  const periodTitle=per.type==="month"?`${months[per.start.getMonth()]} ${per.start.getFullYear()}`:per.type==="week"?`Semaine du ${iso(per.start)} au ${iso(per.end)}`:`${per.weeks} semaines : ${iso(per.start)} au ${iso(per.end)}`;
+
+  const dayNames=["D","L","M","M","J","V","S"];
+  const headers=["Médecin",...dates.map(d=>`${dayNames[d.getDay()]}\n${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`)];
+  const rows=state.doctors.filter(d=>d.active).map(doc=>[doc.name,...dates.map(d=>cellFor(doc.name,d,src))]);
+
+  // En-tête identique au Word : Centre Antipoison / Tox-Garde / sous-titre / période.
+  doc.setTextColor(24,34,48);
+  doc.setFont("helvetica","bold"); doc.setFontSize(12);
+  doc.text("CENTRE ANTIPOISON",center,7.2,{align:"center"});
+  doc.setFontSize(18);
+  doc.text(title,center,13.4,{align:"center"});
+  doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(75,85,99);
+  doc.text(subtitle,center,18.4,{align:"center"});
+  doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(24,34,48);
+  doc.text(`Planning des gardes — ${periodTitle}`,center,24.2,{align:"center"});
+
+  const colors={J:[183,228,199],N:[244,166,166],G:[217,217,217],F:[191,232,255],"CONGÉ":[255,227,110],"RÉCUP":[255,227,110],INDISP:[255,227,110]};
+  const fillFor=v=>colors[v]||[255,255,255];
+  const tableWidth=pageWidth-(margin*2);
+  const doctorColWidth=37.0; // 105 pt environ : même proportion que Word
+  const dayColWidth=(tableWidth-doctorColWidth)/Math.max(1,dates.length);
+  const fontSize=dates.length>31?5.8:dates.length>14?7.5:9;
+  const headerFontSize=dates.length>31?5.2:dates.length>14?6.5:8;
+
+  doc.autoTable({
+    head:[headers], body:rows, startY:28.0, theme:"grid",
+    margin:{left:margin,right:margin}, tableWidth:tableWidth,
+    styles:{
+      font:"helvetica",fontSize:fontSize,cellPadding:{top:0.65,right:0.35,bottom:0.65,left:0.35},
+      minCellHeight:5.5,halign:"center",valign:"middle",lineWidth:0.15,lineColor:[119,119,119],
+      overflow:"hidden",textColor:[24,34,48]
+    },
+    headStyles:{
+      font:"helvetica",fontSize:headerFontSize,minCellHeight:6.5,fontStyle:"bold",
+      fillColor:[238,242,247],textColor:[24,34,48],halign:"center",valign:"middle"
+    },
+    columnStyles:{
+      0:{halign:"left",fontStyle:"bold",cellWidth:doctorColWidth},
+      ...Object.fromEntries(dates.map((_,i)=>[i+1,{cellWidth:dayColWidth}]))
+    },
+    didParseCell:function(data){
+      if(data.section==="body" && data.column.index>0){
+        data.cell.styles.fillColor=fillFor(data.cell.raw);
+        if(data.cell.raw)data.cell.styles.fontStyle="bold";
+      }
+      if(data.section==="head" && data.column.index>0){
+        const dt=dates[data.column.index-1];
+        const isF=(src.fixed||[]).some(x=>x.date===iso(dt)&&x.type==="F");
+        if(isF)data.cell.styles.fillColor=[191,232,255];
+        else if(isWeekend(dt))data.cell.styles.fillColor=[217,217,217];
+      }
+      if(data.section==="head" && data.column.index===0){
+        data.cell.styles.halign="left";
+      }
+    }
+  });
+  doc.save(`planning_gardes_${ctx.history?"ancien_":""}${per.key}.pdf`);
+}
 function exportPlanningWord(){
   const ctx=getExportContext(); const per=ctx.per; const src=ctx.source;
   const dates=datesBetween(per.start,per.end);
@@ -2069,11 +2181,29 @@ function formatEntryCreatedAt(ts){
   if(isNaN(d))return "Non renseignée";
   return d.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
 }
-function renderAll(){let body=document.getElementById("teamBody");let c=counts();body.innerHTML=state.doctors.map((d,i)=>`<tr><td class='name'><input value="${d.name.replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td><input type="checkbox" ${d.weekend!==false?"checked":""} onchange="state.doctors[${i}].weekend=this.checked;save()"></td><td>${c[d.name]?.J||0}</td><td>${c[d.name]?.N||0}</td><td>${c[d.name]?.G||0}</td><td>${c[d.name]?.F||0}</td><td>${c[d.name]?.total||0}</td><td><b>${workload(c[d.name]||{})}</b></td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`).join("");
-let opts=state.doctors.map(d=>`<option>${d.name}</option>`).join("");document.getElementById("absDoctor").innerHTML=opts;
-const mergedEntries=[...state.absences.map((a,i)=>({kind:"abs",index:i,doctor:a.doctor,start:a.start,end:a.end,type:a.type,createdAt:a.createdAt})),...state.fixed.map((x,i)=>({kind:"fixed",index:i,doctor:x.doctor,start:x.date,end:x.date,type:x.type,createdAt:x.createdAt}))].sort((a,b)=>(a.start||"").localeCompare(b.start||"")||a.doctor.localeCompare(b.doctor));
-document.getElementById("absBody").innerHTML=mergedEntries.map(a=>{const ses=currentSession();const canDelete=ses?.role==="admin" || (a.kind==="abs" && a.doctor===ses?.doctor && !["G","F"].includes(a.type));const action=canDelete?`<button class="btn small danger" onclick='deleteMergedEntry("${a.kind}",${a.index})'>Supprimer</button>`:`<span class="hint">Consultation</span>`;return `<tr><td class="name">${a.doctor}</td><td>${a.start}</td><td>${a.end}</td><td>${["G","F"].includes(a.type)?`<span class="badge ${a.type==="G"?"bG":"bF"}">${a.type}</span>`:a.type}</td><td>${formatEntryCreatedAt(a.createdAt)}</td><td>${action}</td></tr>`}).join("");
-document.getElementById("dashStats").innerHTML=`<div class='stat'><span>Médecins actifs</span><b>${state.doctors.filter(d=>d.active).length}</b></div>`;renderTodayGuards(); if(isAdmin())renderPlanning(); else {renderDoctorHistorySelect(); const k=activePlanningView?.type==="history"?activePlanningView.key:document.getElementById("doctorHistorySelect")?.value; if(k)showDoctorValidatedPlanning(k);}}
+function renderAll(){
+  const body=document.getElementById("teamBody");
+  const c=counts();
+  const ses=currentSession();
+  const admin=isAdmin();
+  body.innerHTML=state.doctors.map((d,i)=>{
+    const x=c[d.name]||{};
+    if(!admin){
+      return `<tr><td class="name">${escapeHtml(d.name)}</td><td>${d.active?"Oui":"Non"}</td><td>${d.shift==="J"?"J uniquement":d.shift==="N"?"N uniquement":"J + N"}</td><td>${d.weekend!==false?"Oui":"Non"}</td><td>${x.J||0}</td><td>${x.N||0}</td><td>${x.G||0}</td><td>${x.F||0}</td><td>${x.total||0}</td><td><b>${workload(x)}</b></td><td></td></tr>`;
+    }
+    return `<tr><td class='name'><input value="${String(d.name).replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td><input type="checkbox" ${d.weekend!==false?"checked":""} onchange="state.doctors[${i}].weekend=this.checked;save()"></td><td>${x.J||0}</td><td>${x.N||0}</td><td>${x.G||0}</td><td>${x.F||0}</td><td>${x.total||0}</td><td><b>${workload(x)}</b></td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`;
+  }).join("");
+  const opts=state.doctors.map(d=>`<option>${escapeHtml(d.name)}</option>`).join("");
+  const absDoctor=document.getElementById("absDoctor");
+  if(absDoctor) absDoctor.innerHTML=opts;
+  const mergedEntries=[...state.absences.map((a,i)=>({kind:"abs",index:i,doctor:a.doctor,start:a.start,end:a.end,type:a.type,createdAt:a.createdAt})),...state.fixed.map((x,i)=>({kind:"fixed",index:i,doctor:x.doctor,start:x.date,end:x.date,type:x.type,createdAt:x.createdAt}))].sort((a,b)=>(a.start||"").localeCompare(b.start||"")||a.doctor.localeCompare(b.doctor));
+  const absBody=document.getElementById("absBody");
+  if(absBody) absBody.innerHTML=mergedEntries.map(a=>{const canDelete=ses?.role==="admin" || (a.kind==="abs" && a.doctor===ses?.doctor && !["G","F"].includes(a.type));const action=canDelete?`<button class="btn small danger" onclick='deleteMergedEntry("${a.kind}",${a.index})'>Supprimer</button>`:`<span class="hint">Consultation</span>`;return `<tr><td class="name">${escapeHtml(a.doctor)}</td><td>${a.start}</td><td>${a.end}</td><td>${["G","F"].includes(a.type)?`<span class="badge ${a.type==="G"?"bG":"bF"}">${a.type}</span>`:a.type}</td><td>${formatEntryCreatedAt(a.createdAt)}</td><td>${action}</td></tr>`}).join("");
+  const dash=document.getElementById("dashStats");
+  if(dash) dash.innerHTML=`<div class='stat'><span>Médecins actifs</span><b>${state.doctors.filter(d=>d.active).length}</b></div>`;
+  renderTodayGuards();
+  if(isAdmin()) renderPlanning(); else {renderDoctorHistorySelect(); const k=activePlanningView?.type==="history"?activePlanningView.key:document.getElementById("doctorHistorySelect")?.value; if(k)showDoctorValidatedPlanning(k);}
+}
 function renameDoctor(i,v){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let old=state.doctors[i].name;v=v.trim();if(!v)return;state.doctors[i].name=v;state.absences.forEach(a=>{if(a.doctor===old)a.doctor=v});state.fixed.forEach(a=>{if(a.doctor===old)a.doctor=v});if(state.accounts){state.accounts.forEach(a=>{if(a.doctor===old)a.doctor=v})};save()}
 
 /* ===== Authentification et rôles : couche ajoutée sans modifier les fonctions métier ===== */
@@ -2258,7 +2388,7 @@ function renderMyGuards(){
   el.innerHTML=`<div style="border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;background:#f8fafc"><div class="hint">⏰ Prochaine garde</div><div style="font-size:20px;font-weight:800;margin-top:4px">${f.day} ${f.date}</div><div style="margin-top:5px;font-weight:700">${typeLabel(first.type)} — ${when}</div></div><table><thead><tr><th>Date</th><th>Jour</th><th>Type</th></tr></thead><tbody>${guards.map(g=>{const x=fmt(g.date);return `<tr><td>${x.date}</td><td>${x.day}</td><td><b>${typeLabel(g.type)}</b></td></tr>`}).join("")}</tbody></table>`;
 }
 function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";return;}
-const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display=admin?"none":"block";document.getElementById("authUserInfo").innerHTML=`${ses.username} — ${admin?"Administrateur":"Médecin"}<button class="btn small" onclick="logout()">Déconnexion</button>`;
+const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display=admin?"none":"block";document.getElementById("authUserInfo").innerHTML=`${ses.username}<button class="btn small" onclick="logout()">Déconnexion</button>`;
 if(!admin){
   document.getElementById("doctorAbsenceHint").style.display="block";
   const absDoctor=document.getElementById("absDoctor");
@@ -2290,7 +2420,7 @@ function toggleAccountPassword(){
   p.type=p.type==="password"?"text":"password";
 }
 
-const _openTab=openTab;openTab=function(id){if(!isAdmin()&&!['dashboard','planning','absences','stats','myGuards'].includes(id))id="planning";if(isAdmin()&&id==="myGuards")id="dashboard";_openTab(id);if(id==="myGuards")renderMyGuards();};
+const _openTab=openTab;openTab=function(id){if(!isAdmin()&&!['dashboard','team','planning','absences','stats','myGuards'].includes(id))id="planning";if(isAdmin()&&id==="myGuards")id="dashboard";_openTab(id);if(id==="team")renderAll();if(id==="myGuards")renderMyGuards();};
 function addDoctorRecovery(){
   const ses=currentSession(); if(!ses||ses.role==="admin")return alert("Cette saisie est destinée aux comptes Médecin.");
   const date=document.getElementById("doctorRecoveryDate")?.value; if(!date)return alert("Sélectionnez la date de récupération.");

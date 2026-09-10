@@ -353,7 +353,7 @@ function counts(){
   return c;
 }
 function guardPoints(type){
-  return ({J:1,N:2,G:4,F:4}[type]||0);
+  return ({J:1,N:2,G:3,F:3}[type]||0);
 }
 function isEligibleForType(doc,type){
   if(!doc || !doc.active) return false;
@@ -414,7 +414,7 @@ function applyWeekendUnits(countObj,entries){
   return countObj;
 }
 function workload(c){
-  return (c?.J||0)*1 + (c?.N||0)*2 + weekendUnits(c,'G')*4 + weekendUnits(c,'F')*4;
+  return (c?.J||0)*1 + (c?.N||0)*2 + weekendUnits(c,'G')*3 + weekendUnits(c,'F')*3;
 }
 function candidateScore(doc,type,c,monthly){
   const x=c[doc.name]||{J:0,N:0,G:0,F:0};
@@ -809,7 +809,7 @@ function generate(){
     document.getElementById('genMessage').innerHTML=
       `<div class="ok"><b>Planning généré sans conflit.</b><br>`+
       `Chaque jour ouvrable comporte 1 J + 1 N. Écart de charge pondérée : ${spread} point(s).<br>`+
-      `<small>J=1 • N=2 • G=4 • F=4. Le planning reste un brouillon jusqu'à validation.</small></div>`;
+      `<small>J=1 • N=2 • G=3 • F=3. Le planning reste un brouillon jusqu'à validation.</small></div>`;
   }
   renderAll();
   renderPlanning();

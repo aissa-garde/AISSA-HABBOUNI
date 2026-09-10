@@ -410,7 +410,7 @@ function counts(){
   return c;
 }
 function guardPoints(type){
-  return ({J:1,N:2,G:4,F:4}[type]||0);
+  return ({J:1,N:2,G:3,F:3}[type]||0);
 }
 function isEligibleForType(doc,type){
   if(!doc || !doc.active) return false;
@@ -422,7 +422,7 @@ function isEligibleForType(doc,type){
   return doc.weekend !== false;
 }
 function workload(c){
-  return (c?.J||0)*1 + (c?.N||0)*2 + (c?.G||0)*4 + (c?.F||0)*4;
+  return (c?.J||0)*1 + (c?.N||0)*2 + (c?.G||0)*3 + (c?.F||0)*3;
 }
 function weeklyRepeatPenalty(doc,date,type,planning){
   // Préférence souple : éviter au maximum 2 J ou 2 N du même médecin
@@ -456,7 +456,7 @@ function candidateScore(doc,type,c,monthly,date,planning){
   // EQUITE PRIORITAIRE : la charge pondérée cumulée est l'objectif
   // principal. La charge du mois courant vient ensuite.
   // Important : les G/F fixes sont déjà inclus avec leur vrai poids
-  // (G=4, F=4). Ils doivent donc naturellement réduire les J/N
+  // (G=3, F=3). Ils doivent donc naturellement réduire les J/N
   // attribués ensuite à un médecin déjà très chargé.
   const total=workload(x);
   const month=workload(m);
@@ -879,7 +879,7 @@ function generate(){
     document.getElementById('genMessage').innerHTML=
       `<div class="ok"><b>Planning généré sans conflit.</b><br>`+
       `Chaque jour ouvrable comporte 1 J + 1 N. Écart de charge pondérée : ${spread} point(s).<br>`+
-      `<small>J=1 • N=2 • G=4 • F=4. Le planning reste un brouillon jusqu'à validation.</small></div>`;
+      `<small>J=1 • N=2 • G=3 • F=3. Le planning reste un brouillon jusqu'à validation.</small></div>`;
   }
   // Affichage automatique du planning nouvellement généré.
   // On fixe d'abord la vue courante, puis on rafraîchit les composants.
@@ -1740,7 +1740,21 @@ function formatEntryCreatedAt(ts){
   if(isNaN(d))return "Non renseignée";
   return d.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
 }
-function renderAll(){let body=document.getElementById("teamBody");let c=counts();body.innerHTML=state.doctors.map((d,i)=>`<tr><td class='name'><input value="${d.name.replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td><input type="checkbox" ${d.weekend!==false?"checked":""} onchange="state.doctors[${i}].weekend=this.checked;save()"></td><td>${c[d.name]?.J||0}</td><td>${c[d.name]?.N||0}</td><td>${c[d.name]?.G||0}</td><td>${c[d.name]?.F||0}</td><td>${c[d.name]?.total||0}</td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`).join("");
+function renderTeamTable(){
+  const body=document.getElementById("teamBody"); if(!body)return;
+  const c=counts();
+  const ses=currentSession();
+  if(ses?.role!=="admin"){
+    body.innerHTML=state.doctors.map(d=>`<tr><td class="name">${escapeHtml(d.name)}</td><td><b>${workload(c[d.name]||{})}</b></td></tr>`).join("");
+  }else{
+    body.innerHTML=state.doctors.map((d,i)=>`<tr><td class='name'><input value="${d.name.replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td><input type="checkbox" ${d.weekend!==false?"checked":""} onchange="state.doctors[${i}].weekend=this.checked;save()"></td><td>${c[d.name]?.J||0}</td><td>${c[d.name]?.N||0}</td><td>${c[d.name]?.G||0}</td><td>${c[d.name]?.F||0}</td><td>${c[d.name]?.total||0}</td><td><b>${workload(c[d.name]||{})}</b></td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`).join("");
+  }
+  const table=document.getElementById("teamTable");
+  if(table){
+    table.querySelector("thead").innerHTML=ses?.role!=="admin"?'<tr><th class="name">Médecin</th><th>POINTS</th></tr>':'<tr><th class="name">Médecin</th><th>Actif</th><th>Type de garde automatique</th><th>Habilité week-end</th><th>J</th><th>N</th><th>G</th><th>F</th><th>Total</th><th>POINTS</th><th></th></tr>';
+  }
+}
+function renderAll(){renderTeamTable();
 let opts=state.doctors.map(d=>`<option>${d.name}</option>`).join("");document.getElementById("absDoctor").innerHTML=opts;
 const mergedEntries=[...state.absences.map((a,i)=>({kind:"abs",index:i,doctor:a.doctor,start:a.start,end:a.end,type:a.type,createdAt:a.createdAt})),...state.fixed.map((x,i)=>({kind:"fixed",index:i,doctor:x.doctor,start:x.date,end:x.date,type:x.type,createdAt:x.createdAt}))].sort((a,b)=>(a.start||"").localeCompare(b.start||"")||a.doctor.localeCompare(b.doctor));
 document.getElementById("absBody").innerHTML=mergedEntries.map(a=>{const ses=currentSession();const canDelete=ses?.role==="admin" || (a.kind==="abs" && a.doctor===ses?.doctor && !["G","F"].includes(a.type));const action=canDelete?`<button class="btn small danger" onclick='deleteMergedEntry("${a.kind}",${a.index})'>Supprimer</button>`:`<span class="hint">Consultation</span>`;return `<tr><td class="name">${a.doctor}</td><td>${a.start}</td><td>${a.end}</td><td>${["G","F"].includes(a.type)?`<span class="badge ${a.type==="G"?"bG":"bF"}">${a.type}</span>`:a.type}</td><td>${formatEntryCreatedAt(a.createdAt)}</td><td>${action}</td></tr>`}).join("");
@@ -1961,7 +1975,7 @@ function toggleAccountPassword(){
   p.type=p.type==="password"?"text":"password";
 }
 
-const _openTab=openTab;openTab=function(id){if(!isAdmin()&&!['dashboard','planning','absences','stats','myGuards'].includes(id))id="planning";if(isAdmin()&&id==="myGuards")id="dashboard";_openTab(id);if(id==="myGuards")renderMyGuards();};
+const _openTab=openTab;openTab=function(id){if(!isAdmin()&&!['dashboard','team','planning','absences','stats','myGuards'].includes(id))id="planning";if(isAdmin()&&id==="myGuards")id="dashboard";_openTab(id);if(id==="myGuards")renderMyGuards();};
 function addDoctorRecovery(){
   const ses=currentSession(); if(!ses||ses.role==="admin")return alert("Cette saisie est destinée aux comptes Médecin.");
   const date=document.getElementById("doctorRecoveryDate")?.value; if(!date)return alert("Sélectionnez la date de récupération.");
