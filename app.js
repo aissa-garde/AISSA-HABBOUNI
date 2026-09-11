@@ -416,7 +416,48 @@ function applyWeekendUnits(countObj,entries){
 function workload(c){
   return (c?.J||0)*1 + (c?.N||0)*2 + weekendUnits(c,'G')*3 + weekendUnits(c,'F')*3;
 }
-function candidateScore(doc,type,c,monthly){
+function separationPenalty(doc,type,date,planning){
+  // Préférence d'équilibrage : lorsqu'un médecin est habilité J+N, on
+  // cherche à espacer au maximum ses gardes J et N. Il s'agit d'une
+  // préférence souple : les contraintes obligatoires (couverture, repos,
+  // congés, indisponibilités et équité de charge) restent prioritaires.
+  if(!doc || !date || !planning) return 0;
+  const opposite=type==='J' ? 'N' : 'J';
+  const target=doc.name;
+  const d0=date instanceof Date ? date : dateFromISO(date);
+  if(!d0) return 0;
+  let minGap=Infinity;
+  for(const [key,entries] of Object.entries(planning||{})){
+    if(!Array.isArray(entries)) continue;
+    if(!entries.some(x=>x?.doctor===target && x.type===opposite)) continue;
+    const d=dateFromISO(key);
+    if(!d) continue;
+    const gap=Math.abs((d0-d)/86400000);
+    if(gap>0 && gap<minGap) minGap=gap;
+  }
+  // Les gardes fixes J/N déjà saisies doivent également compter dans
+  // l'espacement recherché.
+  for(const x of (state.fixed||[])){
+    if(x?.doctor!==target || x.type!==opposite) continue;
+    const d=dateFromISO(x.date);
+    if(!d) continue;
+    const gap=Math.abs((d0-d)/86400000);
+    if(gap>0 && gap<minGap) minGap=gap;
+  }
+  if(!Number.isFinite(minGap)) return 0;
+  // Forte pénalisation des alternances rapprochées, décroissante avec la
+  // distance. Au-delà de 7 jours, aucune pénalité n'est appliquée.
+  if(minGap<=1) return 30000;
+  if(minGap<=2) return 15000;
+  if(minGap<=3) return 8000;
+  if(minGap<=4) return 4000;
+  if(minGap<=5) return 2000;
+  if(minGap<=6) return 1000;
+  if(minGap<=7) return 400;
+  return 0;
+}
+
+function candidateScore(doc,type,c,monthly,date,planning){
   const x=c[doc.name]||{J:0,N:0,G:0,F:0};
   const m=(monthly&&monthly[doc.name])||{J:0,N:0,G:0,F:0};
   const total=workload(x);
@@ -436,9 +477,13 @@ function candidateScore(doc,type,c,monthly){
   const opposite=type==='J' ? (x.N||0)*2 : (x.J||0);
   const imbalance=Math.max(0,shiftBalance-opposite);
 
+  // En plus de la charge pondérée, on pénalise les J/N trop rapprochés
+  // pour favoriser le maximum de séparation possible.
+  const separation=separationPenalty(doc,type,date,planning);
+
   // La priorité N-only est forte mais reste une priorité de sélection :
   // entre plusieurs N-only, la charge cumulée puis mensuelle départage.
-  return priorityPenalty*1000000000 + total*100000 + month*1000 + shiftBalance*20 + imbalance*5 + (weekendUnits(x,'G')*2) + (weekendUnits(x,'F')*2);
+  return priorityPenalty*1000000000 + total*100000 + month*1000 + shiftBalance*20 + imbalance*5 + (weekendUnits(x,'G')*2) + (weekendUnits(x,'F')*2) + separation;
 }
 function recoveryDeltaFor(planning, absences){
   const delta={};
@@ -572,7 +617,7 @@ function generate(){
     st.counts[doc.name].total=(st.counts[doc.name].total||0)+1;
     if(!st.monthly[doc.name]) st.monthly[doc.name]={J:0,N:0,G:0,F:0};
     st.monthly[doc.name][type]=(st.monthly[doc.name][type]||0)+1;
-    st.score += candidateScore(doc,type,st.counts,st.monthly);
+    st.score += candidateScore(doc,type,st.counts,st.monthly,date,st.planning);
   }
 
   function eligibleCandidates(st,date,type){
@@ -585,8 +630,8 @@ function generate(){
     // Randomness is deliberately applied only among candidates that satisfy
     // all hard constraints. The score remains the main ranking criterion.
     return list.sort((a,b)=>{
-      const sa=candidateScore(a,type,st.counts,st.monthly);
-      const sb=candidateScore(b,type,st.counts,st.monthly);
+      const sa=candidateScore(a,type,st.counts,st.monthly,date,st.planning);
+      const sb=candidateScore(b,type,st.counts,st.monthly,date,st.planning);
       return (sa-sb)+(rand()-0.5)*Math.max(1000,Math.min(sa+sb,100000)*0.015);
     });
   }
@@ -641,7 +686,7 @@ function generate(){
           if(fixedN && !canAssign(n,date,"N",st.planning)) continue;
           if(fixedN && n.name===j.name) continue;
           if(!fixedJ && fixedN){ /* handled below */ }
-          const score=tmp.score + candidateScore(n,"N",tmp.counts,tmp.monthly);
+          const score=tmp.score + candidateScore(n,"N",tmp.counts,tmp.monthly,date,tmp.planning) + separationPenalty(j,"J",date,st.planning);
           pairs.push({j,n,score,jitter:rand()});
         }
       }
@@ -1216,8 +1261,14 @@ function renderTodayGuards(){
 }
 
 function renderAll(){let body=document.getElementById("teamBody");let c=counts();body.innerHTML=state.doctors.map((d,i)=>`<tr><td class='name'><input value="${d.name.replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td><input type="checkbox" ${d.weekend!==false?"checked":""} onchange="state.doctors[${i}].weekend=this.checked;save()"></td><td>${c[d.name]?.J||0}</td><td>${c[d.name]?.N||0}</td><td>${c[d.name]?.G||0}</td><td>${c[d.name]?.F||0}</td><td>${c[d.name]?.total||0}</td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`).join("");
-let opts=state.doctors.map(d=>`<option>${d.name}</option>`).join("");document.getElementById("absDoctor").innerHTML=opts;document.getElementById("fixedDoctor").innerHTML=opts;
-document.getElementById("absBody").innerHTML=state.absences.map((a,i)=>`<tr><td class='name'>${a.doctor}</td><td>${a.start}</td><td>${a.end}</td><td>${a.type}</td><td><button class='btn small danger' onclick='delAbs(${i})'>Supprimer</button></td></tr>`).join("");
+const sesAbs=currentSession();
+const doctorSession=sesAbs?.role!=="admin";
+const myDoctor=String(sesAbs?.doctor||"").trim();
+let opts=doctorSession?state.doctors.filter(d=>String(d.name||"").trim()===myDoctor).map(d=>`<option>${d.name}</option>`).join(""):state.doctors.map(d=>`<option>${d.name}</option>`).join("");
+document.getElementById("absDoctor").innerHTML=opts;
+if(doctorSession){document.getElementById("absDoctor").value=myDoctor;document.getElementById("absDoctor").disabled=true;}else document.getElementById("absDoctor").disabled=false;
+const visibleAbsences=doctorSession?state.absences.map((a,i)=>({a,i})).filter(x=>String(x.a.doctor||"").trim()===myDoctor):state.absences.map((a,i)=>({a,i}));
+document.getElementById("absBody").innerHTML=visibleAbsences.map(({a,i})=>`<tr><td class='name'>${a.doctor}</td><td>${a.start}</td><td>${a.end}</td><td>${a.type}</td><td><button class='btn small danger' onclick='delAbs(${i})'>Supprimer</button></td></tr>`).join("");
 document.getElementById("fixedBody").innerHTML=state.fixed.map((x,i)=>`<tr><td class='name'>${x.doctor}</td><td>${x.date}</td><td><span class='badge ${x.type==="G"?"bG":"bF"}'>${x.type}</span></td><td><button class='btn small danger' onclick='state.fixed.splice(${i},1);save()'>×</button></td></tr>`).join("");
 let total=Object.values(c).reduce((s,x)=>s+x.total,0);document.getElementById("dashStats").innerHTML=`<div class='stat'><span>Médecins actifs</span><b>${state.doctors.filter(d=>d.active).length}</b></div><div class='stat'><span>G importées</span><b>${state.fixed.filter(x=>x.type==="G").length}</b></div><div class='stat'><span>F importées</span><b>${state.fixed.filter(x=>x.type==="F").length}</b></div><div class='stat'><span>Absences</span><b>${state.absences.length}</b></div><div class='stat'><span>Gardes enregistrées</span><b>${total}</b></div>`;renderTodayGuards();renderPlanning();renderHistorySelect()}
 function renameDoctor(i,v){let old=state.doctors[i].name;v=v.trim();if(!v)return;state.doctors[i].name=v;state.absences.forEach(a=>{if(a.doctor===old)a.doctor=v});state.fixed.forEach(a=>{if(a.doctor===old)a.doctor=v});save()}

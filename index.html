@@ -327,7 +327,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
   </div>
 </details>
 <button class="btn admin-only" onclick="window.print()">Imprimer</button>
-<button class="btn primary admin-only" onclick="confirmCurrentPlanning()">✓ Valider le planning</button></div>
+<button class="btn primary admin-only" onclick="confirmDisplayedPlanning()">✓ Valider le planning</button></div>
 <div class="actions admin-only" style="margin-top:10px"><select id="historySelect" onchange="showHistoryPlanning()" style="display:none"></select><button class="btn" onclick="showCurrentPlanning()">Planning actuel</button></div><div id="historyBlocks" class="history-groups"></div>
 <div class="actions doctor-only" style="margin-top:10px"><label style="min-width:360px">Plannings validés<select id="doctorHistorySelect" onchange="showDoctorValidatedPlanning()"></select></label><button class="btn primary" onclick="showDoctorValidatedPlanning()">Afficher</button></div>
 <div id="doctorPlanningNotice" class="hint doctor-only" style="margin-top:10px"></div>
@@ -464,7 +464,11 @@ function addAbsence(){
       if(!hpStart || !hpEnd) return;
       const periodOverlaps=iso(hpEnd)>=start && iso(hpStart)<=end;
       if(!periodOverlaps) return;
-      const hpPlanning=historyData(key)||{};
+      // Toujours lire le planning lui-même. Les anciennes versions peuvent
+      // stocker directement le tableau des gardes dans planningHistory[key]
+      // au lieu de l'envelopper dans {planning: ...}.
+      const historyEntry=historyData(key)||{};
+      const hpPlanning=historyEntry.planning||{};
       Object.values(hpPlanning).flat().forEach(x=>{
         if(x?.doctor!==doctor || !x?.date || !["J","N","G","F"].includes(x.type)) return;
         if(x.date>=start && x.date<=end) validatedConflicts.push({date:x.date,type:x.type});
@@ -484,7 +488,7 @@ function addAbsence(){
       state.absences.push({doctor,start,end,type,createdAt:Date.now()});
       rebuildRecoveryLedger(); save();
       const conflicts=uniqueValidated.map(x=>`${x.date} ${x.type}`);
-      alert(`ABSENCE ENREGISTRÉE — CONFLIT AVEC LE PLANNING VALIDÉ.\n\n${doctor} a déjà : ${conflicts.join(" • ")}\n\nLe planning validé reste inchangé. Pour que cette absence soit prise en compte dans les gardes, régénérez puis validez un nouveau planning.`);
+      alert(`ABSENCE ENREGISTRÉE — CONFLIT AVEC LE PLANNING VALIDÉ.\n\n${doctor} a déjà : ${conflicts.join(" • ")}\n\nLe planning validé reste inchangé. Contactez l'administrateur pour modifier le planning validé, puis régénérez et validez le nouveau planning.`);
       return;
     }
 
@@ -1679,7 +1683,10 @@ function renderPlanning(source,periodOverride){
     ? state.planningHistory[per.key] : null;
   let src=source||currentValidated||{planning:state.planning,fixed:state.fixed,absences:state.absences};
   if(currentValidated && !source){ src={...currentValidated,__validatedSnapshot:true}; }
-  const editable=!source && isAdmin();
+  // L'administrateur peut aussi modifier directement un ancien planning affiché.
+  // Dans ce cas, les modifications portent sur son historique, pas sur le brouillon courant.
+  const editingHistory=!!(isAdmin() && source && activePlanningView?.type==="history" && activePlanningView.key);
+  const editable=isAdmin() && (!source || editingHistory);
   const hasPlanning=Object.values(src.planning||{}).flat().length>0 || (src.fixed||[]).some(x=>x.date>=iso(per.start)&&x.date<=iso(per.end)&&["G","F"].includes(x.type));
   if(!hasPlanning){
     document.getElementById("planningTable").innerHTML="<div class='hint' style='padding:15px'>Aucun planning à afficher.</div>";
@@ -1690,7 +1697,7 @@ function renderPlanning(source,periodOverride){
   let html="<table class='schedule'><thead><tr><th class='name'>Médecin</th>";
   for(const dt of datesBetween(per.start,per.end)){let h=(src.fixed||[]).some(x=>x.date===iso(dt)&&x.type==="F");let hc=h?"holiday":(isWeekend(dt)?"weekend":"");html+=`<th class='${hc}'><div>${["D","L","M","M","J","V","S"][dt.getDay()]}</div><div class='dayhead'>${String(dt.getDate()).padStart(2,"0")}/${String(dt.getMonth()+1).padStart(2,"0")}</div></th>`}
   html+="</tr></thead><tbody>";
-  state.doctors.filter(d=>d.active).forEach(doc=>{html+=`<tr><td class='name'><b>${escapeHtml(doc.name)}</b></td>`;for(const dt of datesBetween(per.start,per.end)){let v=cellFor(doc.name,dt,src);let attrs=editable?`data-edit-name="${encodeURIComponent(doc.name)}" data-edit-date="${iso(dt)}"`:'';html+=`<td class='${cls(v)}' title='Cliquer pour modifier' ${attrs}>${editable?`<button type="button" class="cellEditBtn" onclick="editCell(this)">${escapeHtml(v||"")}</button>`:escapeHtml(v||"")}</td>`}html+="</tr>"});
+  state.doctors.filter(d=>d.active).forEach(doc=>{html+=`<tr><td class='name'><b>${escapeHtml(doc.name)}</b></td>`;for(const dt of datesBetween(per.start,per.end)){let v=cellFor(doc.name,dt,src);let attrs=editable?`data-edit-name="${encodeURIComponent(doc.name)}" data-edit-date="${iso(dt)}"${editingHistory?` data-edit-history-key="${escapeHtml(activePlanningView.key)}"`:''}`:'';html+=`<td class='${cls(v)}' title='Cliquer pour modifier' ${attrs}>${editable?`<button type="button" class="cellEditBtn" onclick="editCell(this)">${escapeHtml(v||"")}</button>`:escapeHtml(v||"")}</td>`}html+="</tr>"});
   html+="</tbody></table>";document.getElementById("planningTable").innerHTML=html;
   const currentHist=state.planningHistory?.[per.key]; const generatedAge=generatedAgeText(currentHist?.generatedAtISO || currentHist?.generatedAt); document.getElementById("planningTitle").textContent=(per.type==="month"?`${months[per.start.getMonth()]} ${per.start.getFullYear()}`:per.type==="week"?`Semaine du ${iso(per.start)} au ${iso(per.end)}`:`${per.weeks} semaines : ${iso(per.start)} au ${iso(per.end)}`)+(generatedAge?` — Généré ${generatedAge}`:"");
   // Pour un compte Médecin, conserver impérativement le planning historique sélectionné.
@@ -1708,10 +1715,109 @@ function editCell(btn){
   if(!td)return;
   const name=decodeURIComponent(td.dataset.editName);
   const date=td.dataset.editDate;
-  const current=cellFor(name,date,{planning:state.planning,fixed:state.fixed,absences:state.absences})||"";
+  const historyKey=td.dataset.editHistoryKey||"";
+  const source=historyKey?historyData(historyKey):{planning:state.planning,fixed:state.fixed,absences:state.absences};
+  const current=cellFor(name,date,source)||"";
   const value=window.prompt("Modifier la garde de "+name+" le "+date+"\n\nValeurs : J, N, G, F, CONGÉ, RÉCUP, INDISP\nLaissez vide pour effacer.",current);
   if(value===null)return;
-  applyInlineEdit(name,date,value);
+  if(historyKey) applyHistoryInlineEdit(historyKey,name,date,value); else applyInlineEdit(name,date,value);
+}
+function normalizeEditValue(raw){
+  let value=String(raw||"").trim().toUpperCase();
+  const allowed=["","J","N","G","F","CONGÉ","CONGE","RECUP","RÉCUP","INDISP","INDISPONIBLE"];
+  if(!allowed.includes(value)){alert("Valeur non reconnue. Utilisez J, N, G, F, CONGÉ, RÉCUP, INDISP ou vide.");return null;}
+  if(value==="CONGE")value="CONGÉ";
+  if(value==="RECUP")value="RÉCUP";
+  if(value==="INDISPONIBLE")value="INDISP";
+  return value;
+}
+async function applyHistoryInlineEdit(key,name,date,raw){
+  if(!isAdmin())return alert("Modification du planning réservée à l'administrateur.");
+  const record=state.planningHistory?.[key];
+  if(!record)return alert("Ancien planning introuvable.");
+  const h=historyData(key);
+  if(!h)return alert("Ancien planning introuvable.");
+  const value=normalizeEditValue(raw);
+  if(value===null)return;
+  const doc=docByName(name); if(!doc)return alert("Médecin introuvable.");
+  const per=historyPeriod(key,h); const dt=dateFromISO(date);
+  if(!dt || dt<per.start || dt>per.end)return alert("La date ne fait pas partie de cet ancien planning.");
+  const planning=h.planning||{};
+  const fixed=h.fixed||[];
+  const absences=h.absences||[];
+  const oldFixedIndex=fixed.findIndex(x=>x.doctor===name&&x.date===date);
+  const oldPlanningEntries=(planning[date]||[]).filter(x=>x.doctor===name);
+  const otherPlanningEntries=(planning[date]||[]).filter(x=>x.doctor!==name);
+  const sameDayOther=fixed.filter(x=>x.date===date&&x.doctor!==name);
+  const sameDoctorOtherFixed=fixed.find(x=>x.date===date&&x.doctor===name);
+  if(["J","N"].includes(value)){
+    const duplicate=[...otherPlanningEntries,...sameDayOther].filter(x=>x?.type===value);
+    if(duplicate.length){alert(`CONFLIT : une garde ${value} est déjà attribuée le ${date} à ${duplicate[0].doctor}.\n\nUn seul ${value} est autorisé par jour.`);return;}
+    if(sameDoctorOtherFixed){alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorOtherFixed.type} le ${date}.\n\nUn médecin ne peut pas avoir deux gardes le même jour.`);return;}
+  }else if(["G","F"].includes(value)){
+    const duplicateFixed=fixed.find(x=>x.date===date&&x.type===value&&x.doctor!==name);
+    if(duplicateFixed){alert(`CONFLIT : une garde ${value} est déjà attribuée le ${date} à ${duplicateFixed.doctor}.`);return;}
+    if(sameDoctorOtherFixed){alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorOtherFixed.type} le ${date}.`);return;}
+  }
+  // Une modification d'un ancien planning validé le rend à nouveau modifiable mais non validé.
+  if(record.confirmed===true || state.confirmedPlanningKeys?.[key]===true){
+    undoConfirmedPeriod(record.planning?record: h);
+    record.confirmed=false; record.includeInEquity=false;
+    if(state.confirmedPlanningKeys)delete state.confirmedPlanningKeys[key];
+  }
+  if(!Array.isArray(record.fixed) && h.fixed) record.fixed=JSON.parse(JSON.stringify(h.fixed));
+  if(!Array.isArray(record.absences) && h.absences) record.absences=JSON.parse(JSON.stringify(h.absences));
+  const rp=record.planning||planning;
+  record.planning=rp;
+  record.fixed=record.fixed||[];
+  record.absences=record.absences||[];
+  record.planning[date]=(record.planning[date]||[]).filter(x=>x.doctor!==name);
+  record.fixed=record.fixed.filter(x=>!(x.doctor===name&&x.date===date));
+  record.absences=record.absences.filter(a=>!(a.doctor===name&&a.start===date&&a.end===date));
+  if(value===""){
+    // cellule effacée
+  }else if(["G","F"].includes(value)){
+    record.fixed.push({doctor:name,date,type:value,createdAt:Date.now()});
+  }else if(["J","N"].includes(value)){
+    record.planning[date].push({doctor:name,type:value,date});
+  }else{
+    record.absences.push({doctor:name,start:date,end:date,type:value,createdAt:Date.now()});
+  }
+  rebuildRecoveryLedger();
+  // save() effectue lui-même un renderAll() après la synchronisation. Pour un
+  // ancien planning, ce renderAll() pourrait remettre l'affichage sur le
+  // planning courant (par ex. septembre). On attend donc la fin de save(),
+  // puis on restaure explicitement l'ancien planning modifié.
+  activePlanningView={type:"history",key};
+  await save();
+  activePlanningView={type:"history",key};
+  renderPlanning(historyData(key),per);
+  const msg=document.getElementById("genMessage");
+  if(msg)msg.innerHTML='<div class="warn"><b>Ancien planning modifié.</b><br>Il doit être revalidé par l’administrateur pour redevenir un planning validé.</div>';
+}
+async function confirmDisplayedPlanning(){
+  if(!isAdmin())return alert("La validation du planning est réservée à l'administrateur.");
+  if(activePlanningView?.type==="history" && activePlanningView.key){
+    const key=activePlanningView.key, h=state.planningHistory?.[key];
+    if(!h)return alert("Ancien planning introuvable.");
+    if(h.confirmed===true)return alert("Ce planning est déjà validé.");
+    const per=historyPeriod(key,h);
+    if(!h.planning || !Object.values(h.planning).flat().length)return alert("Aucun planning à confirmer.");
+    if(!confirm(`Valider les modifications de l'ancien planning ${historyPeriodLabel(key,h)} ?`))return;
+    h.confirmed=true; h.includeInEquity=true; h.confirmedAtISO=Date.now();
+    state.confirmedPlanningKeys=state.confirmedPlanningKeys||{}; state.confirmedPlanningKeys[key]=true;
+    h.generatedAtISO=h.generatedAtISO||Date.now(); h.generatedAt=h.generatedAt||new Date().toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
+    rebuildRecoveryLedger();
+    // Attendre complètement la sauvegarde/synchronisation avant de réafficher
+    // l'ancien planning. Sinon le renderAll() interne de save() peut remettre
+    // l'administrateur sur le planning courant (ex. septembre).
+    await save();
+    activePlanningView={type:"history",key};
+    renderPlanning(historyData(key),per);
+    const msg=document.getElementById('genMessage'); if(msg)msg.innerHTML='<div class="ok"><b>Ancien planning modifié puis validé.</b></div>';
+    return;
+  }
+  confirmCurrentPlanning();
 }
 function startInlineEdit(td,name,date){ editCell(td.querySelector(".cellEditBtn")); }
 function applyInlineEdit(name,date,raw){
@@ -2282,10 +2388,27 @@ function renderAll(){
     }
     return `<tr><td class='name'><input value="${String(d.name).replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td><input type="checkbox" ${d.weekend!==false?"checked":""} onchange="state.doctors[${i}].weekend=this.checked;save()"></td><td>${x.J||0}</td><td>${x.N||0}</td><td>${x.G||0}</td><td>${x.F||0}</td><td>${x.total||0}</td><td><b>${workload(x)}</b></td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`;
   }).join("");
-  const opts=state.doctors.map(d=>`<option>${escapeHtml(d.name)}</option>`).join("");
+  const isDoctorSession=ses?.role!=="admin";
+  const myDoctor=String(ses?.doctor||"").trim();
+  const opts=isDoctorSession
+    ? state.doctors.filter(d=>String(d.name||"").trim()===myDoctor).map(d=>`<option>${escapeHtml(d.name)}</option>`).join("")
+    : state.doctors.map(d=>`<option>${escapeHtml(d.name)}</option>`).join("");
   const absDoctor=document.getElementById("absDoctor");
-  if(absDoctor) absDoctor.innerHTML=opts;
-  const mergedEntries=[...state.absences.map((a,i)=>({kind:"abs",index:i,doctor:a.doctor,start:a.start,end:a.end,type:a.type,createdAt:a.createdAt})),...state.fixed.map((x,i)=>({kind:"fixed",index:i,doctor:x.doctor,start:x.date,end:x.date,type:x.type,createdAt:x.createdAt}))].sort((a,b)=>(a.start||"").localeCompare(b.start||"")||a.doctor.localeCompare(b.doctor));
+  if(absDoctor){
+    absDoctor.innerHTML=opts;
+    if(isDoctorSession){
+      absDoctor.value=myDoctor;
+      absDoctor.disabled=true;
+    }else{
+      absDoctor.disabled=false;
+    }
+  }
+  // Un compte Médecin ne consulte que ses propres congés/indisponibilités/
+  // récupérations et éventuelles gardes fixes. L'Administrateur voit tout.
+  const allMergedEntries=[...state.absences.map((a,i)=>({kind:"abs",index:i,doctor:a.doctor,start:a.start,end:a.end,type:a.type,createdAt:a.createdAt})),...state.fixed.map((x,i)=>({kind:"fixed",index:i,doctor:x.doctor,start:x.date,end:x.date,type:x.type,createdAt:x.createdAt}))];
+  const mergedEntries=allMergedEntries
+    .filter(a=>!isDoctorSession || String(a.doctor||"").trim()===myDoctor)
+    .sort((a,b)=>(a.start||"").localeCompare(b.start||"")||a.doctor.localeCompare(b.doctor));
   const absBody=document.getElementById("absBody");
   if(absBody) absBody.innerHTML=mergedEntries.map(a=>{const canDelete=ses?.role==="admin" || (a.kind==="abs" && a.doctor===ses?.doctor && !["G","F"].includes(a.type));const action=canDelete?`<button class="btn small danger" onclick='deleteMergedEntry("${a.kind}",${a.index})'>Supprimer</button>`:`<span class="hint">Consultation</span>`;return `<tr><td class="name">${escapeHtml(a.doctor)}</td><td>${a.start}</td><td>${a.end}</td><td>${["G","F"].includes(a.type)?`<span class="badge ${a.type==="G"?"bG":"bF"}">${a.type}</span>`:a.type}</td><td>${formatEntryCreatedAt(a.createdAt)}</td><td>${action}</td></tr>`}).join("");
   const dash=document.getElementById("dashStats");
