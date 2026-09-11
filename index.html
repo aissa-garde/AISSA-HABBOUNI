@@ -2528,8 +2528,16 @@ async function save(){
 }
 let cloudSyncBusy=false;
 let cloudPollTimer=null;
+let cloudSyncInFlight=false;
+let cloudSyncLastAt=0;
 let lastCloudSnapshot="";
 
+// Synchronisation cloud optimisée :
+// - plus de polling toutes les 5 secondes ;
+// - contrôle périodique toutes les 2 minutes ;
+// - synchronisation immédiate au retour sur l'onglet / à la reconnexion ;
+// - verrou anti-requêtes simultanées ;
+// - aucun historique ni aucune donnée métier supprimés.
 async function refreshCloudOnStartup(){
   const ses=currentSession(), token=cloudToken();
   if(!ses||!token)return;
@@ -2538,6 +2546,7 @@ async function refreshCloudOnStartup(){
     if(remote&&typeof remote==="object"&&Object.keys(remote).length){
       const incoming=JSON.stringify(remote);
       lastCloudSnapshot=incoming;
+      cloudSyncLastAt=Date.now();
       state=Object.assign(state,remote);
       state.accounts=[];
       localStorage.setItem("gardeMed",JSON.stringify(state));
@@ -2549,11 +2558,19 @@ async function refreshCloudOnStartup(){
   }
 }
 
-async function pollCloudChanges(){
+async function pollCloudChanges(force=false){
   const ses=currentSession(), token=cloudToken();
-  if(!ses||!token||cloudSyncBusy)return;
+  if(!ses||!token||cloudSyncBusy||cloudSyncInFlight)return;
+
+  // Les événements focus/visibility peuvent déclencher une vérification,
+  // mais on évite les doublons rapprochés.
+  const now=Date.now();
+  if(!force && now-cloudSyncLastAt<15000)return;
+
+  cloudSyncInFlight=true;
   try{
     const remote=await cloudLoad(token);
+    cloudSyncLastAt=Date.now();
     if(!remote||typeof remote!=="object"||!Object.keys(remote).length)return;
     const incoming=JSON.stringify(remote);
     if(incoming===lastCloudSnapshot)return;
@@ -2566,12 +2583,27 @@ async function pollCloudChanges(){
     console.log("Tox-Garde : données Supabase actualisées automatiquement.");
   }catch(e){
     console.error("Tox-Garde / synchronisation automatique :",e);
+  }finally{
+    cloudSyncInFlight=false;
   }
 }
 
 function startCloudPolling(){
   if(cloudPollTimer)clearInterval(cloudPollTimer);
-  cloudPollTimer=setInterval(pollCloudChanges,5000);
+  // Filet de sécurité : une vérification toutes les 2 minutes au lieu de 5 secondes.
+  cloudPollTimer=setInterval(()=>pollCloudChanges(false),120000);
+
+  // Synchronisation événementielle : utile lorsqu'un médecin revient sur l'application
+  // après qu'un administrateur a modifié/validé un planning.
+  if(!window.__toxGardeSyncEventsBound){
+    window.__toxGardeSyncEventsBound=true;
+    document.addEventListener("visibilitychange",()=>{
+      if(document.visibilityState==="visible")pollCloudChanges(true);
+    });
+    window.addEventListener("focus",()=>pollCloudChanges(true));
+    window.addEventListener("pageshow",()=>pollCloudChanges(true));
+    window.addEventListener("online",()=>pollCloudChanges(true));
+  }
 }
 function renderMyGuards(){
   const el=document.getElementById("myGuardsContent");
