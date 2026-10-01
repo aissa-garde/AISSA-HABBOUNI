@@ -56,6 +56,54 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid 
 .header-settings-panel ul{margin:0;padding-left:22px}.header-settings-panel li{margin-bottom:6px;font-size:13px}
 @media(max-width:700px){.home-image{width:calc(100% + 24px);margin-left:-12px;height:clamp(150px,28vh,280px);margin-top:20px}header{padding:14px 12px;align-items:flex-start}.header-tools{gap:5px;flex-shrink:0}.header-settings{min-width:auto}.header-settings summary{padding:8px 9px;font-size:12px}.header-settings-panel{right:-5px;width:min(420px,calc(100vw - 20px))}header h1{font-size:20px}header p{font-size:12px}}
 
+
+/* Navigation mobile inspirée d'une application mobile : tiroir latéral + barre fixe en bas. */
+.mobile-menu-btn,.mobile-bottom-nav,.mobile-nav-backdrop{display:none}.mobile-only-nav{display:none!important}
+@media(max-width:700px){
+  body{padding-bottom:68px;overflow-x:hidden}
+  header{position:sticky;top:0;z-index:120;min-height:62px;display:flex;align-items:center;gap:8px;padding:10px 12px;box-shadow:0 2px 8px rgba(16,24,40,.12)}
+  .mobile-menu-btn{display:flex;align-items:center;justify-content:center;flex:0 0 42px;width:42px;height:42px;border:0;border-radius:10px;background:rgba(255,255,255,.16);color:#fff;font-size:24px;cursor:pointer;touch-action:manipulation}
+  .mobile-menu-btn:active{transform:scale(.97)}
+  .brand-wrap{gap:8px;min-width:0;flex:1}
+  .brand-logo{width:40px;height:40px}
+  header h1{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header p{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .header-tools{gap:4px}
+  .auth-user{font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis}
+  .header-settings{display:none}
+  .header-settings.mobile-settings-open{display:block;position:fixed;left:10px;right:10px;top:72px;z-index:230;min-width:0;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 32px rgba(16,24,40,.24)}
+  .header-settings.mobile-settings-open summary{display:block;padding:12px 14px;font-size:14px;color:var(--text)}
+  .header-settings.mobile-settings-open .header-settings-panel{position:static;width:auto;max-height:calc(100dvh - 130px);overflow:auto;border:0;border-top:1px solid var(--line);border-radius:0 0 12px 12px;box-shadow:none;padding:12px}
+  main{display:block;max-width:none;margin:0;padding:10px 10px 12px}
+  main>nav{position:fixed;left:0;top:0;bottom:0;width:min(82vw,330px);height:100dvh;max-height:100dvh;display:flex;flex-direction:column;gap:6px;margin:0;padding:76px 12px 82px;background:var(--card);border:0;border-radius:0;box-shadow:8px 0 30px rgba(16,24,40,.20);z-index:200;overflow-y:auto;transform:translateX(-105%);transition:transform .22s ease;visibility:hidden}
+  main>nav.mobile-open{transform:translateX(0);visibility:visible}
+  main>nav button{min-height:48px;border-radius:10px;font-size:14px;flex:0 0 auto}
+  main>nav button.active{background:var(--blue);color:#fff}
+  main>nav .nav-icon{font-size:19px}
+  main>nav .nav-label{font-size:14px}
+  main>nav .mobile-only-nav{display:flex!important}
+  main>nav .nav-toggle{display:none!important}
+  .mobile-nav-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.42);z-index:190;opacity:0;visibility:hidden;transition:opacity .2s ease}
+  .mobile-nav-backdrop.mobile-open{opacity:1;visibility:visible}
+  .mobile-bottom-nav{position:fixed;left:0;right:0;bottom:0;height:64px;padding:5px max(6px,env(safe-area-inset-left)) max(5px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-right));display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:rgba(255,255,255,.98);border-top:1px solid var(--line);box-shadow:0 -3px 14px rgba(16,24,40,.12);z-index:180;backdrop-filter:blur(8px)}
+  .mobile-bottom-nav button{border:0;background:transparent;color:var(--muted);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:700;cursor:pointer;touch-action:manipulation;min-width:0}
+  .mobile-bottom-nav button span{font-size:19px;line-height:20px}
+  .mobile-bottom-nav button small{font-size:9px;line-height:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .mobile-bottom-nav button.active{color:var(--blue);background:var(--blue2)}
+  .mobile-bottom-nav button:active{transform:scale(.97)}
+  .panel{grid-column:auto}
+  .home-image{width:calc(100% + 20px);margin-left:-10px;margin-top:10px;height:clamp(150px,28vh,280px)}
+  .card{padding:14px;margin-bottom:12px}
+  table{font-size:12px}
+  .schedule{min-width:760px}
+  #planning{overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+@media(max-width:380px){
+  .mobile-bottom-nav button small{font-size:8px}
+  .mobile-bottom-nav button span{font-size:18px}
+  main>nav{width:86vw}
+}
+
 /* Couche de connexion */
 #authOverlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#3f83c5,#1f4f7a)}
 .auth-card{width:min(420px,100%);background:#fff;border-radius:18px;padding:30px;box-shadow:0 18px 60px #0005;text-align:center}.auth-logo{width:92px;height:92px;object-fit:contain;border-radius:18px;background:#f5f7fb;padding:8px;margin:0 auto 14px;display:block}.login-progress{display:none;margin-top:16px;text-align:left}.login-progress.show{display:block}.login-progress-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:#667085;margin-bottom:7px}.login-progress-head strong{color:#182230;font-size:12px}.login-progress-track{height:9px;background:#e8edf3;border-radius:999px;overflow:hidden}.login-progress-bar{height:100%;width:0;background:linear-gradient(90deg,#3f83c5,#67b7f0);border-radius:999px;transition:width .35s ease}.login-progress.success .login-progress-bar{background:#2e9b57}.login-progress.success .login-progress-head{color:#166534}.login-progress.success .login-progress-head strong{color:#166534}.auth-card h2{margin:0 0 8px}.auth-card p{color:#667085}.auth-card .remember-row{display:flex;align-items:center;gap:8px;margin:14px 0}.auth-card .remember-row input{width:auto;margin:0}.auth-error{display:none;margin-top:12px;padding:9px;border-radius:8px;background:#fff0f0;color:#a11;font-size:13px}.auth-user{color:#182230;font-size:13px;font-weight:700;white-space:nowrap}.auth-user button{margin-left:8px}
@@ -311,6 +359,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <div id="authOverlay" aria-live="polite"><form class="auth-card" onsubmit="login(event)"><img id="loginLogoDisplay" class="auth-logo" src="./icons/icon-192.png" alt="Logo Tox-Garde"><h2>🔐 Connexion</h2><p id="loginSubtitleDisplay">Accédez à Tox-Garde avec votre compte.</p><label>Identifiant<input id="loginUsername" autocomplete="username" required></label><label>Mot de passe<input id="loginPassword" type="password" autocomplete="current-password" required></label><label class="remember-row"><input id="keepConnected" type="checkbox"> Rester connecté sur cet appareil</label><button id="loginSubmitBtn" class="btn primary" type="submit" style="width:100%;margin-top:8px">Se connecter</button><div id="loginProgress" class="login-progress" aria-live="polite" aria-hidden="true"><div class="login-progress-head"><span id="loginProgressText">Connexion en cours…</span><strong id="loginProgressPercent">0%</strong></div><div class="login-progress-track"><div id="loginProgressBar" class="login-progress-bar" style="width:0%"></div></div></div><div id="authError" class="auth-error"></div></form></div>
 
 <header>
+<button type="button" id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
 <div class="brand-wrap"><img id="appLogoDisplay" class="brand-logo" alt="Logo application"><div><h1 id="appTitleDisplay">GardeMed</h1><p id="appSubtitleDisplay">Générateur équitable des gardes médicales</p></div><img id="centerLogoDisplay" class="brand-logo" alt="Logo Centre Antipoison"></div>
 <div class="header-tools"><div id="authUserInfo" class="auth-user"></div>
 
@@ -324,11 +373,20 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <button data-tab="absences" title="Congés / indisponibilités"><span class="nav-icon">📅</span><span class="nav-label">Congés / indisponibilités</span></button>
 <button class="admin-only" data-tab="generate" title="Génération"><span class="nav-icon">⚙️</span><span class="nav-label">Génération</span></button>
 <button data-tab="planning" title="Planning"><span class="nav-icon">📋</span><span class="nav-label">Planning</span></button>
-<button id="myGuardsTab" data-tab="myGuards" style="display:none" title="Historique des changements"><span class="nav-icon">🕘</span><span class="nav-label">Historique des changements</span></button>
+<button id="myGuardsTab" data-tab="myGuards" style="display:none" title="Changement"><span class="nav-icon">🕘</span><span class="nav-label">Changement</span></button>
 <button data-tab="stats" title="Récupération"><span class="nav-icon">🔄</span><span class="nav-label">Récupération</span></button>
 <button class="admin-only" data-tab="accounts" title="Comptes"><span class="nav-icon">🔐</span><span class="nav-label">Comptes</span></button>
+<button type="button" id="mobileSettingsNav" class="mobile-only-nav admin-only" title="Paramètres"><span class="nav-icon">⚙️</span><span class="nav-label">Paramètres</span></button>
 <button type="button" id="navToggle" class="nav-toggle" title="Réduire le menu" aria-label="Réduire le menu"><span class="nav-icon">◀</span><span class="nav-label">Réduire le menu</span></button>
 </nav>
+<div id="mobileNavBackdrop" class="mobile-nav-backdrop" aria-hidden="true"></div>
+<div id="mobileBottomNav" class="mobile-bottom-nav" aria-label="Navigation rapide">
+  <button type="button" data-mobile-tab="dashboard" class="active"><span>🏠</span><small>Accueil</small></button>
+  <button type="button" data-mobile-tab="planning"><span>📋</span><small>Planning</small></button>
+  <button type="button" data-mobile-tab="absences"><span>📅</span><small>Congés</small></button>
+  <button type="button" data-mobile-tab="stats"><span>🔄</span><small>Récup.</small></button>
+  <button type="button" id="mobileMoreBtn"><span>☰</span><small>Plus</small></button>
+</div>
 
 <section id="dashboard" class="panel active">
 <div class="card dashboard-card"><h2>Tableau de bord</h2><div class="statgrid" id="dashStats"></div><div id="todayGuards" class="today-dashboard"></div></div>
@@ -505,6 +563,54 @@ document.querySelectorAll("nav button[data-tab]").forEach(b=>b.onclick=()=>openT
 const navToggle=document.getElementById("navToggle");
 if(navToggle){navToggle.onclick=()=>{const main=document.querySelector("main");const collapsed=main.classList.toggle("nav-collapsed");navToggle.querySelector(".nav-icon").textContent=collapsed?"▶":"◀";navToggle.querySelector(".nav-label").textContent=collapsed?"Développer le menu":"Réduire le menu";navToggle.title=collapsed?"Développer le menu":"Réduire le menu";navToggle.setAttribute("aria-label",navToggle.title);localStorage.setItem("toxGardeNavCollapsed",collapsed?"1":"0");};
   if(localStorage.getItem("toxGardeNavCollapsed")==="1"){document.querySelector("main").classList.add("nav-collapsed");navToggle.querySelector(".nav-icon").textContent="▶";navToggle.querySelector(".nav-label").textContent="Développer le menu";navToggle.title="Développer le menu";navToggle.setAttribute("aria-label","Développer le menu");}}
+
+// Navigation mobile : le tiroir réutilise exactement les mêmes boutons et droits que le menu principal.
+const mobileMenuBtn=document.getElementById("mobileMenuBtn");
+const mobileMoreBtn=document.getElementById("mobileMoreBtn");
+const mobileNavBackdrop=document.getElementById("mobileNavBackdrop");
+const sideNav=document.getElementById("sideNav");
+function closeMobileNav(){
+  if(!sideNav)return;
+  sideNav.classList.remove("mobile-open");
+  mobileNavBackdrop?.classList.remove("mobile-open");
+  mobileMenuBtn?.setAttribute("aria-expanded","false");
+}
+function openMobileNav(){
+  if(!sideNav)return;
+  sideNav.classList.add("mobile-open");
+  mobileNavBackdrop?.classList.add("mobile-open");
+  mobileMenuBtn?.setAttribute("aria-expanded","true");
+}
+mobileMenuBtn?.addEventListener("click",()=>{sideNav?.classList.contains("mobile-open")?closeMobileNav():openMobileNav();});
+mobileMoreBtn?.addEventListener("click",openMobileNav);
+mobileNavBackdrop?.addEventListener("click",closeMobileNav);
+
+document.querySelectorAll("[data-mobile-tab]").forEach(b=>b.addEventListener("click",()=>{openTab(b.dataset.mobileTab);closeMobileNav();}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMobileNav();});
+
+// Paramètres reste le même composant existant : aucun réglage ni logique n'est dupliqué.
+document.getElementById("mobileSettingsNav")?.addEventListener("click",()=>{
+  const details=document.querySelector(".header-settings");
+  closeMobileNav();
+  if(details){details.classList.add("mobile-settings-open");details.open=true;}
+});
+document.getElementById("mobileNavBackdrop")?.addEventListener("click",()=>{
+  const details=document.querySelector(".header-settings");
+  if(details){details.classList.remove("mobile-settings-open");details.open=false;}
+});
+document.addEventListener("click",e=>{
+  const details=document.querySelector(".header-settings");
+  if(!details?.classList.contains("mobile-settings-open"))return;
+  if(!details.contains(e.target) && e.target!==document.getElementById("mobileSettingsNav")){details.classList.remove("mobile-settings-open");details.open=false;}
+});
+
+// Synchronise visuellement la barre basse avec l'onglet actuellement ouvert.
+const originalOpenTab=openTab;
+openTab=function(id){
+  originalOpenTab(id);
+  document.querySelectorAll("[data-mobile-tab]").forEach(b=>b.classList.toggle("active",b.dataset.mobileTab===id));
+  if(window.matchMedia("(max-width:700px)").matches)closeMobileNav();
+};
 
 function addDoctor(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let n=document.getElementById("newDoctor").value.trim();if(!n)return;if(state.doctors.some(d=>d.name.toLowerCase()===n.toLowerCase()))return alert("Ce médecin existe déjà.");state.doctors.push({name:n,active:true,shift:"BOTH",weekend:true});document.getElementById("newDoctor").value="";save()}
 function loadDemo(){state.doctors=demoDoctors.map(name=>({name,active:true,shift:"BOTH",weekend:true}));save()}
