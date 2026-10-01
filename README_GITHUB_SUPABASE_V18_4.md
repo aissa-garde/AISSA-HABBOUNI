@@ -16,3 +16,8 @@ Ajouté :
 - `toxgarde_justifications` et ses RPC
 
 La connexion Supabase existante est conservée dans `index.html`.
+
+
+## Correctifs intégrés
+- Barre de progression dynamique et étapes de connexion Supabase dans `index.html`.
+- Après acceptation d'un échange G/F, synchronisation de la garde dans `state.fixed` afin que le tableau week-end / jours fériés affiche immédiatement le nouveau médecin.

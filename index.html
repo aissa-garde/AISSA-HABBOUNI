@@ -9,22 +9,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <title>Tox-Garde — Générateur équitable des gardes</title>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js">applyAppearance();
 
-/* Initialisation des nouveaux affichages */
-document.addEventListener("DOMContentLoaded",()=>{
-  try{
-    if(!state.justifications)state.justifications=[];
-    ensureAdminFilterDoctors();
-    renderAdminAbsences();
-    renderJustifications();
-    renderDoctorJustifications();
-  }catch(e){console.error("Initialisation justificatifs:",e);}
-});
-
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{--bg:#f5f7fb;--card:#fff;--line:#d8dee9;--text:#182230;--muted:#667085;--blue:#3f83c5;--blue2:#eaf3fb;--orange:#ffbf00;--green:#dff4e6;--red:#fde2e2;--gray:#e5e7eb}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
@@ -93,6 +78,62 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
   .admin-subtabs{display:grid!important;grid-template-columns:1fr;}
   .admin-subtabs .btn{width:100%;}
   #adminMonthlyAbsences table{min-width:760px;}
+}
+
+/* Harmonisation des tableaux Congé / Indisponible / Récupération */
+.admin-absence-table{
+  width:100%;
+  min-width:980px;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+.admin-absence-table th,.admin-absence-table td{
+  box-sizing:border-box;
+  vertical-align:middle;
+  overflow-wrap:anywhere;
+  font-size:13px;
+  line-height:1.25;
+}
+/* Largeurs stables : les 2 variantes (avec/sans Statut) restent harmonisées. */
+.admin-absence-table th:nth-child(1),.admin-absence-table td:nth-child(1){width:13%;text-align:left;}
+.admin-absence-table th:nth-child(2),.admin-absence-table td:nth-child(2){width:12%;}
+.admin-absence-table th:nth-child(3),.admin-absence-table td:nth-child(3){width:8%;}
+.admin-absence-table th:nth-child(4),.admin-absence-table td:nth-child(4){width:10%;}
+.admin-absence-table.has-status th:nth-child(5),.admin-absence-table.has-status td:nth-child(5){width:14%;}
+.admin-absence-table.has-status th:nth-child(6),.admin-absence-table.has-status td:nth-child(6){width:20%;}
+.admin-absence-table.has-status th:nth-child(7),.admin-absence-table.has-status td:nth-child(7){width:15%;}
+.admin-absence-table.no-status th:nth-child(5),.admin-absence-table.no-status td:nth-child(5){width:22%;}
+.admin-absence-table.no-status th:nth-child(6),.admin-absence-table.no-status td:nth-child(6){width:15%;}
+.admin-absence-table.no-status th:nth-child(7),.admin-absence-table.no-status td:nth-child(7){width:0;padding:0;border:0;}
+.admin-absence-table th:last-child,.admin-absence-table td:last-child{width:0;padding:0;border-left:0;border-right:0;}
+.admin-absence-table .admin-date-cell,.admin-absence-table .admin-date-cell *{
+  font-size:13px!important;
+  line-height:1.25!important;
+}
+.admin-absence-table .admin-date-cell small{font-size:13px!important;}
+.admin-absence-table .admin-action-cell{padding:6px 5px!important;}
+.admin-absence-table .admin-action-stack{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  width:100%;
+}
+.admin-absence-table .admin-action-stack .btn{
+  width:92%;
+  max-width:150px;
+  box-sizing:border-box;
+  white-space:nowrap;
+  padding:6px 7px;
+  font-size:11px;
+}
+.admin-absence-table .admin-justification-cell{min-height:44px;}
+.admin-absence-table .hint,.admin-absence-table small{overflow-wrap:anywhere;}
+.admin-absence-table label.btn{width:92%;max-width:150px;box-sizing:border-box;text-align:center;}
+
+@media(max-width:1100px){
+  .admin-month-content{overflow-x:auto;}
 }
 
 </style>
@@ -414,6 +455,33 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <datalist id="guardValues"><option value="J"><option value="N"><option value="G"><option value="F"><option value="CONGÉ"><option value="RÉCUP"><option value="INDISP"></datalist>
 
 <script>
+/* Chargement à la demande des bibliothèques lourdes (Excel / PDF).
+   Elles ne sont téléchargées que lorsqu'une fonction d'import/export est utilisée. */
+const __toxLazyScripts = {};
+function loadExternalScriptOnce(src, globalName){
+  if(globalName && window[globalName]) return Promise.resolve(window[globalName]);
+  if(__toxLazyScripts[src]) return __toxLazyScripts[src];
+  __toxLazyScripts[src]=new Promise((resolve,reject)=>{
+    const tag=document.createElement("script");
+    tag.src=src; tag.async=true;
+    tag.onload=()=>resolve(globalName?window[globalName]:true);
+    tag.onerror=()=>{delete __toxLazyScripts[src]; reject(new Error("Impossible de charger la bibliothèque externe."));};
+    document.head.appendChild(tag);
+  });
+  return __toxLazyScripts[src];
+}
+async function ensureXLSX(){
+  if(window.XLSX) return window.XLSX;
+  return loadExternalScriptOnce("https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js","XLSX");
+}
+async function ensurePDF(){
+  if(window.jspdf?.jsPDF && window.jspdf.jsPDF.API?.autoTable) return window.jspdf;
+  await loadExternalScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js","jspdf");
+  await loadExternalScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+  return window.jspdf;
+}
+</script>
+<script>
 const demoDoctors=["Dr Daoudi","Dr Daghouane","Dr El Hariri","Dr Ennakhassi","Dr Benarina","Dr Faouzi","Dr Habbouni","Dr Mourabiti","Dr El Mrabet","Dr Belkhadir","Dr El Azher"];
 let state=JSON.parse(localStorage.getItem("gardeMed")||"null")||{doctors:[],absences:[],fixed:[],planning:{},planningHistory:{},generationOffset:0,settings:{title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:""}};
 if(!state.recoveryLedger) state.recoveryLedger={};
@@ -443,8 +511,9 @@ function loadDemo(){state.doctors=demoDoctors.map(name=>({name,active:true,shift
 function importTeamFile(ev){if(!isAdmin())return alert("Cette action est réservée aux administrateurs.");
   const f=ev.target.files?.[0]; if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{
+  r.onload=async e=>{
     try{
+      await ensureXLSX();
       const wb=XLSX.read(e.target.result,{type:"array",cellDates:true});
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{defval:"",raw:true});
@@ -488,7 +557,8 @@ function importTeamFile(ev){if(!isAdmin())return alert("Cette action est réserv
   };
   r.readAsArrayBuffer(f);
 }
-function downloadTeamTemplate(){
+async function downloadTeamTemplate(){
+  await ensureXLSX();
   const rows=[["Médecin","Actif","Type de garde","Habilité week-end"],["Dr Exemple 1","Oui","J","Oui"],["Dr Exemple 2","Oui","N","Oui"],["Dr Exemple 3","Oui","J+N","Oui"]];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Equipe"); XLSX.writeFile(wb,"modele_equipe_tox-garde.xlsx");
 }
@@ -702,8 +772,9 @@ function parseExcelDate(v){
 function importExcel(ev){if(!isAdmin())return alert("Cette action est réservée aux administrateurs.");
   const f=ev.target.files?.[0]; if(!f) return;
   const r=new FileReader();
-  r.onload=e=>{
+  r.onload=async e=>{
     try{
+      await ensureXLSX();
       const wb=XLSX.read(e.target.result,{type:"array",cellDates:true});
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{defval:"",raw:true});
@@ -748,7 +819,7 @@ function importExcel(ev){if(!isAdmin())return alert("Cette action est réservée
   r.readAsArrayBuffer(f);
 }
 function clearFixed(){if(!isAdmin())return alert("Cette action est réservée aux administrateurs.");if(confirm("Effacer toutes les saisies : congés, indisponibilités, récupérations et gardes G/F ?")){state.fixed=[];state.absences=[];save()}}
-function downloadTemplate(){let rows=[["Médecin","Date début","Date fin","Type"],["Dr Exemple 1","2026-09-01","2026-09-05","CONGÉ"],["Dr Exemple 2","2026-09-08","2026-09-08","INDISPONIBLE"],["Dr Exemple 3","2026-09-10","2026-09-10","RÉCUP"],["Dr Exemple 1","2026-09-12","2026-09-13","G"],["Dr Exemple 2","2026-09-20","2026-09-20","F"]];let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Disponibilités");XLSX.writeFile(wb,"modele_disponibilites_gardes.xlsx")}
+async function downloadTemplate(){await ensureXLSX(); let rows=[["Médecin","Date début","Date fin","Type"],["Dr Exemple 1","2026-09-01","2026-09-05","CONGÉ"],["Dr Exemple 2","2026-09-08","2026-09-08","INDISPONIBLE"],["Dr Exemple 3","2026-09-10","2026-09-10","RÉCUP"],["Dr Exemple 1","2026-09-12","2026-09-13","G"],["Dr Exemple 2","2026-09-20","2026-09-20","F"]];let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Disponibilités");XLSX.writeFile(wb,"modele_disponibilites_gardes.xlsx")}
 function daysInMonth(y,m){return new Date(y,m+1,0).getDate()}
 function getPeriodDates(){
   const type=document.getElementById("periodType")?.value||"month";
@@ -2200,14 +2271,16 @@ function buildExportHeaderImage(periodTitle){
   });
 }
 
-function exportPlanning(){
+async function exportPlanning(){
+  await ensureXLSX();
   const ctx=getExportContext(); const per=ctx.per; const src=ctx.source; const dates=datesBetween(per.start,per.end);
   let rows=[["Médecin",...dates.map(d=>`${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`)]];
   state.doctors.filter(d=>d.active).forEach(doc=>rows.push([doc.name,...dates.map(d=>cellFor(doc.name,d,src))]));
   let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Planning"); XLSX.writeFile(wb,`planning_gardes_${ctx.history?"ancien_":""}${per.key}.xlsx`);
 }
 
-function exportPlanningPDF(){
+async function exportPlanningPDF(){
+  await ensurePDF();
   const ctx=getExportContext(); const per=ctx.per; const src=ctx.source; const dates=datesBetween(per.start,per.end);
   if(!window.jspdf || !window.jspdf.jsPDF)return alert("L’export PDF n’est pas disponible. Vérifiez votre connexion internet puis réessayez.");
 
@@ -2642,29 +2715,149 @@ async function refreshJustificationsFromServer(){
 
 function cleanStateForCloud(){const copy=JSON.parse(JSON.stringify(state));delete copy.accounts;return copy}
 let cloudSaveQueue=Promise.resolve();
+
+/* ===== Synchronisation temps réel Supabase =====
+   Les données métier restent protégées par les RPC existantes.
+   Le canal Realtime ne transporte aucune donnée métier : il envoie uniquement
+   un signal "les données ont changé". Le navigateur qui reçoit ce signal
+   recharge alors les données via toxgarde_get_data avec son propre token.
+   Un polling de sécurité reste actif en secours. */
+let toxRealtimeSocket=null;
+let toxRealtimeRef=0;
+let toxRealtimeReconnectTimer=null;
+let toxRealtimeHeartbeatTimer=null;
+let toxRealtimeStarted=false;
+const TOX_REALTIME_TOPIC="realtime:toxgarde-sync";
+
+function toxRealtimeSend(event,payload={},ref=null){
+  if(!toxRealtimeSocket || toxRealtimeSocket.readyState!==WebSocket.OPEN)return false;
+  toxRealtimeSocket.send(JSON.stringify({
+    topic:TOX_REALTIME_TOPIC,
+    event,
+    payload,
+    ref:ref||String(++toxRealtimeRef)
+  }));
+  return true;
+}
+
+function stopRealtimeSync(){
+  toxRealtimeStarted=false;
+  if(toxRealtimeReconnectTimer){clearTimeout(toxRealtimeReconnectTimer);toxRealtimeReconnectTimer=null;}
+  if(toxRealtimeHeartbeatTimer){clearInterval(toxRealtimeHeartbeatTimer);toxRealtimeHeartbeatTimer=null;}
+  try{if(toxRealtimeSocket)toxRealtimeSocket.close();}catch(_){}
+  toxRealtimeSocket=null;
+}
+
+function scheduleRealtimeReconnect(){
+  if(!toxRealtimeStarted || toxRealtimeReconnectTimer)return;
+  toxRealtimeReconnectTimer=setTimeout(()=>{
+    toxRealtimeReconnectTimer=null;
+    startRealtimeSync();
+  },3000);
+}
+
+function startRealtimeSync(){
+  const token=cloudToken();
+  if(!token || !window.WebSocket)return;
+  toxRealtimeStarted=true;
+  if(toxRealtimeSocket && [WebSocket.OPEN,WebSocket.CONNECTING].includes(toxRealtimeSocket.readyState))return;
+  try{
+    const projectRef=new URL(SUPABASE_URL).hostname.split('.')[0];
+    const url=`wss://${projectRef}.supabase.co/realtime/v1/websocket?apikey=${encodeURIComponent(SUPABASE_KEY)}&vsn=1.0.0`;
+    const ws=new WebSocket(url);
+    toxRealtimeSocket=ws;
+    ws.onopen=()=>{
+      toxRealtimeSend("phx_join",{config:{broadcast:{self:false},presence:{key:""},private:false}});
+      if(toxRealtimeHeartbeatTimer)clearInterval(toxRealtimeHeartbeatTimer);
+      toxRealtimeHeartbeatTimer=setInterval(()=>{
+        if(ws.readyState===WebSocket.OPEN){
+          ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:String(++toxRealtimeRef)}));
+        }
+      },25000);
+    };
+    ws.onmessage=ev=>{
+      let msg;
+      try{msg=JSON.parse(ev.data)}catch(_){return;}
+      if(msg.topic!==TOX_REALTIME_TOPIC || msg.event!=="broadcast")return;
+      const eventName=msg.payload?.event || msg.payload?.payload?.event;
+      if(eventName!=="toxgarde_update")return;
+      // Ne jamais remplacer l'état local par le payload du canal : on relit
+      // Supabase avec le token courant pour conserver les règles d'accès.
+      pollCloudChanges(true);
+      refreshJustificationsFromServer();
+    };
+    ws.onerror=()=>{try{ws.close();}catch(_){}};
+    ws.onclose=()=>{
+      if(toxRealtimeSocket===ws)toxRealtimeSocket=null;
+      if(toxRealtimeHeartbeatTimer){clearInterval(toxRealtimeHeartbeatTimer);toxRealtimeHeartbeatTimer=null;}
+      scheduleRealtimeReconnect();
+    };
+  }catch(e){
+    console.error("Tox-Garde / Supabase Realtime :",e);
+    scheduleRealtimeReconnect();
+  }
+}
+
+function notifyRealtimeUpdate(){
+  toxRealtimeSend("broadcast",{type:"broadcast",event:"toxgarde_update",payload:{at:Date.now()}});
+}
+
 async function cloudSave(){
   const token=cloudToken();
   if(!token)return;
   const snapshot=cleanStateForCloud();
   cloudSaveQueue=cloudSaveQueue.catch(()=>{}).then(()=>supaRpc("toxgarde_save_data",{p_token:token,p_data:snapshot}));
   await cloudSaveQueue;
+  notifyRealtimeUpdate();
 }
 function authStorage(){return JSON.parse(localStorage.getItem("toxGardeSession")||"null")}
 function persistSession(session,keep){(keep?localStorage:sessionStorage).setItem("toxGardeSession",JSON.stringify(session)); if(keep) sessionStorage.removeItem("toxGardeSession"); else localStorage.removeItem("toxGardeSession")}
 function currentSession(){return JSON.parse(sessionStorage.getItem("toxGardeSession")||localStorage.getItem("toxGardeSession")||"null")}
 function isAdmin(){return currentSession()?.role==="admin"}
 function normalizeUser(v){return String(v||"").trim().toLowerCase()}
+function setLoginProgress(percent,text,success=false){
+  const box=document.getElementById("loginProgress");
+  const bar=document.getElementById("loginProgressBar");
+  const pct=document.getElementById("loginProgressPercent");
+  const label=document.getElementById("loginProgressText");
+  if(!box||!bar||!pct||!label)return;
+  box.classList.add("show");
+  box.classList.toggle("success",!!success);
+  const value=Math.max(0,Math.min(100,Math.round(percent)));
+  bar.style.width=value+"%";
+  pct.textContent=value+"%";
+  label.textContent=text||"Connexion en cours…";
+}
+function resetLoginProgress(){
+  const box=document.getElementById("loginProgress");
+  const bar=document.getElementById("loginProgressBar");
+  const pct=document.getElementById("loginProgressPercent");
+  const label=document.getElementById("loginProgressText");
+  if(!box)return;
+  box.classList.remove("show","success");
+  if(bar)bar.style.width="0%";
+  if(pct)pct.textContent="0%";
+  if(label)label.textContent="Connexion en cours…";
+}
 async function login(ev){
   ev.preventDefault();
   const u=document.getElementById("loginUsername").value.trim();
   const pw=document.getElementById("loginPassword").value;
   const err=document.getElementById("authError");
+  const submit=document.getElementById("loginSubmitBtn");
   err.style.display="none";
+  if(!u||!pw)return;
+
+  if(submit)submit.disabled=true;
+  setLoginProgress(10,"Vérification des identifiants…");
+
   try{
+    setLoginProgress(25,"Authentification Supabase…");
     const result=await supaRpc("toxgarde_login",{p_username:u,p_password:pw});
     const a=Array.isArray(result)?result[0]:result;
     if(!a?.token)throw new Error("Identifiant ou mot de passe incorrect.");
 
+    setLoginProgress(45,"Compte authentifié. Chargement des données…");
     const keep=document.getElementById("keepConnected").checked;
 
     // Vérifier la lecture des données AVANT d'enregistrer la session.
@@ -2676,6 +2869,8 @@ async function login(ev){
       throw new Error(`Connexion au compte réussie, mais récupération des données Tox-Garde impossible. ${e.message}`);
     }
 
+    setLoginProgress(65,"Données récupérées. Préparation de votre session…");
+
     // La session n'est mémorisée qu'après authentification + lecture cloud réussies.
     persistSession({username:a.username,role:a.role,doctor:a.doctor||""},keep);
     (keep?localStorage:sessionStorage).setItem("toxGardeCloudToken",a.token);
@@ -2685,9 +2880,11 @@ async function login(ev){
     localStorage.setItem("toxGardeRememberedUsername",u);
 
     if(remote&&typeof remote==="object"&&Object.keys(remote).length){
+      setLoginProgress(78,"Synchronisation des données…");
       state=Object.assign(state,remote);
       state.accounts=[];
     }else if(a.role==="admin"){
+      setLoginProgress(72,"Initialisation des données administrateur…");
       const localAccounts=Array.isArray(state.accounts)?JSON.parse(JSON.stringify(state.accounts)):[];
       for(const acc of localAccounts){
         if(acc?.username&&acc?.password&&normalizeUser(acc.username)!==normalizeUser(INITIAL_ADMIN.username)){
@@ -2700,18 +2897,31 @@ async function login(ev){
           });
         }
       }
+      setLoginProgress(88,"Finalisation de la synchronisation…");
       await cloudSave();
     }
 
     state.accounts=[];
+    setLoginProgress(100,"Connexion réussie ✓",true);
+    await new Promise(resolve=>setTimeout(resolve,350));
     applyAuthUI();
   }catch(e){
     console.error("Tox-Garde / connexion Supabase :",e);
-    err.textContent=e?.message||"Connexion impossible.";
-    err.style.display="block";
+    if(err){
+      err.textContent=e?.message||"Connexion impossible.";
+      err.style.display="block";
+    }
+    const box=document.getElementById("loginProgress");
+    if(box){
+      box.classList.remove("success");
+      setLoginProgress(0,"Échec de la connexion.");
+      setTimeout(resetLoginProgress,1800);
+    }
+  }finally{
+    if(submit)submit.disabled=false;
   }
 }
-async function logout(){const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
+async function logout(){stopRealtimeSync();const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
 async function save(){
   localStorage.setItem("gardeMed",JSON.stringify(state));
   cloudSyncBusy=true;
@@ -2744,8 +2954,8 @@ async function refreshCloudOnStartup(){
       state=Object.assign(state,remote);
       state.accounts=[];
       localStorage.setItem("gardeMed",JSON.stringify(state));
-      renderAll();
-      if(ses.role!=="admin")showDoctorValidatedPlanning();
+      if(document.visibilityState !== "hidden") renderAll();
+      if(ses.role!=="admin" && document.visibilityState !== "hidden") showDoctorValidatedPlanning();
     }
   }catch(e){
     console.error("Tox-Garde / actualisation Supabase :",e);
@@ -2772,8 +2982,8 @@ async function pollCloudChanges(force=false){
     state=Object.assign(state,remote);
     state.accounts=[];
     localStorage.setItem("gardeMed",JSON.stringify(state));
-    renderAll();
-    if(ses.role!=="admin")showDoctorValidatedPlanning();
+    if(document.visibilityState !== "hidden") renderAll();
+    if(ses.role!=="admin" && document.visibilityState !== "hidden") showDoctorValidatedPlanning();
     console.log("Tox-Garde : données Supabase actualisées automatiquement.");
   }catch(e){
     console.error("Tox-Garde / synchronisation automatique :",e);
@@ -2783,6 +2993,7 @@ async function pollCloudChanges(force=false){
 }
 
 function startCloudPolling(){
+  startRealtimeSync();
   if(cloudPollTimer)clearInterval(cloudPollTimer);
   // Filet de sécurité : une vérification toutes les 2 minutes au lieu de 5 secondes.
   cloudPollTimer=setInterval(()=>pollCloudChanges(false),120000);
@@ -2911,12 +3122,25 @@ async function respondGuardChange(id,decision){
   if(absence)return alert(`Changement impossible : ${req.toDoctor} a une ${absence.type.toLowerCase()} le ${req.date}.`);
   if((source.fixed||[]).some(x=>x.date===req.date&&x.doctor===req.toDoctor) || (source.planning?.[req.date]||[]).some(x=>x.doctor===req.toDoctor))return alert(`Changement impossible : ${req.toDoctor} a déjà une garde le ${req.date}.`);
   if(guard.kind==='fixed'){
+    // Le planning validé contient une copie historique de la garde.
+    // Il faut aussi mettre à jour state.fixed : le tableau
+    // "week-end / jours fériés" lit cette collection.
     raw.fixed[guard.index].doctor=req.toDoctor;
+
+    const normalizedType=String(req.type||"").toUpperCase();
+    const currentFixed=(state.fixed||[]).filter(x=>
+      x && normalizeDateKey(x.date)===normalizeDateKey(req.date) &&
+      String(x.type||"").toUpperCase()===normalizedType &&
+      String(x.doctor||"").trim()===String(req.fromDoctor||"").trim()
+    );
+    currentFixed.forEach(x=>{ x.doctor=req.toDoctor; });
   }else{
     raw.planning[req.date][guard.index].doctor=req.toDoctor;
   }
+
   req.status='accepted';req.respondedAt=new Date().toISOString();
   await save();
+  renderAdminAbsences();
   renderMyGuards();
   alert(`Changement effectué : la garde ${req.date} — ${req.type} est maintenant attribuée à ${req.toDoctor}.`);
 }
@@ -3022,8 +3246,8 @@ renderAccountOptions();renderAccounts();renderAll();}
 function renderAccountOptions(){const el=document.getElementById("accountDoctor");if(!el)return;el.innerHTML='<option value="">-- Choisir un médecin --</option>'+state.doctors.map(d=>`<option value="${String(d.name).replaceAll('"','&quot;')}">${d.name}</option>`).join("")}
 async function loadCloudAccounts(){if(!isAdmin())return [];const token=cloudToken();if(!token)return [];try{return await supaRpc("toxgarde_list_accounts",{p_token:token})}catch(e){console.error(e);return []}}
 async function renderAccounts(){const el=document.getElementById("accountsBody");if(!el)return;if(!isAdmin()){el.innerHTML='<tr><td colspan="4" class="hint">Accès administrateur.</td></tr>';return;}const accounts=await loadCloudAccounts();el.innerHTML=accounts.map((a,i)=>`<tr><td>${a.doctor||"—"}</td><td>${a.username}</td><td>${a.role==="admin"?"Administrateur":"Médecin"}</td><td>${a.username!==INITIAL_ADMIN.username?`<button class="btn small danger" onclick="deleteDoctorAccount(${i},'${String(a.username).replaceAll("'","\\'")}')">Supprimer</button>`:""}</td></tr>`).join("")||'<tr><td colspan="4" class="hint">Aucun compte médecin créé.</td></tr>'}
-async function saveDoctorAccount(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");const doctor=document.getElementById("accountDoctor").value,username=document.getElementById("accountUsername").value.trim(),password=document.getElementById("accountPassword").value,role=document.getElementById("accountRole").value;if(!doctor||!username||!password)return alert("Veuillez renseigner le médecin, l’identifiant et le mot de passe.");if(normalizeUser(username)===normalizeUser(INITIAL_ADMIN.username))return alert("Cet identifiant est réservé à l’administrateur initial.");try{await supaRpc("toxgarde_upsert_account",{p_token:cloudToken(),p_doctor:doctor,p_username:username,p_password:password,p_role:role});document.getElementById("accountUsername").value="";document.getElementById("accountPassword").value="";await renderAccounts();const m=document.getElementById("accountFormMessage");if(m){m.textContent="Compte médecin créé/mis à jour avec succès.";m.style.display="block";}}catch(e){alert("Impossible d'enregistrer le compte : "+e.message)}}
-async function deleteDoctorAccount(i,username){if(!isAdmin())return alert("Accès réservé aux administrateurs.");if(!confirm("Supprimer ce compte ?"))return;try{await supaRpc("toxgarde_delete_account",{p_token:cloudToken(),p_username:username});await renderAccounts()}catch(e){alert("Impossible de supprimer le compte : "+e.message)}}
+async function saveDoctorAccount(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");const doctor=document.getElementById("accountDoctor").value,username=document.getElementById("accountUsername").value.trim(),password=document.getElementById("accountPassword").value,role=document.getElementById("accountRole").value;if(!doctor||!username||!password)return alert("Veuillez renseigner le médecin, l’identifiant et le mot de passe.");if(normalizeUser(username)===normalizeUser(INITIAL_ADMIN.username))return alert("Cet identifiant est réservé à l’administrateur initial.");try{await supaRpc("toxgarde_upsert_account",{p_token:cloudToken(),p_doctor:doctor,p_username:username,p_password:password,p_role:role});notifyRealtimeUpdate();document.getElementById("accountUsername").value="";document.getElementById("accountPassword").value="";await renderAccounts();const m=document.getElementById("accountFormMessage");if(m){m.textContent="Compte médecin créé/mis à jour avec succès.";m.style.display="block";}}catch(e){alert("Impossible d'enregistrer le compte : "+e.message)}}
+async function deleteDoctorAccount(i,username){if(!isAdmin())return alert("Accès réservé aux administrateurs.");if(!confirm("Supprimer ce compte ?"))return;try{await supaRpc("toxgarde_delete_account",{p_token:cloudToken(),p_username:username});notifyRealtimeUpdate();await renderAccounts()}catch(e){alert("Impossible de supprimer le compte : "+e.message)}}
 function clearDoctorAccountForm(){
   const d=document.getElementById("accountDoctor"),u=document.getElementById("accountUsername"),p=document.getElementById("accountPassword"),r=document.getElementById("accountRole"),m=document.getElementById("accountFormMessage");
   if(d)d.value="";
@@ -3155,11 +3379,20 @@ function renderAdminAbsences(){
   rows.sort((a,b)=>(a.start||"").localeCompare(b.start||"")||String(a.end||"").localeCompare(String(b.end||""))||String(a.doctor).localeCompare(String(b.doctor)));
   if(!rows.length){el.innerHTML='<div class="hint">Aucun résultat pour les filtres sélectionnés.</div>';return;}
 
+  // Cache local des justificatifs : évite de refaire un filter/sort complet pour chaque ligne.
+  const latestJustificationByAbsence=new Map();
+  for(const j of localJustifications()){
+    const key=String(j.absenceKey||"");
+    if(!key) continue;
+    const prev=latestJustificationByAbsence.get(key);
+    if(!prev || String(j.uploadedAt||"").localeCompare(String(prev.uploadedAt||""))>0) latestJustificationByAbsence.set(key,j);
+  }
+
   // Vue Médecin : un seul tableau continu, sans regroupement mensuel.
   if(doctorMode && adminAbsView==="leave"){
-    el.innerHTML=`<div class="admin-month-content" style="overflow-x:auto"><table><thead><tr><th></th><th>Date</th><th>Type</th><th>Date de saisie</th><th>Statut</th><th>Justificatif</th><th>Action</th><th></th></tr></thead><tbody>${rows.map(r=>{
+    el.innerHTML=`<div class="admin-month-content" style="overflow-x:auto"><table class="admin-absence-table has-status"><thead><tr><th></th><th>Date</th><th>Type</th><th>Date de saisie</th><th>Statut</th><th>Justificatif</th><th>Action</th><th></th></tr></thead><tbody>${rows.map(r=>{
       const a=state.absences?.[r.index];
-      const j=a ? localJustifications().filter(x=>x.absenceKey===absenceKey(a)).sort((x,y)=>String(y.uploadedAt||"").localeCompare(String(x.uploadedAt||"")))[0] : null;
+      const j=a ? latestJustificationByAbsence.get(absenceKey(a)) : null;
       const hasFile=!!j?.fileName;
       const status=absenceStatus(a||r);
       const statusText=j ? justificationStatusLabel(j.status) : "🟠 En attente de justificatif";
@@ -3172,8 +3405,8 @@ function renderAdminAbsences(){
         : canJustify
           ? `<label class="btn small" style="display:inline-block;cursor:pointer">📎 Ajouter<input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="uploadJustification(${r.index},this.files[0]);this.value=''"> </label>`
           : `<span class="hint">—</span>`;
-      const action=`<button class="btn small danger" type="button" onclick="deleteMyAbsence(${r.index})">🗑 Supprimer</button>`;
-      return `<tr><td></td><td>${period}</td><td><b>${escapeHtml(r.type)}</b></td><td>${escapeHtml(entered)}</td><td>${escapeHtml(statusText)}${status.details?`<br><small>${escapeHtml(status.details)}</small>`:""}</td><td>${docCell}</td><td>${action}</td><td></td></tr>`;
+      const action=`<div class="admin-action-stack"><button class="btn small danger" type="button" onclick="deleteMyAbsence(${r.index})">🗑 Supprimer</button></div>`;
+      return `<tr><td></td><td class="admin-date-cell">${period}</td><td><b>${escapeHtml(r.type)}</b></td><td>${escapeHtml(entered)}</td><td>${escapeHtml(statusText)}${status.details?`<br><small>${escapeHtml(status.details)}</small>`:""}</td><td>${docCell}</td><td class="admin-action-cell">${action}</td><td></td></tr>`;
     }).join("")}</tbody></table></div>`;
     return;
   }
@@ -3187,10 +3420,10 @@ function renderAdminAbsences(){
   el.innerHTML=Object.entries(groups).map(([key,list])=>{
     const [yy,mm]=key.split("-").map(Number), title=`${months[mm-1]} ${yy}`;
     const showStatus=adminAbsView==="leave";
-    return `<details class="admin-month-block" open><summary>${title} — ${list.length} élément(s)</summary><div class="admin-month-content"><table><thead><tr><th>Médecin</th><th>Date</th><th>Type</th><th>Date de saisie</th>${showStatus?"<th>Statut</th>":""}<th>Justificatif</th><th>Action</th><th></th></tr></thead><tbody>${list.map(r=>{
+    return `<details class="admin-month-block" open><summary>${title} — ${list.length} élément(s)</summary><div class="admin-month-content"><table class="admin-absence-table ${showStatus?"has-status":"no-status"}"><thead><tr><th>Médecin</th><th>Date</th><th>Type</th><th>Date de saisie</th>${showStatus?"<th>Statut</th>":""}<th>Justificatif</th><th>Action</th><th></th></tr></thead><tbody>${list.map(r=>{
       const status=showStatus?absenceStatus(r):null;
       const a=r.kind==="abs"?state.absences?.[r.index]:null;
-      const j=a?localJustifications().filter(x=>x.absenceKey===absenceKey(a)).sort((x,y)=>String(y.uploadedAt||"").localeCompare(String(x.uploadedAt||"")))[0]:null;
+      const j=a?latestJustificationByAbsence.get(absenceKey(a)):null;
       const canJustify=!!a && ["CONGÉ","RÉCUP","RECUP"].includes(String(a.type||"").toUpperCase());
       const docCell=j?.fileName
         ? `<button class="btn small" type="button" onclick="openJustificationFile('${escapeHtml(String(j.id))}')">👁 Voir</button><div class="hint" style="margin-top:4px">${escapeHtml(j.fileName)}</div><small>${escapeHtml(justificationStatusLabel(j.status))}</small>${j.rejectionReason?`<div class="hint" style="margin-top:3px">Motif : ${escapeHtml(j.rejectionReason)}</div>`:""}${canJustify?`<br><label class="btn small" style="display:inline-block;cursor:pointer;margin-top:4px">📎 Remplacer<input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="uploadJustification(${r.index},this.files[0]);this.value=''"> </label>`:""}`
@@ -3217,8 +3450,8 @@ function renderAdminAbsences(){
           ? `<button class="btn small danger" type="button" onclick="reviewJustification('${escapeHtml(String(j.id))}','rejected')">❌ Refuser</button>`
           : `<button class="btn small danger" type="button" disabled title="Aucun justificatif en attente de validation">❌ Refuser</button>`)
         : "";
-      const action=`<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">${viewBtn}${validateBtn}${rejectBtn}<button class="btn small danger" type="button" onclick='deleteMergedEntry("${r.kind}",${r.index})'>🗑 Supprimer</button></div>`;
-      return `<tr><td class="name">${escapeHtml(r.doctor)}</td><td>${escapeHtml(r.start)}${r.end!==r.start?`<br><small>au ${escapeHtml(r.end)}</small>`:""}</td><td><b>${escapeHtml(r.type)}</b></td><td>${r.createdAt?new Date(r.createdAt).toLocaleDateString('fr-FR'):"—"}</td>${showStatus?`<td>${escapeHtml(status.label||"—")}${status.details?`<br><small>${escapeHtml(status.details)}</small>`:""}</td>`:""}<td>${docCell}</td><td>${action}</td><td></td></tr>`;
+      const action=`<div class="admin-action-stack">${viewBtn}${validateBtn}${rejectBtn}<button class="btn small danger" type="button" onclick='deleteMergedEntry("${r.kind}",${r.index})'>🗑 Supprimer</button></div>`;
+      return `<tr><td class="name">${escapeHtml(r.doctor)}</td><td class="admin-date-cell">${escapeHtml(r.start)}${r.end!==r.start?`<br><small>au ${escapeHtml(r.end)}</small>`:""}</td><td><b>${escapeHtml(r.type)}</b></td><td>${r.createdAt?new Date(r.createdAt).toLocaleDateString('fr-FR'):"—"}</td>${showStatus?`<td>${escapeHtml(status.label||"—")}${status.details?`<br><small>${escapeHtml(status.details)}</small>`:""}</td>`:""}<td>${docCell}</td><td class="admin-action-cell">${action}</td><td></td></tr>`;
     }).join("")}</tbody></table></div></details>`;
   }).join("");
 }
@@ -3280,6 +3513,7 @@ async function uploadJustification(absenceIndex,file){
     state.justifications.push(normalizeJustification(result.justification));
     localStorage.setItem("gardeMed",JSON.stringify(state));
     await refreshJustificationsFromServer();
+    notifyRealtimeUpdate();
     renderJustifications();
     renderAdminAbsences();
     alert("Justificatif envoyé. Il est maintenant en attente de vérification par l'Admin.");
@@ -3317,6 +3551,7 @@ async function reviewJustification(id,status){
     });
     if(!result?.success)throw new Error("Action impossible.");
     await refreshJustificationsFromServer();
+    notifyRealtimeUpdate();
     renderJustifications();
     renderDoctorJustifications();
     renderAdminAbsences();
