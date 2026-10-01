@@ -75,6 +75,12 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid 
   .header-settings.mobile-settings-open summary{display:block;padding:12px 14px;font-size:14px;color:var(--text)}
   .header-settings.mobile-settings-open .header-settings-panel{position:static;width:auto;max-height:calc(100dvh - 130px);overflow:auto;border:0;border-top:1px solid var(--line);border-radius:0 0 12px 12px;box-shadow:none;padding:12px}
   main{display:block;max-width:none;margin:0;padding:10px 10px 12px}
+  /* Le mode replié est réservé au menu desktop : sur mobile le tiroir reste toujours complet. */
+  main.nav-collapsed{display:block;grid-template-columns:none}
+  main.nav-collapsed>nav{padding:76px 12px 82px;width:min(82vw,330px);}
+  main.nav-collapsed>nav .nav-label{display:inline!important;position:static!important;left:auto!important;top:auto!important;width:auto!important;height:auto!important;max-width:none!important;min-width:0!important;padding:0!important;margin:0!important;border:0!important;overflow:visible!important;clip:auto!important;clip-path:none!important;white-space:nowrap!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+  main.nav-collapsed>nav button{justify-content:flex-start;padding:9px 12px;overflow:visible!important}
+  main.nav-collapsed>nav button .nav-icon{display:block!important;visibility:visible!important;flex:0 0 24px!important;margin:0}
   main>nav{position:fixed;left:0;top:0;bottom:0;width:min(82vw,330px);height:100dvh;max-height:100dvh;display:flex;flex-direction:column;gap:6px;margin:0;padding:76px 12px 82px;background:var(--card);border:0;border-radius:0;box-shadow:8px 0 30px rgba(16,24,40,.20);z-index:200;overflow-y:auto;transform:translateX(-105%);transition:transform .22s ease;visibility:hidden}
   main>nav.mobile-open{transform:translateX(0);visibility:visible}
   main>nav button{min-height:48px;border-radius:10px;font-size:14px;flex:0 0 auto}
@@ -91,6 +97,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid 
   .mobile-bottom-nav button small{font-size:9px;line-height:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .mobile-bottom-nav button.active{color:var(--blue);background:var(--blue2)}
   .mobile-bottom-nav button:active{transform:scale(.97)}
+  .mobile-bottom-nav.doctor-mode{grid-template-columns:repeat(6,1fr)}
+  .mobile-bottom-nav .doctor-bottom-only{display:flex!important}
+  .mobile-bottom-nav:not(.doctor-mode) .doctor-bottom-only{display:none!important}
   .panel{grid-column:auto}
   .home-image{width:calc(100% + 20px);margin-left:-10px;margin-top:10px;height:clamp(150px,28vh,280px)}
   .card{padding:14px;margin-bottom:12px}
@@ -385,6 +394,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
   <button type="button" data-mobile-tab="planning"><span>📋</span><small>Planning</small></button>
   <button type="button" data-mobile-tab="absences"><span>📅</span><small>Congés</small></button>
   <button type="button" data-mobile-tab="stats"><span>🔄</span><small>Récup.</small></button>
+  <button type="button" id="mobileMyGuardsBtn" class="doctor-bottom-only" data-mobile-tab="myGuards" style="display:none"><span>📅</span><small>Mes gardes</small></button>
   <button type="button" id="mobileMoreBtn"><span>☰</span><small>Plus</small></button>
 </div>
 
@@ -558,7 +568,7 @@ document.getElementById("month").value=8;
 if(document.getElementById("weekStart"))document.getElementById("weekStart").value="2026-09-01";
 let activePlanningView={type:"current",key:null};
 function save(){save();renderAll()}
-function openTab(id){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.tab===id))}
+function openTab(id){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));const panel=document.getElementById(id);if(panel)panel.classList.add("active");document.querySelectorAll("nav button[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===id));document.querySelectorAll(".mobile-bottom-nav button[data-mobile-tab]").forEach(x=>x.classList.toggle("active",x.dataset.mobileTab===id));}
 document.querySelectorAll("nav button[data-tab]").forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 const navToggle=document.getElementById("navToggle");
 if(navToggle){navToggle.onclick=()=>{const main=document.querySelector("main");const collapsed=main.classList.toggle("nav-collapsed");navToggle.querySelector(".nav-icon").textContent=collapsed?"▶":"◀";navToggle.querySelector(".nav-label").textContent=collapsed?"Développer le menu":"Réduire le menu";navToggle.title=collapsed?"Développer le menu":"Réduire le menu";navToggle.setAttribute("aria-label",navToggle.title);localStorage.setItem("toxGardeNavCollapsed",collapsed?"1":"0");};
@@ -577,6 +587,8 @@ function closeMobileNav(){
 }
 function openMobileNav(){
   if(!sideNav)return;
+  // Le mode replié ne doit jamais être utilisé par le tiroir mobile.
+  document.querySelector("main")?.classList.remove("nav-collapsed");
   sideNav.classList.add("mobile-open");
   mobileNavBackdrop?.classList.add("mobile-open");
   mobileMenuBtn?.setAttribute("aria-expanded","true");
@@ -3334,8 +3346,8 @@ function renderMyGuards(){
   html+=`<div style="border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;background:#f8fafc"><div class="hint">⏰ Prochaine garde</div><div style="font-size:20px;font-weight:800;margin-top:4px">${f.day} ${f.date}</div><div style="margin-top:5px;font-weight:700">${typeLabel(first.type)} — ${when}</div></div><table><thead><tr><th>Date</th><th>Jour</th><th>Type</th><th>Action</th></tr></thead><tbody>${guards.map(g=>{const x=fmt(g.date);const pending=(state.exchangeRequests||[]).some(r=>r.status==='pending'&&r.historyKey===g.historyKey&&r.date===g.date&&r.type===g.type&&r.fromDoctor===doctor);return `<tr><td>${x.date}</td><td>${x.day}</td><td><b>${typeLabel(g.type)}</b></td><td>${pending?'<span class="hint">Demande en attente</span>':`<button class="btn small" type="button" onclick="requestGuardChange('${escapeHtml(g.historyKey)}','${escapeHtml(g.date)}','${escapeHtml(g.type)}','${escapeHtml(doctor)}')">🔄 Changer</button>`}</td></tr>`}).join('')}</tbody></table>`;
   el.innerHTML=html;
 }
-function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";return;}
-const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.querySelectorAll(".doctor-only").forEach(el=>el.style.display=admin?"none":"block");const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display="block";document.getElementById("authUserInfo").innerHTML=`${ses.username} — ${admin?"Administrateur":"Médecin"}<button class="btn small" onclick="logout()">Déconnexion</button>`;
+function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";document.getElementById("mobileBottomNav")?.classList.remove("doctor-mode");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display="none";return;}
+const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.querySelectorAll(".doctor-only").forEach(el=>el.style.display=admin?"none":"block");const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display="block";const mobileBottomNav=document.getElementById("mobileBottomNav");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileBottomNav)mobileBottomNav.classList.toggle("doctor-mode",!admin);if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display=admin?"none":"flex";document.getElementById("authUserInfo").innerHTML=`${ses.username} — ${admin?"Administrateur":"Médecin"}<button class="btn small" onclick="logout()">Déconnexion</button>`;
 if(!admin){
   document.getElementById("doctorAbsenceHint").style.display="block";
   const absDoctor=document.getElementById("absDoctor");
