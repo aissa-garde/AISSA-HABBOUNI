@@ -11,7 +11,7 @@
 <title>Tox-Garde — Générateur équitable des gardes</title>
 
 <style>
-:root{--bg:#f5f7fb;--card:#fff;--line:#d8dee9;--text:#182230;--muted:#667085;--blue:#3f83c5;--blue2:#eaf3fb;--orange:#ffbf00;--green:#dff4e6;--red:#fde2e2;--gray:#e5e7eb}
+:root{--bg:#f6f8fb;--card:#ffffff;--line:#d9e2ec;--text:#1f2937;--muted:#667085;--blue:#2e86ab;--blue2:#eaf3fb;--orange:#ffbf00;--green:#dff4e6;--red:#fde2e2;--gray:#e5e7eb;--header-bg:#176b87;--title:#ffffff;--subtitle:#dceaf0;--active:#e8f3f7;--icon-muted:#98a2b3}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
 header{background:var(--header-bg,#3f83c5);color:white;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:20px}.brand-wrap{display:flex;align-items:center;gap:12px;min-width:0}.brand-logo{width:58px;height:58px;object-fit:contain;border-radius:8px;background:#ffffff22;padding:3px;display:none}.brand-logo.show{display:block}.home-image{width:calc(100% + 40px);max-width:none;height:clamp(180px,30vh,360px);object-fit:cover;border-radius:0;display:none;margin:28px -20px 0}.home-image.show{display:block}
 header h1{margin:0;font-size:25px} header p{margin:5px 0 0;opacity:.9}
@@ -193,6 +193,32 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
   .admin-month-content{overflow-x:auto;}
 }
 
+
+/* Paramètres d'apparence — organisation moderne */
+.header-settings-panel{width:min(760px,calc(100vw - 24px));padding:0;overflow-x:hidden}
+.settings-panel-head{padding:18px 20px 15px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,rgba(248,250,252,.9))}
+.settings-panel-head h3{margin:0 0 4px;font-size:17px;color:var(--text)}
+.settings-panel-head p{margin:0;font-size:12px;color:var(--muted);font-weight:400}
+.settings-section{padding:17px 20px;border-bottom:1px solid var(--line)}
+.settings-section:last-of-type{border-bottom:0}
+.settings-section-title{display:flex;align-items:flex-start;gap:10px;margin-bottom:13px}
+.settings-section-title>span{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--active);font-size:15px}
+.settings-section-title strong{display:block;font-size:13px;color:var(--text)}
+.settings-section-title small{display:block;margin-top:3px;color:var(--muted);font-size:11px;font-weight:400}
+.settings-color-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.color-field{position:relative;display:grid;grid-template-columns:42px 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:11px;background:var(--card);cursor:pointer}
+.color-field>span{grid-column:2;font-size:12px;color:var(--text);font-weight:700;line-height:1.25}
+.color-field>input[type=color]{grid-column:1;grid-row:1 / span 2;width:42px;height:42px;margin:0;padding:3px;border:1px solid var(--line);border-radius:9px;background:var(--card);cursor:pointer}
+.color-field>small{grid-column:2;color:var(--muted);font-size:10px;font-weight:400;margin-top:3px}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.settings-grid label{font-size:12px;color:var(--muted);font-weight:700}
+.settings-grid input[type=text],.settings-grid input[type=file]{margin-top:6px}
+.font-setting{display:grid;grid-template-columns:190px 1fr 55px;align-items:center;gap:12px}
+.font-setting label{font-size:12px;color:var(--muted);font-weight:700}
+.font-setting input[type=range]{margin:0;width:100%;accent-color:var(--blue)}
+.font-setting strong{font-size:12px;color:var(--text);text-align:right}
+.settings-actions{padding:15px 20px 4px}
+@media(max-width:900px) and (min-width:701px){.settings-color-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <style>
 .history-groups{display:flex;flex-direction:column;gap:10px;margin-top:10px}
@@ -372,29 +398,27 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
    ========================================================= */
 @media (min-width:701px){
   :root{
-    --desktop-bg:#f6f7ff;
-    --desktop-sidebar:#fbfbff;
-    --desktop-card:#ffffff;
-    --desktop-line:#e4e7f2;
-    --desktop-text:#20243a;
-    --desktop-muted:#73798e;
-    --desktop-accent:#ff6f73;
-    --desktop-accent-soft:#fff0f1;
+    --desktop-bg:var(--bg);
+    --desktop-sidebar:var(--card);
+    --desktop-card:var(--card);
+    --desktop-line:var(--line);
+    --desktop-text:var(--text);
+    --desktop-muted:var(--muted);
+    --desktop-accent:var(--blue);
+    --desktop-accent-soft:var(--active);
     --desktop-purple:#6d6ff2;
     --desktop-purple-soft:#eeeefe;
   }
 
   body{
-    background:
-      radial-gradient(circle at 75% 12%, rgba(221,224,255,.42), transparent 31%),
-      linear-gradient(135deg,#fbfbff 0%,var(--desktop-bg) 58%,#f8fbff 100%);
+    background:var(--desktop-bg);
     color:var(--desktop-text);
   }
 
   header{
     min-height:76px;
     padding:12px 32px;
-    background:rgba(255,255,255,.94);
+    background:var(--header-bg);
     color:var(--desktop-text);
     border-bottom:1px solid var(--desktop-line);
     box-shadow:0 1px 0 rgba(32,36,58,.02);
@@ -404,7 +428,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
     backdrop-filter:blur(10px);
   }
   header h1{font-size:18px;letter-spacing:.02em;font-weight:800}
-  header p{font-size:11px;color:var(--desktop-muted);opacity:1;margin-top:3px}
+  header p{font-size:11px;color:var(--subtitle);opacity:1;margin-top:3px}
   .brand-wrap{gap:10px}
   .brand-logo{width:44px;height:44px;border-radius:12px;background:#f0f1ff;padding:4px}
   .header-tools{align-items:center;gap:12px}
@@ -469,8 +493,8 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
     height:calc(100vh - 40px);
     min-height:560px;
     padding:18px 12px;
-    background:rgba(255,255,255,.72);
-    border:1px solid rgba(228,231,242,.9);
+    background:var(--desktop-card);
+    border:1px solid var(--desktop-line);
     border-radius:18px;
     box-shadow:0 10px 30px rgba(71,75,126,.07);
     backdrop-filter:blur(12px);
@@ -491,12 +515,12 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
     border:0;
     border-radius:11px;
     background:transparent;
-    color:#60667b;
+    color:var(--icon-muted);
     font-size:12px;
     font-weight:700;
     transition:background .16s ease,color .16s ease,transform .16s ease;
   }
-  nav button:hover{background:#f1f2ff;color:#4548a9;transform:translateX(1px)}
+  nav button:hover{background:var(--active);color:var(--blue);transform:translateX(1px)}
   nav button.active{
     background:var(--desktop-accent-soft);
     color:var(--desktop-accent);
@@ -645,7 +669,65 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <div class="brand-wrap"><img id="appLogoDisplay" class="brand-logo" alt="Logo application"><div><h1 id="appTitleDisplay">GardeMed</h1><p id="appSubtitleDisplay">Générateur équitable des gardes médicales</p></div><img id="centerLogoDisplay" class="brand-logo" alt="Logo Centre Antipoison"></div>
 <div class="header-tools"><div id="authUserInfo" class="auth-user"></div>
 
-<details class="header-settings admin-only"><summary>⚙ Paramètres</summary><div class="header-settings-panel"><div class="settings-grid"><label>Nom / titre de l’application<input type="text" id="appTitle" placeholder="Tox-Garde"></label><label>Phrase sous le titre<input type="text" id="appSubtitle" placeholder="Simple. Équitable. Intelligent"></label><label>Arrière-plan de l’application<input type="color" id="appBg" value="#f5f7fb"></label><label>Couleur de l’en-tête<input type="color" id="headerBg" value="#3f83c5"></label><label>Arrière-plan des cartes<input type="color" id="cardBg" value="#ffffff"></label><label class="desktop-only-setting">Couleur des boutons principaux / « Ajouter »<input type="color" id="primaryBtnBg" value="#ff6f73"></label><label class="desktop-only-setting">Couleur du texte des boutons principaux<input type="color" id="primaryBtnText" value="#ffffff"></label><label class="desktop-only-setting">Couleur des éléments actifs<input type="color" id="activeItemBg" value="#fff0f1"></label><label class="desktop-only-setting">Couleur de la police des écritures<input type="color" id="desktopFontColor" value="#20243a"></label><label class="desktop-only-setting">Taille de la police (ordinateur)<input type="range" id="desktopFontSize" min="12" max="20" step="1" value="14"><small id="desktopFontSizeValue">14 px</small></label><label>Logo de l’application<input type="file" id="appLogoFile" accept="image/*"><small id="appLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('appLogo','appLogoFile')">🗑 Supprimer</button></label><label>Logo du Centre Antipoison<input type="file" id="centerLogoFile" accept="image/*"><small id="centerLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('centerLogo','centerLogoFile')">🗑 Supprimer</button></label><label>Image d’arrière-plan<input type="file" id="bgImageFile" accept="image/*"><small id="bgImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('bgImage','bgImageFile')">🗑 Supprimer</button></label><label>Image d’accueil<input type="file" id="homeImageFile" accept="image/*"><small id="homeImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('homeImage','homeImageFile')">🗑 Supprimer</button></label></div><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="saveAppearance()">Enregistrer l’apparence</button><button class="btn" onclick="removeImages()">Supprimer les images/logos</button><button class="btn" onclick="resetAppearance()">Réinitialiser</button></div><p class="hint">Les réglages de couleur et de police ci-dessus s’appliquent uniquement à la version ordinateur (≥ 701 px). La version téléphone reste inchangée.</p></div></details>
+<details class="header-settings admin-only"><summary>⚙ Paramètres</summary><div class="header-settings-panel">
+  <div class="settings-panel-head">
+    <div>
+      <h3>Apparence de l’application</h3>
+      <p>Personnalisez les couleurs et l’identité visuelle de l’interface.</p>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-title"><span>🎨</span><div><strong>Palette de couleurs</strong><small>Chaque couleur contrôle une zone précise de l’interface.</small></div></div>
+    <div class="settings-color-grid">
+      <label class="color-field"><span>En-tête principal</span><input type="color" id="headerBg" value="#176b87"><small>Barre supérieure</small></label>
+      <label class="color-field"><span>Bleu secondaire</span><input type="color" id="secondaryBlue" value="#2e86ab"><small>Boutons et actions</small></label>
+      <label class="color-field"><span>Fond général</span><input type="color" id="appBg" value="#f6f8fb"><small>Arrière-plan global</small></label>
+      <label class="color-field"><span>Cartes</span><input type="color" id="cardBg" value="#ffffff"><small>Blocs et panneaux</small></label>
+      <label class="color-field"><span>Texte principal</span><input type="color" id="textPrimary" value="#1f2937"><small>Contenu courant</small></label>
+      <label class="color-field"><span>Texte secondaire</span><input type="color" id="textSecondary" value="#667085"><small>Aides et informations</small></label>
+      <label class="color-field"><span>Texte du titre</span><input type="color" id="titleText" value="#ffffff"><small>Titre de l’application</small></label>
+      <label class="color-field"><span>Texte de la phrase d’en-tête</span><input type="color" id="subtitleText" value="#dceaf0"><small>Sous-titre</small></label>
+      <label class="color-field"><span>Bordures / séparateurs</span><input type="color" id="borderColor" value="#d9e2ec"><small>Contours et lignes</small></label>
+      <label class="color-field"><span>Accueil sélectionné</span><input type="color" id="activeItemBg" value="#e8f3f7"><small>Élément actif du menu</small></label>
+      <label class="color-field"><span>Icônes inactives</span><input type="color" id="inactiveIconColor" value="#98a2b3"><small>Icônes non sélectionnées</small></label>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-title"><span>✏️</span><div><strong>Identité</strong><small>Nom et phrase affichés dans l’en-tête.</small></div></div>
+    <div class="settings-grid">
+      <label>Nom / titre de l’application<input type="text" id="appTitle" placeholder="Tox-Garde"></label>
+      <label>Phrase sous le titre<input type="text" id="appSubtitle" placeholder="Simple. Équitable. Intelligent"></label>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-title"><span>🔤</span><div><strong>Typographie</strong><small>Réglez la taille du texte sur ordinateur.</small></div></div>
+    <div class="font-setting">
+      <label for="desktopFontSize">Taille de la police (ordinateur)</label>
+      <input type="range" id="desktopFontSize" min="12" max="20" step="1" value="14">
+      <strong id="desktopFontSizeValue">14 px</strong>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-title"><span>🖼️</span><div><strong>Logos et images</strong><small>Ajoutez les éléments visuels de l’application.</small></div></div>
+    <div class="settings-grid">
+      <label>Logo de l’application<input type="file" id="appLogoFile" accept="image/*"><small id="appLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('appLogo','appLogoFile')">🗑 Supprimer</button></label>
+      <label>Logo du Centre Antipoison<input type="file" id="centerLogoFile" accept="image/*"><small id="centerLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('centerLogo','centerLogoFile')">🗑 Supprimer</button></label>
+      <label>Image d’arrière-plan<input type="file" id="bgImageFile" accept="image/*"><small id="bgImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('bgImage','bgImageFile')">🗑 Supprimer</button></label>
+      <label>Image d’accueil<input type="file" id="homeImageFile" accept="image/*"><small id="homeImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('homeImage','homeImageFile')">🗑 Supprimer</button></label>
+    </div>
+  </div>
+
+  <div class="actions settings-actions">
+    <button class="btn primary" onclick="saveAppearance()">Enregistrer l’apparence</button>
+    <button class="btn" onclick="removeImages()">Supprimer les images/logos</button>
+    <button class="btn" onclick="resetAppearance()">Réinitialiser</button>
+  </div>
+  <p class="hint">Les réglages de couleur et de police s’appliquent à la version ordinateur (≥ 701 px). La version téléphone reste inchangée.</p>
+</div></details>
 </div>
 </header>
 <main><img id="homeImageDisplay" class="home-image" alt="Image d’accueil">
@@ -824,14 +906,14 @@ async function ensurePDF(){
 </script>
 <script>
 const demoDoctors=["Dr Daoudi","Dr Daghouane","Dr El Hariri","Dr Ennakhassi","Dr Benarina","Dr Faouzi","Dr Habbouni","Dr Mourabiti","Dr El Mrabet","Dr Belkhadir","Dr El Azher"];
-let state=JSON.parse(localStorage.getItem("gardeMed")||"null")||{doctors:[],absences:[],fixed:[],planning:{},planningHistory:{},generationOffset:0,settings:{title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14}};
+let state=JSON.parse(localStorage.getItem("gardeMed")||"null")||{doctors:[],absences:[],fixed:[],planning:{},planningHistory:{},generationOffset:0,settings:{title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f6f8fb",headerBg:"#176b87",cardBg:"#ffffff",secondaryBlue:"#2e86ab",textPrimary:"#1f2937",textSecondary:"#667085",titleText:"#ffffff",subtitleText:"#dceaf0",borderColor:"#d9e2ec",activeItemBg:"#e8f3f7",inactiveIconColor:"#98a2b3",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",desktopFontSize:14,appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14}};
 if(!state.recoveryLedger) state.recoveryLedger={};
 if(!state.confirmedPlanningKeys) state.confirmedPlanningKeys={};
-state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:""},state.settings||{});
+state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f6f8fb",headerBg:"#176b87",cardBg:"#ffffff",secondaryBlue:"#2e86ab",textPrimary:"#1f2937",textSecondary:"#667085",titleText:"#ffffff",subtitleText:"#dceaf0",borderColor:"#d9e2ec",activeItemBg:"#e8f3f7",inactiveIconColor:"#98a2b3",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",desktopFontSize:14},state.settings||{});
 if(!state.planningHistory) state.planningHistory={};
 if(!Array.isArray(state.exchangeRequests)) state.exchangeRequests=[];
 if(!Array.isArray(state.justifications)) state.justifications=[];
-if(!state.settings) state.settings={title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:""};
+if(!state.settings) state.settings={title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f6f8fb",headerBg:"#176b87",cardBg:"#ffffff",secondaryBlue:"#2e86ab",textPrimary:"#1f2937",textSecondary:"#667085",titleText:"#ffffff",subtitleText:"#dceaf0",borderColor:"#d9e2ec",activeItemBg:"#e8f3f7",inactiveIconColor:"#98a2b3",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",desktopFontSize:14};
 if(!state.generationOffset) state.generationOffset=0;
 if(!state.doctors.length) state.doctors=demoDoctors.map(name=>({name,active:true,shift:"BOTH",weekend:true}));
 state.doctors.forEach(d=>{if(!d.shift)d.shift="BOTH";});
@@ -2638,10 +2720,21 @@ function applyInlineEdit(name,date,raw){
 function manualEditPlanning(){alert("Pour modifier le planning, cliquez directement sur la cellule souhaitée.");}
 function imageToDataURL(file,maxW,maxH,quality){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{const scale=Math.min(1,maxW/img.width,maxH/img.height);const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext("2d").drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL("image/jpeg",quality));};img.onerror=reject;img.src=reader.result;};reader.onerror=reject;reader.readAsDataURL(file);});}
 async function saveAppearance(){
-  state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14},state.settings||{});
-  state.settings.title=(document.getElementById("appTitle").value||"Tox-Garde").trim(); state.settings.subtitle=(document.getElementById("appSubtitle").value||"Simple. Équitable. Intelligent").trim();
-  state.settings.appBg=document.getElementById("appBg").value; state.settings.headerBg=document.getElementById("headerBg").value; state.settings.cardBg=document.getElementById("cardBg").value;
-  state.settings.primaryBtnBg=document.getElementById("primaryBtnBg").value; state.settings.primaryBtnText=document.getElementById("primaryBtnText").value; state.settings.activeItemBg=document.getElementById("activeItemBg").value; state.settings.desktopFontColor=document.getElementById("desktopFontColor").value; state.settings.desktopFontSize=Number(document.getElementById("desktopFontSize").value)||14;
+  const defaults={
+    title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",
+    appBg:"#f6f8fb",headerBg:"#176b87",cardBg:"#ffffff",
+    secondaryBlue:"#2e86ab",textPrimary:"#1f2937",textSecondary:"#667085",
+    titleText:"#ffffff",subtitleText:"#dceaf0",borderColor:"#d9e2ec",
+    activeItemBg:"#e8f3f7",inactiveIconColor:"#98a2b3",
+    bgImage:"",appLogo:"",centerLogo:"",homeImage:"",desktopFontSize:14
+  };
+  state.settings=Object.assign(defaults,state.settings||{});
+  const value=id=>document.getElementById(id)?.value;
+  state.settings.title=(value("appTitle")||defaults.title).trim();
+  state.settings.subtitle=(value("appSubtitle")||defaults.subtitle).trim();
+  ["appBg","headerBg","cardBg","secondaryBlue","textPrimary","textSecondary","titleText","subtitleText","borderColor","activeItemBg","inactiveIconColor"]
+    .forEach(id=>{if(value(id))state.settings[id]=value(id);});
+  state.settings.desktopFontSize=Number(value("desktopFontSize"))||14;
   try{
     const jobs=[['appLogoFile','appLogo',900,900,.82],['centerLogoFile','centerLogo',900,900,.82],['homeImageFile','homeImage',1600,900,.78],['bgImageFile','bgImage',1600,1000,.78]];
     for(const [id,key,mw,mh,q] of jobs){const f=document.getElementById(id)?.files?.[0];if(f)state.settings[key]=await imageToDataURL(f,mw,mh,q);}
@@ -2651,22 +2744,79 @@ async function saveAppearance(){
 function persistAppearance(){try{save();applyAppearance();}catch(e){alert("Le stockage du navigateur est insuffisant. Choisissez des images plus légères.");}}
 function removeOneImage(key,fileId){state.settings=Object.assign({appLogo:"",centerLogo:"",homeImage:"",bgImage:""},state.settings||{});state.settings[key]="";const f=document.getElementById(fileId);if(f)f.value="";persistAppearance();}
 function removeImages(){state.settings.appLogo="";state.settings.centerLogo="";state.settings.homeImage="";state.settings.bgImage="";["appLogoFile","centerLogoFile","homeImageFile","bgImageFile"].forEach(id=>{const f=document.getElementById(id);if(f)f.value="";});persistAppearance();}
-function resetAppearance(){state.settings={title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14};save();applyAppearance();}
+function resetAppearance(){
+  state.settings={
+    title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",
+    appBg:"#f6f8fb",headerBg:"#176b87",cardBg:"#ffffff",
+    secondaryBlue:"#2e86ab",textPrimary:"#1f2937",textSecondary:"#667085",
+    titleText:"#ffffff",subtitleText:"#dceaf0",borderColor:"#d9e2ec",
+    activeItemBg:"#e8f3f7",inactiveIconColor:"#98a2b3",
+    bgImage:"",appLogo:"",centerLogo:"",homeImage:"",desktopFontSize:14
+  };
+  save();applyAppearance();
+}
 function applyAppearance(){
-  state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14},state.settings||{});
-  document.getElementById("appTitleDisplay").textContent=state.settings.title||"Tox-Garde"; document.getElementById("appSubtitleDisplay").textContent=state.settings.subtitle||"Simple. Équitable. Intelligent";
-  document.getElementById("appTitle").value=state.settings.title||"Tox-Garde"; document.getElementById("appSubtitle").value=state.settings.subtitle||"Simple. Équitable. Intelligent"; document.getElementById("appBg").value=state.settings.appBg||"#f5f7fb"; document.getElementById("headerBg").value=state.settings.headerBg||"#3f83c5"; document.getElementById("cardBg").value=state.settings.cardBg||"#ffffff";
-  const pbg=state.settings.primaryBtnBg||"#ff6f73", ptxt=state.settings.primaryBtnText||"#ffffff", abg=state.settings.activeItemBg||"#fff0f1", fcolor=state.settings.desktopFontColor||"#20243a", fsize=Number(state.settings.desktopFontSize)||14;
-  ["primaryBtnBg","primaryBtnText","activeItemBg","desktopFontColor"].forEach((id)=>{const el=document.getElementById(id);if(el)el.value=({primaryBtnBg:pbg,primaryBtnText:ptxt,activeItemBg:abg,desktopFontColor:fcolor}[id]);});
-  const fs=document.getElementById("desktopFontSize"); if(fs)fs.value=String(Math.min(20,Math.max(12,fsize))); const fsv=document.getElementById("desktopFontSizeValue"); if(fsv)fsv.textContent=`${fsize} px`;
-  let dyn=document.getElementById("desktopAppearanceDynamic"); if(!dyn){dyn=document.createElement("style");dyn.id="desktopAppearanceDynamic";document.head.appendChild(dyn);}
-  dyn.textContent=`@media (min-width:701px){:root{--desktop-primary-bg:${pbg};--desktop-primary-text:${ptxt};--desktop-active-bg:${abg};--desktop-active-text:${pbg};--desktop-font-color:${fcolor};--desktop-font-size:${fsize}px;}}`;
-  const setImg=(id,src,statusId,yes,no)=>{const el=document.getElementById(id);if(el){el.src=src||"";el.classList.toggle("show",!!src);}const st=document.getElementById(statusId);if(st)st.textContent=src?yes:no;};
-  setImg("appLogoDisplay",state.settings.appLogo,"appLogoStatus","Logo enregistré","Aucun logo"); setImg("centerLogoDisplay",state.settings.centerLogo,"centerLogoStatus","Logo enregistré","Aucun logo"); setImg("homeImageDisplay",state.settings.homeImage,"homeImageStatus","Image enregistrée","Aucune image");
-  const loginLogo=document.getElementById("loginLogoDisplay"); if(loginLogo){loginLogo.src=state.settings.appLogo||"./icons/icon-192.png";}
-  const loginSubtitle=document.getElementById("loginSubtitleDisplay"); if(loginSubtitle){loginSubtitle.textContent=state.settings.subtitle?`Accédez à ${state.settings.title||"Tox-Garde"} avec votre compte.`:"Accédez à Tox-Garde avec votre compte.";}
-  document.body.style.backgroundColor=state.settings.appBg||"#f5f7fb"; document.body.style.backgroundImage=state.settings.bgImage?`linear-gradient(#ffffffaa,#ffffffaa),url(${state.settings.bgImage})`:"none"; document.body.style.backgroundSize="cover"; document.body.style.backgroundAttachment="fixed"; document.body.style.backgroundPosition="center";
-  document.querySelector("header").style.background=state.settings.headerBg||"#3f83c5"; document.querySelectorAll(".card").forEach(x=>x.style.backgroundColor=state.settings.cardBg||"#ffffff"); const st=document.getElementById("bgImageStatus");if(st)st.textContent=state.settings.bgImage?"Image enregistrée":"Aucune image";
+  const defaults={
+    title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",
+    appBg:"#f6f8fb",headerBg:"#176b87",cardBg:"#ffffff",
+    secondaryBlue:"#2e86ab",textPrimary:"#1f2937",textSecondary:"#667085",
+    titleText:"#ffffff",subtitleText:"#dceaf0",borderColor:"#d9e2ec",
+    activeItemBg:"#e8f3f7",inactiveIconColor:"#98a2b3",
+    bgImage:"",appLogo:"",centerLogo:"",homeImage:"",desktopFontSize:14
+  };
+  const old=state.settings||{};
+  state.settings=Object.assign({},defaults,old);
+
+  // Compatibilité avec les anciennes versions des paramètres.
+  if(old.primaryBtnBg && !old.secondaryBlue)state.settings.secondaryBlue=old.primaryBtnBg;
+  if(old.desktopFontColor && !old.textPrimary)state.settings.textPrimary=old.desktopFontColor;
+  if(old.activeItemBg)state.settings.activeItemBg=old.activeItemBg;
+
+  const s=state.settings, root=document.documentElement;
+  const vars={
+    "--bg":s.appBg,"--card":s.cardBg,"--line":s.borderColor,"--text":s.textPrimary,
+    "--muted":s.textSecondary,"--blue":s.secondaryBlue,"--header-bg":s.headerBg,
+    "--title":s.titleText,"--subtitle":s.subtitleText,"--active":s.activeItemBg,
+    "--icon-muted":s.inactiveIconColor,
+    "--desktop-bg":s.appBg,"--desktop-card":s.cardBg,"--desktop-line":s.borderColor,
+    "--desktop-text":s.textPrimary,"--desktop-muted":s.textSecondary,
+    "--desktop-accent":s.secondaryBlue,"--desktop-accent-soft":s.activeItemBg,
+    "--desktop-primary-bg":s.secondaryBlue,"--desktop-primary-text":s.titleText,
+    "--desktop-active-bg":s.activeItemBg,"--desktop-active-text":s.secondaryBlue,
+    "--desktop-font-color":s.textPrimary,"--desktop-font-size":`${Number(s.desktopFontSize)||14}px`
+  };
+  Object.entries(vars).forEach(([k,v])=>root.style.setProperty(k,v));
+
+  document.getElementById("appTitleDisplay").textContent=s.title||"Tox-Garde";
+  document.getElementById("appSubtitleDisplay").textContent=s.subtitle||"Simple. Équitable. Intelligent";
+  document.getElementById("appTitle").value=s.title||"Tox-Garde";
+  document.getElementById("appSubtitle").value=s.subtitle||"Simple. Équitable. Intelligent";
+
+  ["appBg","headerBg","cardBg","secondaryBlue","textPrimary","textSecondary","titleText","subtitleText","borderColor","activeItemBg","inactiveIconColor"].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value=s[id];
+  });
+  const fs=document.getElementById("desktopFontSize");
+  if(fs)fs.value=String(Math.min(20,Math.max(12,Number(s.desktopFontSize)||14)));
+  const fsv=document.getElementById("desktopFontSizeValue");
+  if(fsv)fsv.textContent=`${Number(s.desktopFontSize)||14} px`;
+
+  const setImg=(id,src,statusId,yes,no)=>{
+    const el=document.getElementById(id);if(el){el.src=src||"";el.classList.toggle("show",!!src);}
+    const st=document.getElementById(statusId);if(st)st.textContent=src?yes:no;
+  };
+  setImg("appLogoDisplay",s.appLogo,"appLogoStatus","Logo enregistré","Aucun logo");
+  setImg("centerLogoDisplay",s.centerLogo,"centerLogoStatus","Logo enregistré","Aucun logo");
+  setImg("homeImageDisplay",s.homeImage,"homeImageStatus","Image enregistrée","Aucune image");
+
+  const loginLogo=document.getElementById("loginLogoDisplay");if(loginLogo)loginLogo.src=s.appLogo||"./icons/icon-192.png";
+  const loginSubtitle=document.getElementById("loginSubtitleDisplay");if(loginSubtitle)loginSubtitle.textContent=s.subtitle?`Accédez à ${s.title||"Tox-Garde"} avec votre compte.`:"Accédez à Tox-Garde avec votre compte.";
+
+  document.body.style.backgroundColor=s.appBg||defaults.appBg;
+  document.body.style.backgroundImage=s.bgImage?`linear-gradient(#ffffffaa,#ffffffaa),url(${s.bgImage})`:"none";
+  document.body.style.backgroundSize="cover";document.body.style.backgroundAttachment="fixed";document.body.style.backgroundPosition="center";
+  const header=document.querySelector("header");if(header)header.style.background=s.headerBg||defaults.headerBg;
+  document.querySelectorAll(".card").forEach(x=>x.style.backgroundColor=s.cardBg||defaults.cardBg);
+  const st=document.getElementById("bgImageStatus");if(st)st.textContent=s.bgImage?"Image enregistrée":"Aucune image";
 }
 document.addEventListener("input",(e)=>{if(e.target?.id==="desktopFontSize"){const out=document.getElementById("desktopFontSizeValue");if(out)out.textContent=`${e.target.value} px`;}});
 function historyPeriod(key,h){
@@ -3410,7 +3560,7 @@ async function cloudSave(options={}){
 function authStorage(){return JSON.parse(localStorage.getItem("toxGardeSession")||"null")}
 function persistSession(session,keep){(keep?localStorage:sessionStorage).setItem("toxGardeSession",JSON.stringify(session)); if(keep) sessionStorage.removeItem("toxGardeSession"); else localStorage.removeItem("toxGardeSession")}
 function currentSession(){return JSON.parse(sessionStorage.getItem("toxGardeSession")||localStorage.getItem("toxGardeSession")||"null")}
-function createSafeEmptyState(){return {doctors:[],absences:[],fixed:[],planning:{},planningHistory:{},generationOffset:0,settings:{title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:""},recoveryLedger:{},confirmedPlanningKeys:{},exchangeRequests:[],justifications:[]};}
+function createSafeEmptyState(){return {doctors:[],absences:[],fixed:[],planning:{},planningHistory:{},generationOffset:0,settings:{title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f6f8fb",headerBg:"#176b87",cardBg:"#ffffff",secondaryBlue:"#2e86ab",textPrimary:"#1f2937",textSecondary:"#667085",titleText:"#ffffff",subtitleText:"#dceaf0",borderColor:"#d9e2ec",activeItemBg:"#e8f3f7",inactiveIconColor:"#98a2b3",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",desktopFontSize:14,appLogo:"",centerLogo:"",homeImage:""},recoveryLedger:{},confirmedPlanningKeys:{},exchangeRequests:[],justifications:[]};}
 function isAdmin(){return currentSession()?.role==="admin"}
 function normalizeUser(v){return String(v||"").trim().toLowerCase()}
 function setLoginProgress(percent,text,success=false){
