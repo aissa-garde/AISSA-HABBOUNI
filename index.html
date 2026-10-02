@@ -54,7 +54,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid 
 .header-settings summary::-webkit-details-marker{display:none}
 .header-settings-panel{position:absolute;right:0;top:calc(100% + 7px);width:min(560px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:0 8px 24px rgba(16,24,40,.18)}
 .header-settings-panel ul{margin:0;padding-left:22px}.header-settings-panel li{margin-bottom:6px;font-size:13px}
-@media(max-width:700px){.home-image{width:calc(100% + 24px);margin-left:-12px;height:clamp(150px,28vh,280px);margin-top:20px}header{padding:14px 12px;align-items:flex-start}.header-tools{gap:5px;flex-shrink:0}.header-settings{min-width:auto}.header-settings summary{padding:8px 9px;font-size:12px}.header-settings-panel{right:-5px;width:min(420px,calc(100vw - 20px))}header h1{font-size:20px}header p{font-size:12px}}
+@media(max-width:700px){.desktop-only-setting{display:none!important;} .home-image{width:calc(100% + 24px);margin-left:-12px;height:clamp(150px,28vh,280px);margin-top:20px}header{padding:14px 12px;align-items:flex-start}.header-tools{gap:5px;flex-shrink:0}.header-settings{min-width:auto}.header-settings summary{padding:8px 9px;font-size:12px}.header-settings-panel{right:-5px;width:min(420px,calc(100vw - 20px))}header h1{font-size:20px}header p{font-size:12px}}
 
 
 /* Navigation mobile inspirée d'une application mobile : tiroir latéral + barre fixe en bas. */
@@ -363,6 +363,279 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 }
 </style>
 
+
+<style id="desktop-redesign">
+/* =========================================================
+   TOX-GARDE — DESKTOP UI REDESIGN ONLY
+   Mobile/tablet rules are intentionally untouched.
+   Applies exclusively from 701px and above.
+   ========================================================= */
+@media (min-width:701px){
+  :root{
+    --desktop-bg:#f6f7ff;
+    --desktop-sidebar:#fbfbff;
+    --desktop-card:#ffffff;
+    --desktop-line:#e4e7f2;
+    --desktop-text:#20243a;
+    --desktop-muted:#73798e;
+    --desktop-accent:#ff6f73;
+    --desktop-accent-soft:#fff0f1;
+    --desktop-purple:#6d6ff2;
+    --desktop-purple-soft:#eeeefe;
+  }
+
+  body{
+    background:
+      radial-gradient(circle at 75% 12%, rgba(221,224,255,.42), transparent 31%),
+      linear-gradient(135deg,#fbfbff 0%,var(--desktop-bg) 58%,#f8fbff 100%);
+    color:var(--desktop-text);
+  }
+
+  header{
+    min-height:76px;
+    padding:12px 32px;
+    background:rgba(255,255,255,.94);
+    color:var(--desktop-text);
+    border-bottom:1px solid var(--desktop-line);
+    box-shadow:0 1px 0 rgba(32,36,58,.02);
+    position:sticky;
+    top:0;
+    z-index:200;
+    backdrop-filter:blur(10px);
+  }
+  header h1{font-size:18px;letter-spacing:.02em;font-weight:800}
+  header p{font-size:11px;color:var(--desktop-muted);opacity:1;margin-top:3px}
+  .brand-wrap{gap:10px}
+  .brand-logo{width:44px;height:44px;border-radius:12px;background:#f0f1ff;padding:4px}
+  .header-tools{align-items:center;gap:12px}
+  .auth-user{display:flex;align-items:center;gap:9px;color:var(--desktop-muted);font-size:12px}
+  .auth-user button{border-radius:10px!important;border:1px solid var(--desktop-line)!important;background:#fff!important;color:var(--desktop-text)!important}
+  .header-settings{min-width:auto;border:1px solid var(--desktop-line);border-radius:11px;background:#fff;box-shadow:none}
+  .header-settings summary{font-size:12px;padding:8px 11px}
+
+  /* En-tête desktop : Déconnexion et Paramètres sous forme d'icônes.
+     Le texte reste présent sur mobile et dans l'accessibilité. */
+  .auth-user button{
+    width:42px;
+    min-width:42px;
+    height:38px;
+    padding:0!important;
+    margin-left:0!important;
+    font-size:0!important;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:11px!important;
+  }
+  .auth-user button::before{
+    /* Icône de déconnexion : flèche sortante vers une barre */
+    content:'⇥';
+    font-family:'Segoe UI Symbol','Arial Unicode MS',sans-serif;
+    font-size:21px;
+    line-height:1;
+    font-weight:700;
+  }
+  .auth-user button:hover{background:#fff5f5!important;color:#c44e55!important}
+  .header-settings summary{
+    width:42px;
+    min-width:42px;
+    height:38px;
+    padding:0!important;
+    font-size:0!important;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .header-settings summary::before{
+    content:'⚙';
+    font-size:19px;
+    line-height:1;
+  }
+  .header-settings summary:hover{background:#f4f5fb}
+
+  main{
+    max-width:1500px;
+    min-height:calc(100vh - 76px);
+    margin:0 auto;
+    padding:24px 30px 36px;
+    grid-template-columns:218px minmax(0,1fr);
+    gap:30px;
+    align-items:start;
+  }
+
+  main>nav{
+    position:sticky;
+    top:20px;
+    height:calc(100vh - 40px);
+    min-height:560px;
+    padding:18px 12px;
+    background:rgba(255,255,255,.72);
+    border:1px solid rgba(228,231,242,.9);
+    border-radius:18px;
+    box-shadow:0 10px 30px rgba(71,75,126,.07);
+    backdrop-filter:blur(12px);
+    gap:5px;
+  }
+  nav:before{
+    content:'TOX-GARDE';
+    display:block;
+    padding:2px 12px 18px;
+    font-size:11px;
+    letter-spacing:.16em;
+    font-weight:900;
+    color:#34384e;
+  }
+  nav button{
+    min-height:43px;
+    padding:10px 12px;
+    border:0;
+    border-radius:11px;
+    background:transparent;
+    color:#60667b;
+    font-size:12px;
+    font-weight:700;
+    transition:background .16s ease,color .16s ease,transform .16s ease;
+  }
+  nav button:hover{background:#f1f2ff;color:#4548a9;transform:translateX(1px)}
+  nav button.active{
+    background:var(--desktop-accent-soft);
+    color:var(--desktop-accent);
+    border:0;
+  }
+  /* Menu ordinateur : toutes les lignes restent strictement horizontales et alignées. */
+  main>nav{min-width:250px}
+  main>nav button{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;flex-wrap:nowrap!important;white-space:nowrap!important;overflow:hidden!important;box-sizing:border-box}
+  main>nav .nav-icon{width:30px!important;min-width:30px!important;max-width:30px!important;flex:0 0 30px!important;height:22px;display:inline-flex!important;align-items:center!important;justify-content:center!important;margin:0!important;line-height:1!important;font-size:17px!important;text-align:center!important}
+  main>nav .nav-label{display:block!important;flex:1 1 auto!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:12px!important;line-height:1.2!important}
+  main>nav .nav-toggle .nav-icon{width:30px!important;min-width:30px!important;flex-basis:30px!important}
+  main>nav .nav-toggle .nav-label{flex:1 1 auto!important}
+  .nav-toggle{
+    margin-top:auto!important;
+    background:#f4f5fa!important;
+    color:#666b7e!important;
+  }
+
+  main.nav-collapsed{grid-template-columns:68px minmax(0,1fr)}
+  main.nav-collapsed nav{padding:12px 8px;min-width:0}
+  main.nav-collapsed nav:before{content:'TG';text-align:center;padding:5px 0 16px;letter-spacing:.08em}
+  main.nav-collapsed nav button{justify-content:center!important;padding:9px 6px!important}
+  main.nav-collapsed nav .nav-icon{width:30px!important;min-width:30px!important;flex:0 0 30px!important}
+
+  .panel{grid-column:2;min-width:0}
+  .card{
+    background:rgba(255,255,255,.93);
+    border:1px solid var(--desktop-line);
+    border-radius:17px;
+    padding:22px;
+    margin-bottom:20px;
+    box-shadow:0 8px 26px rgba(66,70,120,.055);
+  }
+  .card h2{font-size:20px;color:var(--desktop-text);margin-bottom:18px}
+  h3{color:var(--desktop-text)}
+
+  .dashboard-card{
+    background:
+      radial-gradient(circle at 92% 4%,rgba(111,113,242,.11),transparent 28%),
+      rgba(255,255,255,.96);
+  }
+  .dashboard-card>h2:after{
+    content:'Aperçu de votre activité';
+    display:block;
+    margin-top:5px;
+    font-size:11px;
+    font-weight:500;
+    color:var(--desktop-muted);
+  }
+  .statgrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+  .stat{
+    background:#fff;
+    border:1px solid var(--desktop-line);
+    border-radius:14px;
+    padding:16px;
+    box-shadow:0 4px 15px rgba(66,70,120,.04);
+  }
+  .stat b{font-size:25px;color:#303550}
+  .stat span,.stat small{color:var(--desktop-muted)}
+
+  input,select{
+    border-color:#e0e3ee;
+    border-radius:10px;
+    padding:10px 11px;
+    background:#fff;
+    color:var(--desktop-text);
+    outline:none;
+    transition:border-color .15s ease,box-shadow .15s ease;
+  }
+  input:focus,select:focus{
+    border-color:#aeb0f4;
+    box-shadow:0 0 0 3px rgba(109,111,242,.10);
+  }
+  label{color:#70768a;font-size:12px}
+  .btn{
+    border-color:#dfe2ed;
+    border-radius:10px;
+    background:#fff;
+    color:#4f556b;
+    font-size:12px;
+    padding:9px 13px;
+    box-shadow:none;
+  }
+  .btn:hover{border-color:#c8cbea;background:#fafaff}
+  .btn.primary{background:var(--desktop-purple);border-color:var(--desktop-purple);color:#fff}
+  .btn.primary:hover{background:#5e60dc;border-color:#5e60dc}
+  .btn.danger{background:#fff3f3;color:#c44e55;border-color:#f2cccc}
+
+  /* Paramètres d'apparence personnalisables — ordinateur uniquement */
+  body{font-size:var(--desktop-font-size,14px);color:var(--desktop-font-color,#20243a)}
+  .btn.primary{background:var(--desktop-primary-bg,var(--desktop-accent));border-color:var(--desktop-primary-bg,var(--desktop-accent));color:var(--desktop-primary-text,#fff)}
+  nav button.active{background:var(--desktop-active-bg,var(--desktop-accent-soft));color:var(--desktop-active-text,var(--desktop-accent))}
+  .adminAbsTab.active{background:var(--desktop-primary-bg,var(--desktop-accent));border-color:var(--desktop-primary-bg,var(--desktop-accent));color:var(--desktop-primary-text,#fff)}
+  #teamAdminControls .btn.primary{background:var(--desktop-primary-bg,var(--desktop-accent));border-color:var(--desktop-primary-bg,var(--desktop-accent));color:var(--desktop-primary-text,#fff)}
+  .card,.settings-bar,.header-settings-panel{color:var(--desktop-font-color,#20243a)}
+
+  .settings-bar,.header-settings-panel{
+    border-color:var(--desktop-line);
+    border-radius:13px;
+    box-shadow:0 8px 24px rgba(66,70,120,.06);
+  }
+  .settings-bar summary{padding:13px 16px;font-size:12px}
+
+  table{font-size:12px}
+  th,td{border-color:var(--desktop-line);padding:9px 8px}
+  th{background:#f4f5fb;color:#555b70;font-size:11px}
+  td.name,th.name{color:#363b51}
+  .schedule th:first-child{background:#f4f5fb}
+  .schedule td:first-child{background:#fff}
+  .schedule td[data-edit-name]:hover{outline-color:var(--desktop-purple)}
+
+  .badge{border-radius:7px;padding:4px 8px;font-size:10px}
+  .today-guards{gap:10px}
+  .today-guard{border-color:var(--desktop-line);border-radius:11px;background:#fff}
+
+  .warn,.ok{border-radius:11px}
+
+  .home-image{
+    grid-column:2;
+    width:100%;
+    margin:0 0 20px;
+    height:210px;
+    border-radius:18px;
+    object-fit:cover;
+    box-shadow:0 10px 30px rgba(66,70,120,.08);
+  }
+  .home-image.show{display:block}
+
+  #planning{border-radius:14px}
+  #planningTable{border-radius:14px;overflow:auto}
+  .cellEdit{border-color:#d6d9e4;border-radius:7px}
+
+  .actions{gap:8px}
+  .hint{color:var(--desktop-muted)}
+
+  /* Keep existing mobile implementation completely isolated. */
+  .mobile-menu-btn,.mobile-bottom-nav,.mobile-nav-backdrop{display:none!important}
+}
+</style>
 </head>
 <body class="auth-locked">
 <div id="authOverlay" aria-live="polite"><form class="auth-card" onsubmit="login(event)"><img id="loginLogoDisplay" class="auth-logo" src="./icons/icon-192.png" alt="Logo Tox-Garde"><h2>🔐 Connexion</h2><p id="loginSubtitleDisplay">Accédez à Tox-Garde avec votre compte.</p><label>Identifiant<input id="loginUsername" autocomplete="username" required></label><label>Mot de passe<input id="loginPassword" type="password" autocomplete="current-password" required></label><label class="remember-row"><input id="keepConnected" type="checkbox"> Rester connecté sur cet appareil</label><button id="loginSubmitBtn" class="btn primary" type="submit" style="width:100%;margin-top:8px">Se connecter</button><div id="loginProgress" class="login-progress" aria-live="polite" aria-hidden="true"><div class="login-progress-head"><span id="loginProgressText">Connexion en cours…</span><strong id="loginProgressPercent">0%</strong></div><div class="login-progress-track"><div id="loginProgressBar" class="login-progress-bar" style="width:0%"></div></div></div><div id="authError" class="auth-error"></div></form></div>
@@ -372,7 +645,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <div class="brand-wrap"><img id="appLogoDisplay" class="brand-logo" alt="Logo application"><div><h1 id="appTitleDisplay">GardeMed</h1><p id="appSubtitleDisplay">Générateur équitable des gardes médicales</p></div><img id="centerLogoDisplay" class="brand-logo" alt="Logo Centre Antipoison"></div>
 <div class="header-tools"><div id="authUserInfo" class="auth-user"></div>
 
-<details class="header-settings admin-only"><summary>⚙ Paramètres</summary><div class="header-settings-panel"><div class="settings-grid"><label>Nom / titre de l’application<input type="text" id="appTitle" placeholder="Tox-Garde"></label><label>Phrase sous le titre<input type="text" id="appSubtitle" placeholder="Simple. Équitable. Intelligent"></label><label>Arrière-plan de l’application<input type="color" id="appBg" value="#f5f7fb"></label><label>Couleur de l’en-tête<input type="color" id="headerBg" value="#3f83c5"></label><label>Arrière-plan des cartes<input type="color" id="cardBg" value="#ffffff"></label><label>Logo de l’application<input type="file" id="appLogoFile" accept="image/*"><small id="appLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('appLogo','appLogoFile')">🗑 Supprimer</button></label><label>Logo du Centre Antipoison<input type="file" id="centerLogoFile" accept="image/*"><small id="centerLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('centerLogo','centerLogoFile')">🗑 Supprimer</button></label><label>Image d’arrière-plan<input type="file" id="bgImageFile" accept="image/*"><small id="bgImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('bgImage','bgImageFile')">🗑 Supprimer</button></label><label>Image d’accueil<input type="file" id="homeImageFile" accept="image/*"><small id="homeImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('homeImage','homeImageFile')">🗑 Supprimer</button></label></div><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="saveAppearance()">Enregistrer l’apparence</button><button class="btn" onclick="removeImages()">Supprimer les images/logos</button><button class="btn" onclick="resetAppearance()">Réinitialiser</button></div><p class="hint">Les réglages sont conservés dans votre navigateur.</p></div></details>
+<details class="header-settings admin-only"><summary>⚙ Paramètres</summary><div class="header-settings-panel"><div class="settings-grid"><label>Nom / titre de l’application<input type="text" id="appTitle" placeholder="Tox-Garde"></label><label>Phrase sous le titre<input type="text" id="appSubtitle" placeholder="Simple. Équitable. Intelligent"></label><label>Arrière-plan de l’application<input type="color" id="appBg" value="#f5f7fb"></label><label>Couleur de l’en-tête<input type="color" id="headerBg" value="#3f83c5"></label><label>Arrière-plan des cartes<input type="color" id="cardBg" value="#ffffff"></label><label class="desktop-only-setting">Couleur des boutons principaux / « Ajouter »<input type="color" id="primaryBtnBg" value="#ff6f73"></label><label class="desktop-only-setting">Couleur du texte des boutons principaux<input type="color" id="primaryBtnText" value="#ffffff"></label><label class="desktop-only-setting">Couleur des éléments actifs<input type="color" id="activeItemBg" value="#fff0f1"></label><label class="desktop-only-setting">Couleur de la police des écritures<input type="color" id="desktopFontColor" value="#20243a"></label><label class="desktop-only-setting">Taille de la police (ordinateur)<input type="range" id="desktopFontSize" min="12" max="20" step="1" value="14"><small id="desktopFontSizeValue">14 px</small></label><label>Logo de l’application<input type="file" id="appLogoFile" accept="image/*"><small id="appLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('appLogo','appLogoFile')">🗑 Supprimer</button></label><label>Logo du Centre Antipoison<input type="file" id="centerLogoFile" accept="image/*"><small id="centerLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('centerLogo','centerLogoFile')">🗑 Supprimer</button></label><label>Image d’arrière-plan<input type="file" id="bgImageFile" accept="image/*"><small id="bgImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('bgImage','bgImageFile')">🗑 Supprimer</button></label><label>Image d’accueil<input type="file" id="homeImageFile" accept="image/*"><small id="homeImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('homeImage','homeImageFile')">🗑 Supprimer</button></label></div><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="saveAppearance()">Enregistrer l’apparence</button><button class="btn" onclick="removeImages()">Supprimer les images/logos</button><button class="btn" onclick="resetAppearance()">Réinitialiser</button></div><p class="hint">Les réglages de couleur et de police ci-dessus s’appliquent uniquement à la version ordinateur (≥ 701 px). La version téléphone reste inchangée.</p></div></details>
 </div>
 </header>
 <main><img id="homeImageDisplay" class="home-image" alt="Image d’accueil">
@@ -551,7 +824,7 @@ async function ensurePDF(){
 </script>
 <script>
 const demoDoctors=["Dr Daoudi","Dr Daghouane","Dr El Hariri","Dr Ennakhassi","Dr Benarina","Dr Faouzi","Dr Habbouni","Dr Mourabiti","Dr El Mrabet","Dr Belkhadir","Dr El Azher"];
-let state=JSON.parse(localStorage.getItem("gardeMed")||"null")||{doctors:[],absences:[],fixed:[],planning:{},planningHistory:{},generationOffset:0,settings:{title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:""}};
+let state=JSON.parse(localStorage.getItem("gardeMed")||"null")||{doctors:[],absences:[],fixed:[],planning:{},planningHistory:{},generationOffset:0,settings:{title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14}};
 if(!state.recoveryLedger) state.recoveryLedger={};
 if(!state.confirmedPlanningKeys) state.confirmedPlanningKeys={};
 state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:""},state.settings||{});
@@ -2194,9 +2467,10 @@ function applyInlineEdit(name,date,raw){
 function manualEditPlanning(){alert("Pour modifier le planning, cliquez directement sur la cellule souhaitée.");}
 function imageToDataURL(file,maxW,maxH,quality){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{const scale=Math.min(1,maxW/img.width,maxH/img.height);const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext("2d").drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL("image/jpeg",quality));};img.onerror=reject;img.src=reader.result;};reader.onerror=reject;reader.readAsDataURL(file);});}
 async function saveAppearance(){
-  state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:""},state.settings||{});
+  state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14},state.settings||{});
   state.settings.title=(document.getElementById("appTitle").value||"Tox-Garde").trim(); state.settings.subtitle=(document.getElementById("appSubtitle").value||"Simple. Équitable. Intelligent").trim();
   state.settings.appBg=document.getElementById("appBg").value; state.settings.headerBg=document.getElementById("headerBg").value; state.settings.cardBg=document.getElementById("cardBg").value;
+  state.settings.primaryBtnBg=document.getElementById("primaryBtnBg").value; state.settings.primaryBtnText=document.getElementById("primaryBtnText").value; state.settings.activeItemBg=document.getElementById("activeItemBg").value; state.settings.desktopFontColor=document.getElementById("desktopFontColor").value; state.settings.desktopFontSize=Number(document.getElementById("desktopFontSize").value)||14;
   try{
     const jobs=[['appLogoFile','appLogo',900,900,.82],['centerLogoFile','centerLogo',900,900,.82],['homeImageFile','homeImage',1600,900,.78],['bgImageFile','bgImage',1600,1000,.78]];
     for(const [id,key,mw,mh,q] of jobs){const f=document.getElementById(id)?.files?.[0];if(f)state.settings[key]=await imageToDataURL(f,mw,mh,q);}
@@ -2206,11 +2480,16 @@ async function saveAppearance(){
 function persistAppearance(){try{save();applyAppearance();}catch(e){alert("Le stockage du navigateur est insuffisant. Choisissez des images plus légères.");}}
 function removeOneImage(key,fileId){state.settings=Object.assign({appLogo:"",centerLogo:"",homeImage:"",bgImage:""},state.settings||{});state.settings[key]="";const f=document.getElementById(fileId);if(f)f.value="";persistAppearance();}
 function removeImages(){state.settings.appLogo="";state.settings.centerLogo="";state.settings.homeImage="";state.settings.bgImage="";["appLogoFile","centerLogoFile","homeImageFile","bgImageFile"].forEach(id=>{const f=document.getElementById(id);if(f)f.value="";});persistAppearance();}
-function resetAppearance(){state.settings={title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:""};save();applyAppearance();}
+function resetAppearance(){state.settings={title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14};save();applyAppearance();}
 function applyAppearance(){
-  state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:""},state.settings||{});
+  state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14},state.settings||{});
   document.getElementById("appTitleDisplay").textContent=state.settings.title||"Tox-Garde"; document.getElementById("appSubtitleDisplay").textContent=state.settings.subtitle||"Simple. Équitable. Intelligent";
   document.getElementById("appTitle").value=state.settings.title||"Tox-Garde"; document.getElementById("appSubtitle").value=state.settings.subtitle||"Simple. Équitable. Intelligent"; document.getElementById("appBg").value=state.settings.appBg||"#f5f7fb"; document.getElementById("headerBg").value=state.settings.headerBg||"#3f83c5"; document.getElementById("cardBg").value=state.settings.cardBg||"#ffffff";
+  const pbg=state.settings.primaryBtnBg||"#ff6f73", ptxt=state.settings.primaryBtnText||"#ffffff", abg=state.settings.activeItemBg||"#fff0f1", fcolor=state.settings.desktopFontColor||"#20243a", fsize=Number(state.settings.desktopFontSize)||14;
+  ["primaryBtnBg","primaryBtnText","activeItemBg","desktopFontColor"].forEach((id)=>{const el=document.getElementById(id);if(el)el.value=({primaryBtnBg:pbg,primaryBtnText:ptxt,activeItemBg:abg,desktopFontColor:fcolor}[id]);});
+  const fs=document.getElementById("desktopFontSize"); if(fs)fs.value=String(Math.min(20,Math.max(12,fsize))); const fsv=document.getElementById("desktopFontSizeValue"); if(fsv)fsv.textContent=`${fsize} px`;
+  let dyn=document.getElementById("desktopAppearanceDynamic"); if(!dyn){dyn=document.createElement("style");dyn.id="desktopAppearanceDynamic";document.head.appendChild(dyn);}
+  dyn.textContent=`@media (min-width:701px){:root{--desktop-primary-bg:${pbg};--desktop-primary-text:${ptxt};--desktop-active-bg:${abg};--desktop-active-text:${pbg};--desktop-font-color:${fcolor};--desktop-font-size:${fsize}px;}}`;
   const setImg=(id,src,statusId,yes,no)=>{const el=document.getElementById(id);if(el){el.src=src||"";el.classList.toggle("show",!!src);}const st=document.getElementById(statusId);if(st)st.textContent=src?yes:no;};
   setImg("appLogoDisplay",state.settings.appLogo,"appLogoStatus","Logo enregistré","Aucun logo"); setImg("centerLogoDisplay",state.settings.centerLogo,"centerLogoStatus","Logo enregistré","Aucun logo"); setImg("homeImageDisplay",state.settings.homeImage,"homeImageStatus","Image enregistrée","Aucune image");
   const loginLogo=document.getElementById("loginLogoDisplay"); if(loginLogo){loginLogo.src=state.settings.appLogo||"./icons/icon-192.png";}
@@ -2218,6 +2497,7 @@ function applyAppearance(){
   document.body.style.backgroundColor=state.settings.appBg||"#f5f7fb"; document.body.style.backgroundImage=state.settings.bgImage?`linear-gradient(#ffffffaa,#ffffffaa),url(${state.settings.bgImage})`:"none"; document.body.style.backgroundSize="cover"; document.body.style.backgroundAttachment="fixed"; document.body.style.backgroundPosition="center";
   document.querySelector("header").style.background=state.settings.headerBg||"#3f83c5"; document.querySelectorAll(".card").forEach(x=>x.style.backgroundColor=state.settings.cardBg||"#ffffff"); const st=document.getElementById("bgImageStatus");if(st)st.textContent=state.settings.bgImage?"Image enregistrée":"Aucune image";
 }
+document.addEventListener("input",(e)=>{if(e.target?.id==="desktopFontSize"){const out=document.getElementById("desktopFontSizeValue");if(out)out.textContent=`${e.target.value} px`;}});
 function historyPeriod(key,h){
   // Les clés mensuelles peuvent être archivées avec un suffixe (_historique_...).
   const m=String(key||'').match(/^month_(\d{4})_(\d{2})(?:_|$)/);
@@ -3285,7 +3565,7 @@ function renderMyGuards(){
   const tab=document.getElementById('myGuardsTab');
   if(ses.role==='admin'){
     if(title)title.textContent='📋 Historique des changements de gardes';
-    if(tab)tab.textContent='📋 Historique des changements';
+    if(tab)tab.innerHTML='<span class="nav-icon">📋</span><span class="nav-label">Historique des changements</span>';
     const allHistory=(state.exchangeRequests||[]).filter(r=>r.status!=='pending')
       .sort((a,b)=>String(b.respondedAt||b.createdAt||'').localeCompare(String(a.respondedAt||a.createdAt||''))).slice(0,100);
     if(!allHistory.length){el.innerHTML='<div class="hint">Aucun changement de garde enregistré.</div>';return;}
@@ -3299,7 +3579,7 @@ function renderMyGuards(){
     return;
   }
   if(title)title.textContent='📅 Mes gardes';
-  if(tab)tab.textContent='📅 Mes gardes';
+  if(tab)tab.innerHTML='<span class="nav-icon">📅</span><span class="nav-label">Mes gardes</span>';
   const doctor=ses.doctor,today=iso(new Date()),byKey=new Map();
   Object.entries(state.planningHistory||{}).forEach(([key,raw])=>{
     const h=historyData(key);
@@ -3347,7 +3627,7 @@ function renderMyGuards(){
   el.innerHTML=html;
 }
 function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";document.getElementById("mobileBottomNav")?.classList.remove("doctor-mode");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display="none";return;}
-const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.querySelectorAll(".doctor-only").forEach(el=>el.style.display=admin?"none":"block");const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display="block";const mobileBottomNav=document.getElementById("mobileBottomNav");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileBottomNav)mobileBottomNav.classList.toggle("doctor-mode",!admin);if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display=admin?"none":"flex";document.getElementById("authUserInfo").innerHTML=`${ses.username} — ${admin?"Administrateur":"Médecin"}<button class="btn small" onclick="logout()">Déconnexion</button>`;
+const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.querySelectorAll(".doctor-only").forEach(el=>el.style.display=admin?"none":"block");const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display="block";const mobileBottomNav=document.getElementById("mobileBottomNav");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileBottomNav)mobileBottomNav.classList.toggle("doctor-mode",!admin);if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display=admin?"none":"flex";document.getElementById("authUserInfo").innerHTML=`${ses.username} — ${admin?"Administrateur":"Médecin"}<button class="btn small" type="button" aria-label="Déconnexion" title="Déconnexion" onclick="logout()">Déconnexion</button>`;
 if(!admin){
   document.getElementById("doctorAbsenceHint").style.display="block";
   const absDoctor=document.getElementById("absDoctor");
