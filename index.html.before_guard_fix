@@ -1109,7 +1109,7 @@ function editAbsenceAdmin(index){
   }
   rebuildRecoveryLedger(); save(); renderAdminAbsences();
 }
-function deleteMergedEntry(kind,index){const ses=currentSession();if(!ses)return;if(ses.role!=="admin"){if(kind==="fixed")return alert("Un compte Médecin ne peut pas supprimer une garde G/F.");const a=state.absences[index];if(!a||a.doctor!==ses.doctor)return alert("Vous ne pouvez supprimer que vos propres congés, indisponibilités ou récupérations.");}if(kind==="fixed")state.fixed.splice(index,1);else state.absences.splice(index,1);rebuildDerivedGuardData();save()}
+function deleteMergedEntry(kind,index){const ses=currentSession();if(!ses)return;if(ses.role!=="admin"){if(kind==="fixed")return alert("Un compte Médecin ne peut pas supprimer une garde G/F.");const a=state.absences[index];if(!a||a.doctor!==ses.doctor)return alert("Vous ne pouvez supprimer que vos propres congés, indisponibilités ou récupérations.");}if(kind==="fixed")state.fixed.splice(index,1);else state.absences.splice(index,1);save()}
 function isWeekend(d){let x=d.getDay();return x===0||x===6}
 function iso(d){
   if(typeof d==='string'){const m=d.match(/^(\d{4}-\d{2}-\d{2})/);if(m)return m[1];}
@@ -1897,11 +1897,6 @@ function generateCore(){
   state.planning=planning;
   state.planningGeneratedAt=Date.now();
   localStorage.setItem('gardeMed',JSON.stringify(state));
-  // Le brouillon doit être persisté immédiatement. Sinon un événement Realtime,
-  // un focus ou un polling peut recharger l'ancien état cloud et faire disparaître
-  // le planning avant sa validation.
-  markUnvalidatedDraft();
-  save();
 
   const loadsFinal=active.map(d=>workload(chosen.counts[d.name]||{}));
   const spread=loadsFinal.length?Math.max(...loadsFinal)-Math.min(...loadsFinal):0;
@@ -1970,152 +1965,7 @@ function isHistoryConfirmed(key,h){
 function historyData(key){
   const h=(state.planningHistory||{})[key];
   if(!h)return null;
-  // Les anciennes versions pouvaient stocker directement le planning dans
-  // planningHistory[key]. Ne jamais lui injecter state.fixed courant : cela
-  // mélange un ancien snapshot avec l'état actuel et crée des gardes fantômes.
-  if(h.planning) return h;
-  return {planning:h,fixed:[],absences:[]};
-}
-
-/* =========================================================
-   GARDE EFFECTIVE : résolution unique et anti-doublons
-   ========================================================= */
-function guardKey(date,type){return `${normalizeDateKey(date)}|${String(type||'').toUpperCase()}`;}
-function historyCoversDate(key,raw,date){
-  const hp=historyPeriod(key,raw||{});
-  const d=dateFromISO(normalizeDateKey(date));
-  return !!(hp?.start&&hp?.end&&d>=hp.start&&d<=hp.end);
-}
-function confirmedHistoryKeysNewestFirst(){
-  return Object.keys(state.planningHistory||{})
-    .filter(k=>isHistoryConfirmed(k,state.planningHistory[k]))
-    .sort((a,b)=>generatedTimestamp(state.planningHistory[b])-generatedTimestamp(state.planningHistory[a]));
-}
-function buildEffectiveGuardMap(){
-  const map=new Map();
-  // Un snapshot plus récent gagne pour une même date/type.
-  for(const key of confirmedHistoryKeysNewestFirst()){
-    const raw=state.planningHistory[key];
-    const h=historyData(key);
-    if(!h)continue;
-    const hp=historyPeriod(key,raw);
-    if(!hp?.start||!hp?.end)continue;
-    for(const [date,items] of Object.entries(h.planning||{})){
-      for(const x of (items||[])){
-        if(!x?.doctor||!x?.date||!['J','N'].includes(String(x.type).toUpperCase()))continue;
-        const k=guardKey(x.date,x.type);
-        if(!map.has(k))map.set(k,{date:normalizeDateKey(x.date),type:String(x.type).toUpperCase(),doctor:x.doctor,historyKey:key,kind:'planning',source:x});
-      }
-    }
-    for(const x of (h.fixed||[])){
-      if(!x?.doctor||!x?.date||!['G','F'].includes(String(x.type).toUpperCase()))continue;
-      const k=guardKey(x.date,x.type);
-      if(!map.has(k))map.set(k,{date:normalizeDateKey(x.date),type:String(x.type).toUpperCase(),doctor:x.doctor,historyKey:key,kind:'fixed',source:x});
-    }
-  }
-
-  // Les échanges acceptés sont des événements métier plus récents que le
-  // snapshot qui les a déclenchés. Ils remplacent donc l'affectation effective
-  // sans détruire l'historique du planning.
-  const accepted=(state.exchangeRequests||[])
-    .filter(r=>r?.status==='accepted'&&r?.date&&r?.type&&r?.fromDoctor&&r?.toDoctor)
-    .sort((a,b)=>String(a.respondedAt||a.createdAt||'').localeCompare(String(b.respondedAt||b.createdAt||'')));
-  for(const r of accepted){
-    const k=guardKey(r.date,r.type);
-    const current=map.get(k);
-    if(!current)continue;
-    // Une demande doit correspondre à l'ancien titulaire pour pouvoir
-    // remplacer la garde. Les chaînes de changements A→B→C restent possibles.
-    if(current.doctor===r.fromDoctor || current.historyKey===r.historyKey){
-      map.set(k,{...current,doctor:r.toDoctor,exchangeId:r.id,exchangeApplied:true});
-    }
-  }
-  return map;
-}
-function getEffectiveGuard(date,type){return buildEffectiveGuardMap().get(guardKey(date,type))||null;}
-function getEffectiveGuardsForDoctor(doctor,fromDate){
-  const min=normalizeDateKey(fromDate||iso(new Date()));
-  return [...buildEffectiveGuardMap().values()]
-    .filter(x=>x.doctor===doctor&&x.date>=min)
-    .sort((a,b)=>a.date.localeCompare(b.date)||a.type.localeCompare(b.type));
-}
-function syncFixedFromAcceptedExchange(req){
-  const date=normalizeDateKey(req?.date), type=String(req?.type||'').toUpperCase();
-  if(!date||!['G','F'].includes(type))return;
-  const matches=(state.fixed||[]).filter(x=>normalizeDateKey(x.date)===date&&String(x.type||'').toUpperCase()===type&&String(x.doctor||'').trim()===String(req.fromDoctor||'').trim());
-  matches.forEach(x=>{x.doctor=req.toDoctor; x.modifiedAt=new Date().toISOString();});
-  // Éviter une deuxième garde G/F identique après une ancienne duplication.
-  const seen=new Set();
-  state.fixed=state.fixed.filter(x=>{
-    const k=guardKey(x.date,x.type);
-    if(!['G','F'].includes(String(x.type||'').toUpperCase()))return true;
-    if(seen.has(k))return false;
-    seen.add(k);
-    return true;
-  });
-}
-function validateEffectiveGuardConsistency(){
-  const errors=[];
-  // Contrôle de chaque snapshot : deux affectations identiques dans un même
-  // planning sont toujours une incohérence, même si la résolution effective
-  // finit par n'en afficher qu'une.
-  for(const key of confirmedHistoryKeysNewestFirst()){
-    const h=historyData(key);
-    if(!h)continue;
-    const byDateDoctor=new Map();
-    const byDateGF=new Map();
-    const entries=[
-      ...Object.values(h.planning||{}).flat().filter(x=>x?.doctor&&x?.date),
-      ...(h.fixed||[]).filter(x=>x?.doctor&&x?.date)
-    ];
-    for(const x of entries){
-      const date=normalizeDateKey(x.date), type=String(x.type||'').toUpperCase();
-      const dk=`${date}|${x.doctor}`;
-      const types=byDateDoctor.get(dk)||new Set(); types.add(type); byDateDoctor.set(dk,types);
-      if(['G','F'].includes(type)){
-        const gf=byDateGF.get(date)||[]; gf.push({type,doctor:x.doctor}); byDateGF.set(date,gf);
-      }
-    }
-    for(const [dk,types] of byDateDoctor){
-      if(types.size>1)errors.push(`${key} — ${dk.split('|')[0]} : ${dk.split('|')[1]} possède plusieurs gardes (${[...types].join(', ')}).`);
-    }
-    for(const [date,gf] of byDateGF){
-      const unique=new Map(gf.map(x=>[`${x.type}|${x.doctor}`,x]));
-      if(unique.size>1)errors.push(`${key} — ${date} : plusieurs gardes G/F (${[...unique.values()].map(x=>x.type+' → '+x.doctor).join(', ')}).`);
-    }
-  }
-
-  // Contrôle de l'état courant : state.fixed/planning ne doivent pas déjà
-  // contenir deux affectations incompatibles.
-  const currentByDateDoctor=new Map();
-  const currentGF=new Map();
-  const currentEntries=[...Object.values(state.planning||{}).flat(),...(state.fixed||[])].filter(x=>x?.doctor&&x?.date);
-  for(const x of currentEntries){
-    const date=normalizeDateKey(x.date),type=String(x.type||'').toUpperCase();
-    const dk=`${date}|${x.doctor}`;
-    const types=currentByDateDoctor.get(dk)||new Set();types.add(type);currentByDateDoctor.set(dk,types);
-    if(['G','F'].includes(type)){const gf=currentGF.get(date)||[];gf.push({type,doctor:x.doctor});currentGF.set(date,gf);}
-  }
-  for(const [dk,types] of currentByDateDoctor)if(types.size>1)errors.push(`État courant — ${dk.split('|')[0]} : ${dk.split('|')[1]} possède plusieurs gardes (${[...types].join(', ')}).`);
-  for(const [date,gf] of currentGF){const unique=new Map(gf.map(x=>[`${x.type}|${x.doctor}`,x]));if(unique.size>1)errors.push(`État courant — ${date} : plusieurs gardes G/F (${[...unique.values()].map(x=>x.type+' → '+x.doctor).join(', ')}).`);}
-
-  // Contrôle de la vue effective après résolution des snapshots + échanges.
-  const map=buildEffectiveGuardMap();
-  const byDate=new Map();
-  for(const g of map.values()){const d=byDate.get(g.date)||[];d.push(g);byDate.set(g.date,d);}
-  for(const [date,guards] of byDate){
-    const docs=new Set();
-    for(const g of guards){if(docs.has(g.doctor))errors.push(`${date} : ${g.doctor} possède plusieurs gardes effectives.`);docs.add(g.doctor);}
-    const gf=guards.filter(g=>['G','F'].includes(g.type));
-    if(gf.length>1)errors.push(`${date} : plusieurs gardes G/F effectives (${gf.map(g=>g.type+' → '+g.doctor).join(', ')}).`);
-  }
-  return [...new Set(errors)];
-}
-
-function rebuildDerivedGuardData(){
-  // Le registre de récupération doit toujours être reconstruit après un
-  // changement de garde validé. Il n'est jamais laissé avec une ancienne copie.
-  rebuildRecoveryLedger();
+  return h.planning? h : {planning:h,fixed:state.fixed,absences:state.absences};
 }
 function cellFor(doc,date,source){
   const src=source||{planning:state.planning,fixed:state.fixed,absences:state.absences};
@@ -2510,17 +2360,6 @@ function applyHistoricalInlineEdit(key,name,date,raw){
     const conflictP=(h.planning[date]||[]).find(x=>x.date===date&&x.doctor!==name&&["G","F"].includes(String(x.type).toUpperCase()));
     if(conflict||conflictP){const c=conflict||conflictP;alert(`CONFLIT : la période de garde ${c.type} du ${date} est déjà attribuée à ${c.doctor}.`);return;}
   }
-  // Une modification historique doit respecter les mêmes règles métier que
-  // la génération : médecin actif, habilitation, absence et repos.
-  if(["G","F"].includes(value)){
-    const problem=validateFixedGuard(name,date);
-    if(problem){alert(problem);return;}
-  }else if(["J","N"].includes(value)){
-    const doc=docByName(name);
-    const tempPlanning={...h.planning,[date]:otherPlanning};
-    if(!doc || !isEligibleForType(doc,value) || absOn(doc,date)) { alert(`CONFLIT : la garde ${value} de ${name} le ${date} ne respecte pas les contraintes du médecin.`); return; }
-    if(!canAssign(doc,dateFromISO(date),value,tempPlanning)){ alert(`CONFLIT : la garde ${value} de ${name} le ${date} ne respecte pas les contraintes de repos ou de garde.`); return; }
-  }
   h.absences=h.absences.filter(a=>!(a.doctor===name&&a.start===date&&a.end===date));
   h.planning[date]=(h.planning[date]||[]).filter(x=>x.doctor!==name);
   if(oldFixedIndex>=0 && !["G","F"].includes(value)) h.fixed.splice(oldFixedIndex,1);
@@ -2528,12 +2367,6 @@ function applyHistoricalInlineEdit(key,name,date,raw){
   else if(["J","N"].includes(value)) h.planning[date].push({doctor:name,type:value,date});
   else if(["CONGÉ","RÉCUP","INDISP"].includes(value)) h.absences.push({doctor:name,start:date,end:date,type:value});
   h.modifiedAt=new Date().toISOString();
-  // Un planning validé modifié devient une nouvelle révision : il ne doit pas
-  // rester confirmé silencieusement. L'ancienne version reste traçable dans
-  // l'historique et le changement est explicite.
-  h.confirmed=false; h.includeInEquity=false;
-  delete state.confirmedPlanningKeys[key];
-  rebuildDerivedGuardData();
   save(); renderAll();
   // Rendre immédiatement visible le snapshot modifié.
   activePlanningView={type:"history",key};
@@ -2587,11 +2420,7 @@ function applyInlineEdit(name,date,raw){
   }else if(["G","F"].includes(value)){
     const problem=validateFixedGuard(name,date);
     if(problem){alert(problem);renderPlanning();return;}
-    // Si la cellule actuellement modifiée est déjà une garde G/F du même
-    // médecin, G↔F est une modification de la même garde et non une seconde
-    // garde. Le conflit ne s'applique donc que lorsqu'il s'agit d'une autre
-    // garde fixe du même médecin.
-    if(sameDoctorOtherFixed && oldFixedIndex<0){
+    if(sameDoctorOtherFixed){
       alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorOtherFixed.type} le ${date}.`);
       renderPlanning();return;
     }
@@ -3026,12 +2855,6 @@ function confirmCurrentPlanning(){
   if(old?.confirmed){return alert("Ce planning est déjà validé.");}
   if(!confirm("Valider ce planning ?"))return;
 
-  const consistency=validateEffectiveGuardConsistency();
-  if(consistency.length){
-    alert(`Validation impossible : ${consistency.slice(0,8).join("\n")}`);
-    return;
-  }
-
   const now=Date.now();
   state.planningHistory[per.key]={
     planning:JSON.parse(JSON.stringify(state.planning)),
@@ -3052,7 +2875,6 @@ function confirmCurrentPlanning(){
 }
 async function awaitSaveAndRender(){
   await save();
-  clearUnvalidatedDraft(per.key);
   const msg=document.getElementById('genMessage');
   if(msg)msg.innerHTML='<div class="ok"><b>Planning validé.</b></div>';
   renderAll();
@@ -3290,13 +3112,6 @@ async function refreshJustificationsFromServer(){
 }
 
 function cleanStateForCloud(){const copy=JSON.parse(JSON.stringify(state));delete copy.accounts;return copy}
-function ensureCloudMeta(){
-  if(!state._cloudMeta||typeof state._cloudMeta!=="object") state._cloudMeta={};
-  if(!state._cloudMeta.revision) state._cloudMeta.revision="legacy-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);
-  if(!state._cloudMeta.updatedAt) state._cloudMeta.updatedAt=Date.now();
-  return state._cloudMeta;
-}
-function makeCloudRevision(){return Date.now()+"-"+Math.random().toString(36).slice(2,10);}
 let cloudSaveQueue=Promise.resolve();
 
 /* ===== Synchronisation temps réel Supabase =====
@@ -3385,32 +3200,17 @@ function notifyRealtimeUpdate(){
   toxRealtimeSend("broadcast",{type:"broadcast",event:"toxgarde_update",payload:{at:Date.now()}});
 }
 
-async function cloudSave(options={}){
+async function cloudSave(){
   const token=cloudToken();
   if(!token)return;
-  const run=async()=>{
-    const remote=await cloudLoad(token);
-    const remoteRev=remote?._cloudMeta?.revision||"legacy";
-    const seenRev=state._cloudMeta?.lastSeenRevision||lastCloudRevision||"legacy";
-    if(!options.bootstrap && seenRev!=="legacy" && remoteRev!==seenRev){
-      const err=new Error("CONFLICT_CLOUD_VERSION"); err.code="CONFLICT_CLOUD_VERSION"; err.remoteRevision=remoteRev; err.localRevision=seenRev;
-      throw err;
-    }
-    const meta=ensureCloudMeta();
-    meta.revision=makeCloudRevision(); meta.updatedAt=Date.now();
-    const snapshot=cleanStateForCloud();
-    await supaRpc("toxgarde_save_data",{p_token:token,p_data:snapshot});
-    lastCloudRevision=meta.revision; meta.lastSeenRevision=meta.revision;
-    lastCloudSnapshot=JSON.stringify(snapshot);
-    notifyRealtimeUpdate();
-  };
-  cloudSaveQueue=cloudSaveQueue.catch(()=>{}).then(run);
+  const snapshot=cleanStateForCloud();
+  cloudSaveQueue=cloudSaveQueue.catch(()=>{}).then(()=>supaRpc("toxgarde_save_data",{p_token:token,p_data:snapshot}));
   await cloudSaveQueue;
+  notifyRealtimeUpdate();
 }
 function authStorage(){return JSON.parse(localStorage.getItem("toxGardeSession")||"null")}
 function persistSession(session,keep){(keep?localStorage:sessionStorage).setItem("toxGardeSession",JSON.stringify(session)); if(keep) sessionStorage.removeItem("toxGardeSession"); else localStorage.removeItem("toxGardeSession")}
 function currentSession(){return JSON.parse(sessionStorage.getItem("toxGardeSession")||localStorage.getItem("toxGardeSession")||"null")}
-function createSafeEmptyState(){return {doctors:[],absences:[],fixed:[],planning:{},planningHistory:{},generationOffset:0,settings:{title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:""},recoveryLedger:{},confirmedPlanningKeys:{},exchangeRequests:[],justifications:[]};}
 function isAdmin(){return currentSession()?.role==="admin"}
 function normalizeUser(v){return String(v||"").trim().toLowerCase()}
 function setLoginProgress(percent,text,success=false){
@@ -3479,17 +3279,9 @@ async function login(ev){
 
     if(remote&&typeof remote==="object"&&Object.keys(remote).length){
       setLoginProgress(78,"Synchronisation des données…");
-      lastCloudRevision=remote?._cloudMeta?.revision||"legacy";
-      lastCloudSnapshot=JSON.stringify(remote);
-      const base=createSafeEmptyState();
-      state=Object.assign(base,JSON.parse(JSON.stringify(restoreUnvalidatedDraft(remote))));
-      ensureCloudMeta().lastSeenRevision=lastCloudRevision;
+      state=Object.assign(state,remote);
       state.accounts=[];
     }else if(a.role==="admin"){
-      // Premier compte administrateur sans données cloud : conserver uniquement
-      // les données locales destinées à la migration initiale.
-      lastCloudRevision="legacy"; lastCloudSnapshot="";
-      state._cloudMeta=Object.assign({},state._cloudMeta||{},{lastSeenRevision:"legacy"});
       setLoginProgress(72,"Initialisation des données administrateur…");
       const localAccounts=Array.isArray(state.accounts)?JSON.parse(JSON.stringify(state.accounts)):[];
       for(const acc of localAccounts){
@@ -3505,14 +3297,6 @@ async function login(ev){
       }
       setLoginProgress(88,"Finalisation de la synchronisation…");
       await cloudSave();
-    }else{
-      // Aucun état cloud : ne jamais conserver en mémoire les données du compte
-      // précédent (notamment un administrateur). Un éventuel brouillon du médecin
-      // connecté est restauré uniquement pour sa propre session.
-      lastCloudRevision="legacy"; lastCloudSnapshot="";
-      state=createSafeEmptyState();
-      state=Object.assign(state,restoreUnvalidatedDraft({}));
-      state._cloudMeta=Object.assign({},state._cloudMeta||{},{lastSeenRevision:"legacy"});
     }
 
     state.accounts=[];
@@ -3535,16 +3319,12 @@ async function login(ev){
     if(submit)submit.disabled=false;
   }
 }
-async function logout(){stopRealtimeSync();const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");lastCloudRevision="";lastCloudSnapshot="";state=createSafeEmptyState();localStorage.setItem("gardeMed",JSON.stringify(state));applyAuthUI()}
+async function logout(){stopRealtimeSync();const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
 async function save(){
   localStorage.setItem("gardeMed",JSON.stringify(state));
   cloudSyncBusy=true;
-  try{await cloudSave();}
-  catch(e){
-    console.error("Synchronisation Supabase:",e);
-    if(e?.code==="CONFLICT_CLOUD_VERSION") alert("Une autre session a modifié les données depuis votre dernière synchronisation. Vos modifications locales n’ont pas écrasé ces données. Rechargez les données cloud avant de continuer.");
-    else alert("Données enregistrées localement, mais la synchronisation en ligne a échoué. Vérifiez Internet.");
-  }
+  try{await cloudSave();lastCloudSnapshot=JSON.stringify(cleanStateForCloud());}
+  catch(e){console.error("Synchronisation Supabase:",e);alert("Données enregistrées localement, mais la synchronisation en ligne a échoué. Vérifiez Internet.");}
   finally{cloudSyncBusy=false;}
   renderAll();
 }
@@ -3553,34 +3333,6 @@ let cloudPollTimer=null;
 let cloudSyncInFlight=false;
 let cloudSyncLastAt=0;
 let lastCloudSnapshot="";
-let lastCloudRevision="";
-
-/* ===== Protection des brouillons non validés =====
-   Plusieurs brouillons peuvent coexister. Chaque brouillon protège uniquement
-   sa période et ne remplace jamais globalement les données d’une autre période. */
-function draftStore(){try{const x=JSON.parse(localStorage.getItem("toxGardeUnvalidatedDrafts")||"{}");return x&&typeof x==="object"?x:{};}catch(_){return {};}}
-function writeDraftStore(x){localStorage.setItem("toxGardeUnvalidatedDrafts",JSON.stringify(x||{}));}
-function draftId(meta){return `${normalizeUser(meta?.username||"")}::${String(meta?.periodKey||"")}`;}
-function currentDraftMeta(){const ses=currentSession();return Object.values(draftStore()).find(x=>x&&(!x.username||!ses?.username||normalizeUser(x.username)===normalizeUser(ses.username)))||null;}
-function markUnvalidatedDraft(){const ses=currentSession(),per=getPeriodDates(),store=draftStore();const meta={username:ses?.username||"",role:ses?.role||"",periodKey:per.key,generatedAt:state.planningGeneratedAt||Date.now(),period:{start:iso(per.start),end:iso(per.end)}};store[draftId(meta)]=meta;writeDraftStore(store);}
-function clearUnvalidatedDraft(periodKey){const store=draftStore(),ses=currentSession();if(periodKey)delete store[draftId({username:ses?.username||"",periodKey})];else Object.keys(store).forEach(k=>{if(!ses?.username||k.startsWith(normalizeUser(ses.username)+"::"))delete store[k];});writeDraftStore(store);}
-function unvalidatedDraftMetas(){const ses=currentSession();return Object.values(draftStore()).filter(meta=>meta&&meta.periodKey&&(!meta.username||!ses?.username||normalizeUser(meta.username)===normalizeUser(ses.username)));}
-function hasUnvalidatedDraft(){return unvalidatedDraftMetas().some(meta=>{const h=state.planningHistory?.[meta.periodKey];return !!h&&!isHistoryConfirmed(meta.periodKey,h);});}
-function periodContainsDate(meta,date){const d=normalizeDateKey(date);return !!d&&d>=String(meta?.period?.start||"")&&d<=String(meta?.period?.end||"");}
-function periodOverlapsRange(meta,start,end){const a=normalizeDateKey(start),b=normalizeDateKey(end||start),ps=String(meta?.period?.start||""),pe=String(meta?.period?.end||"");return !!a&&!!b&&a<=pe&&b>=ps;}
-function mergePeriodArray(remoteArr,localArr,meta,kind){const out=Array.isArray(remoteArr)?JSON.parse(JSON.stringify(remoteArr)):[];const local=Array.isArray(localArr)?localArr:[];const isIn=kind==="fixed"?x=>periodContainsDate(meta,x.date):x=>periodOverlapsRange(meta,x.start,x.end);return [...out.filter(x=>!isIn(x)),...JSON.parse(JSON.stringify(local.filter(isIn)))];}
-function restoreUnvalidatedDraft(remote){
-  const base=JSON.parse(JSON.stringify(remote||{})),raw=localStorage.getItem("gardeMed");if(!raw)return base;let localState;try{localState=JSON.parse(raw)}catch(_){return base;}
-  const ses=currentSession(),store=draftStore();const metas=Object.values(store).filter(meta=>meta&&meta.periodKey&&(!meta.username||!ses?.username||normalizeUser(meta.username)===normalizeUser(ses.username)));if(!metas.length)return base;
-  base.planningHistory=Object.assign({},base.planningHistory||{});base.planning=Object.assign({},base.planning||{});let changed=false;
-  for(const meta of metas){const key=meta.periodKey,lh=localState.planningHistory?.[key];if(!lh||isHistoryConfirmed(key,lh)){delete store[draftId(meta)];changed=true;continue;}const rh=base.planningHistory?.[key];if(rh?.confirmed===true||base.confirmedPlanningKeys?.[key]===true){delete store[draftId(meta)];changed=true;continue;}
-    base.planningHistory[key]=JSON.parse(JSON.stringify(lh));const per=lh.period||meta.period;
-    if(key===getPeriodDates().key){base.planning=JSON.parse(JSON.stringify(localState.planning||{}));base.planningGeneratedAt=localState.planningGeneratedAt||meta.generatedAt||Date.now();}
-    else if(per?.start&&per?.end){for(const date of Object.keys(localState.planning||{})){if(date>=per.start&&date<=per.end)base.planning[date]=JSON.parse(JSON.stringify(localState.planning[date]));}}
-    base.fixed=mergePeriodArray(base.fixed,localState.fixed,meta,"fixed");base.absences=mergePeriodArray(base.absences,localState.absences,meta,"absences");
-  }
-  if(changed)writeDraftStore(store);return base;
-}
 
 // Synchronisation cloud optimisée :
 // - plus de polling toutes les 5 secondes ;
@@ -3596,10 +3348,8 @@ async function refreshCloudOnStartup(){
     if(remote&&typeof remote==="object"&&Object.keys(remote).length){
       const incoming=JSON.stringify(remote);
       lastCloudSnapshot=incoming;
-      lastCloudRevision=remote?._cloudMeta?.revision||"legacy";
       cloudSyncLastAt=Date.now();
-      state=Object.assign(state,restoreUnvalidatedDraft(remote));
-      ensureCloudMeta().lastSeenRevision=lastCloudRevision;
+      state=Object.assign(state,remote);
       state.accounts=[];
       localStorage.setItem("gardeMed",JSON.stringify(state));
       if(document.visibilityState !== "hidden") renderAll();
@@ -3622,29 +3372,12 @@ async function pollCloudChanges(force=false){
   cloudSyncInFlight=true;
   try{
     const remote=await cloudLoad(token);
-    if(hasUnvalidatedDraft()){
-      const protectedRemote=restoreUnvalidatedDraft(remote);
-      const protectedIncoming=JSON.stringify(protectedRemote);
-      if(protectedIncoming!==lastCloudSnapshot){
-        lastCloudSnapshot=protectedIncoming;
-        lastCloudRevision=remote?._cloudMeta?.revision||"legacy";
-        state=Object.assign(state,protectedRemote);
-        ensureCloudMeta().lastSeenRevision=lastCloudRevision;
-        state.accounts=[];
-        localStorage.setItem("gardeMed",JSON.stringify(state));
-        if(document.visibilityState !== "hidden") renderAll();
-        if(currentSession()?.role!=="admin" && document.visibilityState !== "hidden") showDoctorValidatedPlanning();
-      }
-      return;
-    }
     cloudSyncLastAt=Date.now();
     if(!remote||typeof remote!=="object"||!Object.keys(remote).length)return;
     const incoming=JSON.stringify(remote);
     if(incoming===lastCloudSnapshot)return;
     lastCloudSnapshot=incoming;
-    lastCloudRevision=remote?._cloudMeta?.revision||"legacy";
     state=Object.assign(state,remote);
-    ensureCloudMeta().lastSeenRevision=lastCloudRevision;
     state.accounts=[];
     localStorage.setItem("gardeMed",JSON.stringify(state));
     if(document.visibilityState !== "hidden") renderAll();
@@ -3776,15 +3509,8 @@ async function respondGuardChange(id,decision){
     renderMyGuards();
     return;
   }
-
-  // Revalidation complète au moment de l'acceptation : la situation peut
-  // avoir changé depuis l'envoi de la demande.
   const guard=getGuardFromHistory(req.historyKey,req.date,req.type,req.fromDoctor);
-  if(!guard){
-    req.status='cancelled';req.respondedAt=new Date().toISOString();
-    await save();renderMyGuards();
-    return alert('Cette garde n’existe plus dans le planning validé.');
-  }
+  if(!guard){req.status='cancelled';req.respondedAt=new Date().toISOString();await save();renderMyGuards();return alert('Cette garde n’existe plus dans le planning validé.');}
   const raw=state.planningHistory?.[req.historyKey];
   const source=historyData(req.historyKey);
   const targetDoc=state.doctors.find(d=>d.name===req.toDoctor);
@@ -3792,70 +3518,30 @@ async function respondGuardChange(id,decision){
   const targetDate=dateFromISO(req.date);
   const absence=(state.absences||[]).find(a=>a.doctor===req.toDoctor&&targetDate>=dateFromISO(a.start)&&targetDate<=dateFromISO(a.end));
   if(absence)return alert(`Changement impossible : ${req.toDoctor} a une ${absence.type.toLowerCase()} le ${req.date}.`);
-  if((source.fixed||[]).some(x=>normalizeDateKey(x.date)===normalizeDateKey(req.date)&&x.doctor===req.toDoctor) || (source.planning?.[req.date]||[]).some(x=>x.doctor===req.toDoctor))
-    return alert(`Changement impossible : ${req.toDoctor} a déjà une garde le ${req.date}.`);
-
-  // Repos 48 h avant/après : on retire temporairement la garde source du
-  // contrôle afin de ne pas compter la garde que le médecin cède.
-  const targetPlanning={...state.planning,[req.date]:(state.planning[req.date]||[]).filter(x=>x.doctor!==req.fromDoctor)};
-  const previousFixed=state.fixed;
-  const targetHasFixed=(previousFixed||[]).some(x=>normalizeDateKey(x.date)===normalizeDateKey(req.date)&&x.doctor===req.toDoctor);
-  if(targetHasFixed)return alert(`Changement impossible : ${req.toDoctor} a déjà une garde fixe le ${req.date}.`);
-  const last=lastGuardDate(targetDoc,targetDate,targetPlanning);
-  if(last && Math.abs((targetDate-last)/36e5)<48)return alert(`Changement impossible : ${req.toDoctor} n’a pas 48 h de repos avant cette garde.`);
-  let next=new Date(targetDate); next.setDate(next.getDate()+1);
-  const nextKey=iso(next);
-  const hasNext=Object.values(targetPlanning).flat().some(x=>x?.doctor===req.toDoctor&&normalizeDateKey(x.date)===nextKey) || (previousFixed||[]).some(x=>x?.doctor===req.toDoctor&&normalizeDateKey(x.date)===nextKey);
-  if(hasNext)return alert(`Changement impossible : ${req.toDoctor} a déjà une garde dans les 24 h suivant le ${req.date}.`);
-
-  // Vérifier les autres demandes concurrentes avant d'écrire.
-  const concurrent=(state.exchangeRequests||[]).filter(r=>r.id!==req.id&&r.status==='pending'&&normalizeDateKey(r.date)===normalizeDateKey(req.date)&&String(r.type).toUpperCase()===String(req.type).toUpperCase());
-  // Transactional backup : aucune validation partielle ne doit rester si le
-  // contrôle final détecte un conflit.
-  const backupHistory=JSON.parse(JSON.stringify(raw));
-  const backupPlanning=JSON.parse(JSON.stringify(state.planning||{}));
-  const backupFixed=JSON.parse(JSON.stringify(state.fixed||[]));
-  const backupRequests=JSON.parse(JSON.stringify(state.exchangeRequests||[]));
-
+  if((source.fixed||[]).some(x=>x.date===req.date&&x.doctor===req.toDoctor) || (source.planning?.[req.date]||[]).some(x=>x.doctor===req.toDoctor))return alert(`Changement impossible : ${req.toDoctor} a déjà une garde le ${req.date}.`);
   if(guard.kind==='fixed'){
-    if(raw?.fixed?.[guard.index]) raw.fixed[guard.index].doctor=req.toDoctor;
-  }else{
-    if(raw?.planning?.[req.date]?.[guard.index]) raw.planning[req.date][guard.index].doctor=req.toDoctor;
-  }
+    // Le planning validé contient une copie historique de la garde.
+    // Il faut aussi mettre à jour state.fixed : le tableau
+    // "week-end / jours fériés" lit cette collection.
+    raw.fixed[guard.index].doctor=req.toDoctor;
 
-  // La source courante doit elle aussi être synchronisée pour empêcher le
-  // retour de l'ancienne garde après actualisation/régénération.
-  syncFixedFromAcceptedExchange(req);
-  if(guard.kind==='planning'){
-    const arr=state.planning?.[req.date]||[];
-    const item=arr.find(x=>x.doctor===req.fromDoctor&&String(x.type).toUpperCase()===String(req.type).toUpperCase());
-    if(item)item.doctor=req.toDoctor;
+    const normalizedType=String(req.type||"").toUpperCase();
+    const currentFixed=(state.fixed||[]).filter(x=>
+      x && normalizeDateKey(x.date)===normalizeDateKey(req.date) &&
+      String(x.type||"").toUpperCase()===normalizedType &&
+      String(x.doctor||"").trim()===String(req.fromDoctor||"").trim()
+    );
+    currentFixed.forEach(x=>{ x.doctor=req.toDoctor; });
+  }else{
+    raw.planning[req.date][guard.index].doctor=req.toDoctor;
   }
 
   req.status='accepted';req.respondedAt=new Date().toISOString();
-  // Les autres demandes portant sur exactement la même garde deviennent
-  // obsolètes : elles ne doivent jamais pouvoir être acceptées ensuite.
-  concurrent.forEach(r=>{r.status='cancelled';r.respondedAt=req.respondedAt;r.cancelReason='Garde déjà attribuée via une autre demande';});
-
-  rebuildDerivedGuardData();
-  const consistency=validateEffectiveGuardConsistency();
-  if(consistency.length){
-    console.error('Tox-Garde / conflit après changement de garde',consistency);
-    // Rollback complet : historique, planning courant, gardes fixes et demandes.
-    state.planningHistory[req.historyKey]=backupHistory;
-    state.planning=backupPlanning;
-    state.fixed=backupFixed;
-    state.exchangeRequests=backupRequests;
-    rebuildDerivedGuardData();
-    await save();
-    return alert('Le changement a été bloqué : un conflit de cohérence a été détecté. Aucune modification n’a été conservée.');
-  }
   await save();
   renderAdminAbsences();
   renderMyGuards();
   alert(`Changement effectué : la garde ${req.date} — ${req.type} est maintenant attribuée à ${req.toDoctor}.`);
 }
-
 function cancelGuardChangeRequest(id){
   const ses=currentSession();
   const req=findExchangeRequest(id);
@@ -3894,10 +3580,20 @@ function renderMyGuards(){
   }
   if(title)title.textContent='📅 Mes gardes';
   if(tab)tab.innerHTML='<span class="nav-icon">📅</span><span class="nav-label">Mes gardes</span>';
-  const doctor=ses.doctor,today=iso(new Date());
-  // Ne plus concaténer les snapshots historiques. Une garde effective est
-  // résolue une seule fois, puis les échanges acceptés sont appliqués.
-  const guards=getEffectiveGuardsForDoctor(doctor,today).slice(0,10);
+  const doctor=ses.doctor,today=iso(new Date()),byKey=new Map();
+  Object.entries(state.planningHistory||{}).forEach(([key,raw])=>{
+    const h=historyData(key);
+    if(!h||!isHistoryConfirmed(key,raw))return;
+    Object.entries(h.planning||{}).forEach(([date,items])=>{
+      if(date<today)return;
+      const item=(items||[]).find(x=>x.doctor===doctor&&['J','N'].includes(x.type));
+      if(item)byKey.set(date,{date,type:item.type,historyKey:key});
+    });
+    (h.fixed||[]).forEach(x=>{
+      if(x.doctor===doctor&&x.date>=today&&['G','F'].includes(x.type))byKey.set(x.date,{date:x.date,type:x.type,historyKey:key});
+    });
+  });
+  const guards=[...byKey.values()].sort((a,b)=>a.date.localeCompare(b.date)).slice(0,10);
   const fmt=d=>{const dt=dateFromISO(d);return {date:dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}),day:dt.toLocaleDateString('fr-FR',{weekday:'long'})};};
   const typeLabel=t=>({J:'☀️ J',N:'🌙 N',G:'🟢 G',F:'🟣 F'}[t]||t);
   const incoming=(state.exchangeRequests||[]).filter(r=>r.status==='pending'&&r.toDoctor===doctor).sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));
@@ -3939,20 +3635,12 @@ if(!admin){
     absDoctor.innerHTML=`<option value="${String(ses.doctor||"").replaceAll('"','&quot;')}">${ses.doctor||"Médecin"}</option>`;
     absDoctor.value=ses.doctor||""; absDoctor.disabled=true;
   }
-  renderDoctorHistorySelect();
-  // Réinitialiser immédiatement la vue Disponibilités avec les droits du compte médecin.
-  // Sans ce rendu explicite, le DOM pouvait conserver quelques instants le tableau admin.
-  setAdminAbsView("availability");
-  renderAdminAbsences();
-  openTab("planning"); showDoctorValidatedPlanning();
+  renderDoctorHistorySelect(); openTab("planning"); showDoctorValidatedPlanning();
 }else{
   document.getElementById("doctorAbsenceHint").style.display="none";
   const absDoctor=document.getElementById("absDoctor"); if(absDoctor)absDoctor.disabled=false;
-  setAdminAbsView("availability");
 }
-renderAccountOptions();renderAccounts();renderAll();
-if(!isAdmin()){ setAdminAbsView("availability"); renderAdminAbsences(); }
-}
+renderAccountOptions();renderAccounts();renderAll();}
 function renderAccountOptions(){const el=document.getElementById("accountDoctor");if(!el)return;el.innerHTML='<option value="">-- Choisir un médecin --</option>'+state.doctors.map(d=>`<option value="${String(d.name).replaceAll('"','&quot;')}">${d.name}</option>`).join("")}
 async function loadCloudAccounts(){if(!isAdmin())return [];const token=cloudToken();if(!token)return [];try{return await supaRpc("toxgarde_list_accounts",{p_token:token})}catch(e){console.error(e);return []}}
 async function renderAccounts(){const el=document.getElementById("accountsBody");if(!el)return;if(!isAdmin()){el.innerHTML='<tr><td colspan="4" class="hint">Accès administrateur.</td></tr>';return;}const accounts=await loadCloudAccounts();el.innerHTML=accounts.map((a,i)=>`<tr><td>${a.doctor||"—"}</td><td>${a.username}</td><td>${a.role==="admin"?"Administrateur":"Médecin"}</td><td>${a.username!==INITIAL_ADMIN.username?`<button class="btn small danger" onclick="deleteDoctorAccount(${i},'${String(a.username).replaceAll("'","\\'")}')">Supprimer</button>`:""}</td></tr>`).join("")||'<tr><td colspan="4" class="hint">Aucun compte médecin créé.</td></tr>'}
