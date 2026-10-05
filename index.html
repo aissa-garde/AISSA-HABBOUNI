@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
-<title>Tox-Garde — Générateur équitable des gardes</title>
+<title>Tox-Garde</title>
 
 <style>
 :root{--bg:#f5f7fb;--card:#fff;--line:#d8dee9;--text:#182230;--muted:#667085;--blue:#3f83c5;--blue2:#eaf3fb;--orange:#ffbf00;--green:#dff4e6;--red:#fde2e2;--gray:#e5e7eb}
@@ -283,6 +283,24 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 .today-status-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
 @media(max-width:900px){.dashboard-card #dashStats{grid-template-columns:repeat(2,minmax(0,1fr));}.today-guards-list{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:600px){.dashboard-card #dashStats{grid-template-columns:1fr 1fr;}.today-guards-list,.today-status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.today-guard,.today-status-box{min-height:60px;padding:6px;}}
+</style>
+
+<style id="planning-month-navigation">
+  /* Planning : navigation mensuelle moderne */
+  .planning-month-nav{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:nowrap;padding:2px 0 12px;border-bottom:1px solid var(--line);margin-bottom:12px;}
+  .planning-month-nav strong{min-width:170px;text-align:center;font-size:18px;color:var(--text);white-space:nowrap;}
+  .planning-year-label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;}
+  .planning-year-label select{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);padding:0 28px 0 10px;font-weight:700;}
+  .planning-main-actions{display:flex!important;align-items:center!important;flex-wrap:nowrap!important;gap:8px!important;width:100%;}
+  .planning-main-actions>#planningTitle{display:none;}
+  .planning-main-actions>.btn,.planning-main-actions>.export-menu{flex:0 0 auto!important;}
+  #planning .planning-legacy-controls,#planning #historyBlocks{display:none!important;}
+  @media(max-width:800px){
+    .planning-month-nav{justify-content:flex-start;overflow-x:auto;padding-bottom:10px;}
+    .planning-month-nav strong{min-width:145px;font-size:16px;}
+    .planning-main-actions{overflow-x:auto;padding-bottom:3px;}
+  }
+
 </style>
 
 <style id="mobile-content-layout">
@@ -632,6 +650,20 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
   .actions{gap:8px}
   .hint{color:var(--desktop-muted)}
 
+  /* Palette moderne et chic — paramètres d’apparence */
+  .appearance-palette{grid-column:1 / -1;background:linear-gradient(145deg,#ffffff,#f8fafc);border:1px solid var(--desktop-line);border-radius:16px;padding:14px;box-shadow:0 6px 20px rgba(15,23,42,.045)}
+  .palette-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .palette-title-row strong{display:block;color:var(--desktop-text);font-size:13px}.palette-title-row small{display:block;color:var(--desktop-muted);font-weight:500;margin-top:3px}
+  .palette-current{font-size:11px;font-weight:800;color:var(--desktop-secondary,#3b82a0);background:#fff;border:1px solid var(--desktop-line);border-radius:999px;padding:6px 10px;white-space:nowrap}
+  .palette-presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:14px}
+  .palette-preset{appearance:none;border:1px solid var(--desktop-line);background:#fff;border-radius:12px;padding:9px;text-align:left;cursor:pointer;color:var(--desktop-text);transition:.16s ease;min-height:70px}.palette-preset:hover{transform:translateY(-1px);box-shadow:0 5px 15px rgba(15,23,42,.08)}.palette-preset.active{border-color:var(--desktop-secondary,#3b82a0);box-shadow:0 0 0 2px color-mix(in srgb,var(--desktop-secondary,#3b82a0) 16%,transparent);background:#fbfdff}.palette-preset b{display:block;font-size:11px;margin-top:6px}.palette-preset small{display:block;font-size:10px;color:var(--desktop-muted);margin-top:2px}
+  .palette-dots{display:flex;gap:4px}.palette-dots i{width:16px;height:16px;border-radius:50%;display:block;border:1px solid rgba(15,23,42,.08)}
+  .palette-preset[data-palette="medical"] .palette-dots i:nth-child(1){background:#16324f}.palette-preset[data-palette="medical"] .palette-dots i:nth-child(2){background:#3b82a0}.palette-preset[data-palette="medical"] .palette-dots i:nth-child(3){background:#f4f7fa}.palette-preset[data-palette="medical"] .palette-dots i:nth-child(4){background:#e8f1f7}
+  .palette-preset[data-palette="sage"] .palette-dots i:nth-child(1){background:#214e45}.palette-preset[data-palette="sage"] .palette-dots i:nth-child(2){background:#5b8c7d}.palette-preset[data-palette="sage"] .palette-dots i:nth-child(3){background:#f5f7f5}.palette-preset[data-palette="sage"] .palette-dots i:nth-child(4){background:#e8f1ee}
+  .palette-preset[data-palette="graphite"] .palette-dots i:nth-child(1){background:#20242b}.palette-preset[data-palette="graphite"] .palette-dots i:nth-child(2){background:#b7794b}.palette-preset[data-palette="graphite"] .palette-dots i:nth-child(3){background:#f7f6f3}.palette-preset[data-palette="graphite"] .palette-dots i:nth-child(4){background:#f3ece7}
+  .palette-preset[data-palette="navy"] .palette-dots i:nth-child(1){background:#14283d}.palette-preset[data-palette="navy"] .palette-dots i:nth-child(2){background:#4f7ea3}.palette-preset[data-palette="navy"] .palette-dots i:nth-child(3){background:#f3f6f9}.palette-preset[data-palette="navy"] .palette-dots i:nth-child(4){background:#e7eef5}
+  .palette-fields{display:grid;grid-template-columns:repeat(3,minmax(145px,1fr));gap:10px;padding-top:12px;border-top:1px solid var(--desktop-line)}
+  .palette-fields label{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid #e6eaf0;border-radius:10px;padding:8px 9px;color:var(--desktop-text);font-size:11px;font-weight:700}.palette-fields input[type=color]{width:34px!important;height:30px!important;padding:2px!important;margin:0!important;border:1px solid #dfe4ea!important;border-radius:7px!important;background:#fff!important;cursor:pointer}
   /* Keep existing mobile implementation completely isolated. */
   .mobile-menu-btn,.mobile-bottom-nav,.mobile-nav-backdrop{display:none!important}
 }
@@ -642,10 +674,10 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 
 <header>
 <button type="button" id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
-<div class="brand-wrap"><img id="appLogoDisplay" class="brand-logo" alt="Logo application"><div><h1 id="appTitleDisplay">GardeMed</h1><p id="appSubtitleDisplay">Générateur équitable des gardes médicales</p></div><img id="centerLogoDisplay" class="brand-logo" alt="Logo Centre Antipoison"></div>
+<div class="brand-wrap"><img id="appLogoDisplay" class="brand-logo" alt="Logo application"><div><h1 id="appTitleDisplay">Tox-Garde</h1><p id="appSubtitleDisplay">Simple. Équitable. Intelligent</p></div><img id="centerLogoDisplay" class="brand-logo" alt="Logo Centre Antipoison"></div>
 <div class="header-tools"><div id="authUserInfo" class="auth-user"></div>
 
-<details class="header-settings admin-only"><summary>⚙ Paramètres</summary><div class="header-settings-panel"><div class="settings-grid"><label>Nom / titre de l’application<input type="text" id="appTitle" placeholder="Tox-Garde"></label><label>Phrase sous le titre<input type="text" id="appSubtitle" placeholder="Simple. Équitable. Intelligent"></label><label>Arrière-plan de l’application<input type="color" id="appBg" value="#f5f7fb"></label><label>Couleur de l’en-tête<input type="color" id="headerBg" value="#3f83c5"></label><label>Arrière-plan des cartes<input type="color" id="cardBg" value="#ffffff"></label><label class="desktop-only-setting">Couleur des boutons principaux / « Ajouter »<input type="color" id="primaryBtnBg" value="#ff6f73"></label><label class="desktop-only-setting">Couleur du texte des boutons principaux<input type="color" id="primaryBtnText" value="#ffffff"></label><label class="desktop-only-setting">Couleur des éléments actifs<input type="color" id="activeItemBg" value="#fff0f1"></label><label class="desktop-only-setting">Couleur de la police des écritures<input type="color" id="desktopFontColor" value="#20243a"></label><label class="desktop-only-setting">Taille de la police (ordinateur)<input type="range" id="desktopFontSize" min="12" max="20" step="1" value="14"><small id="desktopFontSizeValue">14 px</small></label><label>Logo de l’application<input type="file" id="appLogoFile" accept="image/*"><small id="appLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('appLogo','appLogoFile')">🗑 Supprimer</button></label><label>Logo du Centre Antipoison<input type="file" id="centerLogoFile" accept="image/*"><small id="centerLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('centerLogo','centerLogoFile')">🗑 Supprimer</button></label><label>Image d’arrière-plan<input type="file" id="bgImageFile" accept="image/*"><small id="bgImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('bgImage','bgImageFile')">🗑 Supprimer</button></label><label>Image d’accueil<input type="file" id="homeImageFile" accept="image/*"><small id="homeImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('homeImage','homeImageFile')">🗑 Supprimer</button></label></div><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="saveAppearance()">Enregistrer l’apparence</button><button class="btn" onclick="removeImages()">Supprimer les images/logos</button><button class="btn" onclick="resetAppearance()">Réinitialiser</button></div><p class="hint">Les réglages de couleur et de police ci-dessus s’appliquent uniquement à la version ordinateur (≥ 701 px). La version téléphone reste inchangée.</p></div></details>
+<details class="header-settings admin-only"><summary>⚙ Paramètres</summary><div class="header-settings-panel"><div class="settings-grid"><label>Nom / titre de l’application<input type="text" id="appTitle" placeholder="Tox-Garde"></label><label>Phrase sous le titre<input type="text" id="appSubtitle" placeholder="Simple. Équitable. Intelligent"></label><div class="appearance-palette"><div class="palette-title-row"><div><strong>Palette de couleurs</strong><small>Moderne, chic et harmonisée pour ordinateur et téléphone</small></div><span id="paletteCurrentName" class="palette-current">Bleu médical premium</span></div><div class="palette-presets"><button type="button" class="palette-preset active" data-palette="medical" onclick="selectPalette('medical')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Bleu médical</b><small>Premium</small></button><button type="button" class="palette-preset" data-palette="sage" onclick="selectPalette('sage')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Vert sauge</b><small>Élégant</small></button><button type="button" class="palette-preset" data-palette="graphite" onclick="selectPalette('graphite')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Graphite</b><small>Cuivre chic</small></button><button type="button" class="palette-preset" data-palette="navy" onclick="selectPalette('navy')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Bleu nuit</b><small>Institutionnel</small></button></div><div class="palette-fields"><label>En-tête principal<input type="color" id="paletteHeader" value="#16324f"></label><label>Bleu secondaire<input type="color" id="paletteSecondary" value="#3b82a0"></label><label>Fond général<input type="color" id="paletteBg" value="#f4f7fa"></label><label>Cartes<input type="color" id="paletteCard" value="#ffffff"></label><label>Texte principal<input type="color" id="paletteText" value="#172033"></label><label>Texte secondaire<input type="color" id="paletteSecondaryText" value="#64748b"></label><label>Texte du titre<input type="color" id="paletteTitle" value="#ffffff"></label><label>Texte de la phrase d’en-tête<input type="color" id="paletteSubtitle" value="#dceaf4"></label><label>Bordures / séparateurs<input type="color" id="paletteBorder" value="#d9e2ec"></label><label>Accueil sélectionné<input type="color" id="paletteActive" value="#e8f1f7"></label><label>Icônes inactives<input type="color" id="paletteInactiveIcon" value="#64748b"></label></div></div><label class="desktop-only-setting">Taille de la police (ordinateur)<input type="range" id="desktopFontSize" min="12" max="20" step="1" value="14"><small id="desktopFontSizeValue">14 px</small></label><input type="color" id="appBg" value="#f4f7fa" hidden><input type="color" id="headerBg" value="#16324f" hidden><input type="color" id="cardBg" value="#ffffff" hidden><input type="color" id="primaryBtnBg" value="#3b82a0" hidden><input type="color" id="primaryBtnText" value="#ffffff" hidden><input type="color" id="activeItemBg" value="#e8f1f7" hidden><input type="color" id="desktopFontColor" value="#172033" hidden><label>Logo de l’application<input type="file" id="appLogoFile" accept="image/*"><small id="appLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('appLogo','appLogoFile')">🗑 Supprimer</button></label><label>Logo du Centre Antipoison<input type="file" id="centerLogoFile" accept="image/*"><small id="centerLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('centerLogo','centerLogoFile')">🗑 Supprimer</button></label><label>Image d’arrière-plan<input type="file" id="bgImageFile" accept="image/*"><small id="bgImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('bgImage','bgImageFile')">🗑 Supprimer</button></label><label>Image d’accueil<input type="file" id="homeImageFile" accept="image/*"><small id="homeImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('homeImage','homeImageFile')">🗑 Supprimer</button></label></div><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="saveAppearance()">Enregistrer l’apparence</button><button class="btn" onclick="removeImages()">Supprimer les images/logos</button><button class="btn" onclick="resetAppearance()">Réinitialiser</button></div><p class="hint">Les réglages de couleur ci-dessus s’appliquent à l’ordinateur et au téléphone.</p></div></details>
 </div>
 </header>
 <main><img id="homeImageDisplay" class="home-image" alt="Image d’accueil">
@@ -766,7 +798,17 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 </section>
 
 <section id="planning" class="panel">
-<div class="card"><h2>Planning</h2><div class="actions"><span id="planningTitle"></span>
+<div class="card"><h2>Planning</h2>
+<div class="planning-month-nav" aria-label="Navigation du planning">
+  <button type="button" class="btn" onclick="planningChangeMonth(-1)">‹ Mois précédent</button>
+  <strong id="planningMonthLabel">Septembre 2026</strong>
+  <button type="button" class="btn" onclick="planningChangeMonth(1)">Mois suivant ›</button>
+  <label class="planning-year-label">Année
+    <select id="planningYearSelect" onchange="planningChangeYear(this.value)"></select>
+  </label>
+  <button id="deleteDisplayedPlanningBtn" type="button" class="btn danger admin-only" onclick="deleteDisplayedPlanning()">🗑 Supprimer planning</button>
+</div>
+<div class="actions planning-main-actions"><span id="planningTitle"></span>
 <button class="btn primary admin-only" onclick="manualEditPlanning()">✎ Modifier manuellement</button>
 <details class="export-menu admin-only">
   <summary class="btn primary">Exporter ▾</summary>
@@ -778,7 +820,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 </details>
 <button class="btn admin-only" onclick="window.print()">Imprimer</button>
 <button class="btn primary admin-only" onclick="confirmCurrentPlanning()">✓ Valider le planning</button></div>
-<div class="actions admin-only" style="margin-top:10px"><select id="historySelect" onchange="showHistoryPlanning()" style="display:none"></select><button class="btn" onclick="showCurrentPlanning()">Planning actuel</button></div><div id="historyBlocks" class="history-groups"></div>
+<div class="actions admin-only planning-legacy-controls" style="margin-top:10px"><select id="historySelect" onchange="showHistoryPlanning()" style="display:none"></select><button class="btn" onclick="showCurrentPlanning()">Planning actuel</button></div><div id="historyBlocks" class="history-groups"></div>
 <div class="actions doctor-only" style="margin-top:10px"><label style="min-width:360px">Plannings validés<select id="doctorHistorySelect" onchange="showDoctorValidatedPlanning()"></select></label><button class="btn primary" onclick="showDoctorValidatedPlanning()">Afficher</button><button id="doctorPdfBtn" class="btn" type="button" onclick="exportDoctorValidatedPlanningPDF()">📄 Exporter PDF</button></div>
 <div id="doctorPlanningNotice" class="hint doctor-only" style="margin-top:10px"></div>
 <div id="planningTable" style="margin-top:15px"></div></div>
@@ -824,7 +866,7 @@ async function ensurePDF(){
 </script>
 <script>
 const demoDoctors=["Dr Daoudi","Dr Daghouane","Dr El Hariri","Dr Ennakhassi","Dr Benarina","Dr Faouzi","Dr Habbouni","Dr Mourabiti","Dr El Mrabet","Dr Belkhadir","Dr El Azher"];
-let state=JSON.parse(localStorage.getItem("gardeMed")||"null")||{doctors:[],absences:[],fixed:[],planning:{},planningHistory:{},generationOffset:0,settings:{title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14}};
+let state=JSON.parse(localStorage.getItem("gardeMed")||"null")||{doctors:[],absences:[],fixed:[],planning:{},planningHistory:{},generationOffset:0,settings:{title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f4f7fa",headerBg:"#16324f",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#3b82a0",primaryBtnText:"#ffffff",activeItemBg:"#e8f1f7",desktopFontColor:"#172033",desktopFontSize:14,paletteName:"medical",paletteHeader:"#16324f",paletteSecondary:"#3b82a0",paletteBg:"#f4f7fa",paletteCard:"#ffffff",paletteText:"#172033",paletteSecondaryText:"#64748b",paletteTitle:"#ffffff",paletteSubtitle:"#dceaf4",paletteBorder:"#d9e2ec",paletteActive:"#e8f1f7",paletteInactiveIcon:"#64748b"}};
 if(!state.recoveryLedger) state.recoveryLedger={};
 if(!state.confirmedPlanningKeys) state.confirmedPlanningKeys={};
 state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:""},state.settings||{});
@@ -840,6 +882,81 @@ months.forEach((m,i)=>document.getElementById("month").innerHTML+=`<option value
 document.getElementById("month").value=8;
 if(document.getElementById("weekStart"))document.getElementById("weekStart").value="2026-09-01";
 let activePlanningView={type:"current",key:null};
+let planningDisplayYear=null;
+let planningDisplayMonth=null;
+
+function initPlanningMonthNavigation(){
+  const per=getPeriodDates();
+  if(planningDisplayYear==null || planningDisplayMonth==null){
+    planningDisplayYear=per.start.getFullYear();
+    planningDisplayMonth=per.start.getMonth();
+  }
+  const yearEl=document.getElementById("planningYearSelect");
+  const label=document.getElementById("planningMonthLabel");
+  if(yearEl){
+    const years=new Set();
+    years.add(planningDisplayYear);
+    years.add(per.start.getFullYear());
+    Object.keys(state.planningHistory||{}).forEach(k=>{
+      const h=state.planningHistory[k]; const hp=historyPeriod(k,h);
+      if(hp?.start) years.add(hp.start.getFullYear());
+    });
+    const minYear=Math.min(2020,...years);
+    const maxYear=Math.max(2100,...years);
+    let html="";
+    for(let y=minYear;y<=maxYear;y++) html+=`<option value="${y}">${y}</option>`;
+    yearEl.innerHTML=html;
+    yearEl.value=String(planningDisplayYear);
+  }
+  if(label)label.textContent=`${months[planningDisplayMonth]} ${planningDisplayYear}`;
+}
+function planningDisplayKey(){return `month_${planningDisplayYear}_${String(planningDisplayMonth+1).padStart(2,"0")}`;}
+function findPlanningHistoryKeyForMonth(year,month){
+  const exact=`month_${year}_${String(month+1).padStart(2,"0")}`;
+  if(state.planningHistory?.[exact]) return exact;
+  const candidates=Object.keys(state.planningHistory||{}).filter(k=>{
+    const h=state.planningHistory[k]; const hp=historyPeriod(k,h);
+    return hp?.type==="month" && hp.start.getFullYear()===year && hp.start.getMonth()===month;
+  });
+  return candidates.sort((a,b)=>generatedTimestamp(state.planningHistory[b])-generatedTimestamp(state.planningHistory[a]))[0]||null;
+}
+function updatePlanningDeleteButton(enabled){
+  const btn=document.getElementById("deleteDisplayedPlanningBtn");
+  if(btn)btn.disabled=!enabled;
+}
+function showPlanningDisplayMonth(){
+  initPlanningMonthNavigation();
+  const currentPer=getPeriodDates();
+  const key=planningDisplayKey();
+  const currentKey=currentPer.key;
+  const historyKey=findPlanningHistoryKeyForMonth(planningDisplayYear,planningDisplayMonth);
+  if(key===currentKey){
+    activePlanningView={type:"current",key:null};
+    renderPlanning();
+  }else if(historyKey){
+    showHistoryPlanningByKey(historyKey);
+  }else{
+    updatePlanningDeleteButton(false);
+    activePlanningView={type:"current",key:null};
+    const table=document.getElementById("planningTable");
+    if(table)table.innerHTML="<div class='hint' style='padding:15px'>Aucun planning à afficher pour ce mois.</div>";
+    const title=document.getElementById("planningTitle"); if(title)title.textContent="";
+  }
+  initPlanningMonthNavigation();
+}
+function planningChangeMonth(delta){
+  initPlanningMonthNavigation();
+  const d=new Date(planningDisplayYear,planningDisplayMonth+delta,1);
+  planningDisplayYear=d.getFullYear(); planningDisplayMonth=d.getMonth();
+  showPlanningDisplayMonth();
+}
+function planningChangeYear(value){
+  initPlanningMonthNavigation();
+  const y=Number(value);
+  if(!Number.isFinite(y))return;
+  planningDisplayYear=y;
+  showPlanningDisplayMonth();
+}
 function save(){save();renderAll()}
 function openTab(id){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));const panel=document.getElementById(id);if(panel)panel.classList.add("active");document.querySelectorAll("nav button[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===id));document.querySelectorAll(".mobile-bottom-nav button[data-mobile-tab]").forEach(x=>x.classList.toggle("active",x.dataset.mobileTab===id));}
 document.querySelectorAll("nav button[data-tab]").forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
@@ -1898,6 +2015,18 @@ function generateCore(){
   state.planningGeneratedAt=Date.now();
   localStorage.setItem('gardeMed',JSON.stringify(state));
 
+  // Le brouillon généré est sauvegardé immédiatement dans Supabase.
+  // Pendant cette sauvegarde, une ancienne copie distante ne peut pas l'écraser.
+  cloudDraftLock=true;
+  cloudSave().then(()=>{
+    lastCloudSnapshot=JSON.stringify(cleanStateForCloud());
+    cloudDraftLock=false;
+  }).catch(err=>{
+    console.error('Tox-Garde / sauvegarde du planning généré :',err);
+    const msg=document.getElementById('genMessage');
+    if(msg) msg.innerHTML += '<div class="warn"><b>Attention :</b> le planning est conservé sur cet appareil, mais sa sauvegarde en ligne a échoué. Il ne sera pas écrasé automatiquement.</div>';
+  });
+
   const loadsFinal=active.map(d=>workload(chosen.counts[d.name]||{}));
   const spread=loadsFinal.length?Math.max(...loadsFinal)-Math.min(...loadsFinal):0;
   if(missing.length){
@@ -2288,8 +2417,11 @@ function showHistoryPlanningByKey(k){
   if(!k)return;
   const h=historyData(k);
   if(!h)return alert("Ancien planning introuvable.");
+  const hp=historyPeriod(k,h);
+  if(hp?.start){planningDisplayYear=hp.start.getFullYear();planningDisplayMonth=hp.start.getMonth();}
   activePlanningView={type:"history",key:k};
-  renderPlanning(h,historyPeriod(k,h));
+  renderPlanning(h,hp);
+  updatePlanningDeleteButton(true);
 }
 
 function doctorCurrentMonthHistoryKey(){
@@ -2389,6 +2521,7 @@ function addDoctorRecovery(){
 function escapeHtml(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
 
 function renderPlanning(source,periodOverride){
+  initPlanningMonthNavigation();
   // SECURITE : un compte Médecin ne peut jamais afficher le planning courant/brouillon.
   // Il ne peut afficher qu'un historique explicitement validé par l'administrateur.
   const ses=currentSession();
@@ -2453,6 +2586,7 @@ function renderPlanning(source,periodOverride){
   }
   const hasPlanning=Object.values(src.planning||{}).flat().length>0 || (src.fixed||[]).some(x=>x.date>=iso(per.start)&&x.date<=iso(per.end)&&["G","F"].includes(x.type));
   if(!hasPlanning){
+    updatePlanningDeleteButton(false);
     document.getElementById("planningTable").innerHTML="<div class='hint' style='padding:15px'>Aucun planning à afficher.</div>";
     document.getElementById("planningTitle").textContent="";
     renderHistorySelect(); renderDoctorHistorySelect(); renderStats();
@@ -2463,6 +2597,7 @@ function renderPlanning(source,periodOverride){
   html+="</tr></thead><tbody>";
   state.doctors.filter(d=>d.active).forEach(doc=>{html+=`<tr><td class='name'><b>${escapeHtml(doc.name)}</b></td>`;for(const dt of datesBetween(per.start,per.end)){let v=cellFor(doc.name,dt,src);let attrs=editable?`data-edit-name="${encodeURIComponent(doc.name)}" data-edit-date="${iso(dt)}"`:'';html+=`<td class='${cls(v)}' title='Cliquer pour modifier' ${attrs}>${editable?`<button type="button" class="cellEditBtn" onclick="editCell(this)">${escapeHtml(v||"")}</button>`:escapeHtml(v||"")}</td>`}html+="</tr>"});
   html+="</tbody></table>";document.getElementById("planningTable").innerHTML=html;
+  updatePlanningDeleteButton(true);
   const currentHist=state.planningHistory?.[per.key]; const generatedAge=generatedAgeText(currentHist?.generatedAtISO || currentHist?.generatedAt); document.getElementById("planningTitle").textContent=(per.type==="month"?`${months[per.start.getMonth()]} ${per.start.getFullYear()}`:per.type==="week"?`Semaine du ${iso(per.start)} au ${iso(per.end)}`:`${per.weeks} semaines : ${iso(per.start)} au ${iso(per.end)}`)+(generatedAge?` — Généré ${generatedAge}`:"");
   // Pour un compte Médecin, conserver impérativement le planning historique sélectionné.
   // Ne jamais remplacer activePlanningView par "current" après l'affichage d'un planning validé.
@@ -2633,10 +2768,10 @@ function applyInlineEdit(name,date,raw){
 function manualEditPlanning(){alert("Pour modifier le planning, cliquez directement sur la cellule souhaitée.");}
 function imageToDataURL(file,maxW,maxH,quality){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{const scale=Math.min(1,maxW/img.width,maxH/img.height);const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext("2d").drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL("image/jpeg",quality));};img.onerror=reject;img.src=reader.result;};reader.onerror=reject;reader.readAsDataURL(file);});}
 async function saveAppearance(){
-  state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14},state.settings||{});
+  state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f4f7fa",headerBg:"#16324f",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#3b82a0",primaryBtnText:"#ffffff",activeItemBg:"#e8f1f7",desktopFontColor:"#172033",desktopFontSize:14,paletteName:"medical",paletteHeader:"#16324f",paletteSecondary:"#3b82a0",paletteBg:"#f4f7fa",paletteCard:"#ffffff",paletteText:"#172033",paletteSecondaryText:"#64748b",paletteTitle:"#ffffff",paletteSubtitle:"#dceaf4",paletteBorder:"#d9e2ec",paletteActive:"#e8f1f7",paletteInactiveIcon:"#64748b"},state.settings||{});
   state.settings.title=(document.getElementById("appTitle").value||"Tox-Garde").trim(); state.settings.subtitle=(document.getElementById("appSubtitle").value||"Simple. Équitable. Intelligent").trim();
-  state.settings.appBg=document.getElementById("appBg").value; state.settings.headerBg=document.getElementById("headerBg").value; state.settings.cardBg=document.getElementById("cardBg").value;
-  state.settings.primaryBtnBg=document.getElementById("primaryBtnBg").value; state.settings.primaryBtnText=document.getElementById("primaryBtnText").value; state.settings.activeItemBg=document.getElementById("activeItemBg").value; state.settings.desktopFontColor=document.getElementById("desktopFontColor").value; state.settings.desktopFontSize=Number(document.getElementById("desktopFontSize").value)||14;
+  const paletteIds=["paletteHeader","paletteSecondary","paletteBg","paletteCard","paletteText","paletteSecondaryText","paletteTitle","paletteSubtitle","paletteBorder","paletteActive","paletteInactiveIcon"]; paletteIds.forEach(id=>{const el=document.getElementById(id);if(el)state.settings[id]=el.value;});
+  state.settings.appBg=state.settings.paletteBg; state.settings.headerBg=state.settings.paletteHeader; state.settings.cardBg=state.settings.paletteCard; state.settings.primaryBtnBg=state.settings.paletteSecondary; state.settings.primaryBtnText=state.settings.paletteTitle; state.settings.activeItemBg=state.settings.paletteActive; state.settings.desktopFontColor=state.settings.paletteText; state.settings.desktopFontSize=Number(document.getElementById("desktopFontSize").value)||14;
   try{
     const jobs=[['appLogoFile','appLogo',900,900,.82],['centerLogoFile','centerLogo',900,900,.82],['homeImageFile','homeImage',1600,900,.78],['bgImageFile','bgImage',1600,1000,.78]];
     for(const [id,key,mw,mh,q] of jobs){const f=document.getElementById(id)?.files?.[0];if(f)state.settings[key]=await imageToDataURL(f,mw,mh,q);}
@@ -2646,16 +2781,22 @@ async function saveAppearance(){
 function persistAppearance(){try{save();applyAppearance();}catch(e){alert("Le stockage du navigateur est insuffisant. Choisissez des images plus légères.");}}
 function removeOneImage(key,fileId){state.settings=Object.assign({appLogo:"",centerLogo:"",homeImage:"",bgImage:""},state.settings||{});state.settings[key]="";const f=document.getElementById(fileId);if(f)f.value="";persistAppearance();}
 function removeImages(){state.settings.appLogo="";state.settings.centerLogo="";state.settings.homeImage="";state.settings.bgImage="";["appLogoFile","centerLogoFile","homeImageFile","bgImageFile"].forEach(id=>{const f=document.getElementById(id);if(f)f.value="";});persistAppearance();}
-function resetAppearance(){state.settings={title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14};save();applyAppearance();}
+function resetAppearance(){state.settings={title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f4f7fa",headerBg:"#16324f",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#3b82a0",primaryBtnText:"#ffffff",activeItemBg:"#e8f1f7",desktopFontColor:"#172033",desktopFontSize:14,paletteName:"medical",paletteHeader:"#16324f",paletteSecondary:"#3b82a0",paletteBg:"#f4f7fa",paletteCard:"#ffffff",paletteText:"#172033",paletteSecondaryText:"#64748b",paletteTitle:"#ffffff",paletteSubtitle:"#dceaf4",paletteBorder:"#d9e2ec",paletteActive:"#e8f1f7",paletteInactiveIcon:"#64748b"};save();applyAppearance();}
+const TOX_PALETTES={medical:{name:"Bleu médical premium",paletteHeader:"#16324f",paletteSecondary:"#3b82a0",paletteBg:"#f4f7fa",paletteCard:"#ffffff",paletteText:"#172033",paletteSecondaryText:"#64748b",paletteTitle:"#ffffff",paletteSubtitle:"#dceaf4",paletteBorder:"#d9e2ec",paletteActive:"#e8f1f7",paletteInactiveIcon:"#64748b"},sage:{name:"Vert sauge élégant",paletteHeader:"#214e45",paletteSecondary:"#5b8c7d",paletteBg:"#f5f7f5",paletteCard:"#ffffff",paletteText:"#1e2a27",paletteSecondaryText:"#687872",paletteTitle:"#ffffff",paletteSubtitle:"#ddebe6",paletteBorder:"#d8e1de",paletteActive:"#e8f1ee",paletteInactiveIcon:"#70817c"},graphite:{name:"Graphite & cuivre chic",paletteHeader:"#20242b",paletteSecondary:"#b7794b",paletteBg:"#f7f6f3",paletteCard:"#ffffff",paletteText:"#20242b",paletteSecondaryText:"#6b7280",paletteTitle:"#ffffff",paletteSubtitle:"#e7ddd6",paletteBorder:"#e4e1dc",paletteActive:"#f3ece7",paletteInactiveIcon:"#7a7f87"},navy:{name:"Bleu nuit institutionnel",paletteHeader:"#14283d",paletteSecondary:"#4f7ea3",paletteBg:"#f3f6f9",paletteCard:"#ffffff",paletteText:"#162536",paletteSecondaryText:"#667788",paletteTitle:"#ffffff",paletteSubtitle:"#d9e5ee",paletteBorder:"#d7e0e8",paletteActive:"#e7eef5",paletteInactiveIcon:"#718294"}};
+function selectPalette(name){const pal=TOX_PALETTES[name];if(!pal)return;state.settings=Object.assign(state.settings||{},pal,{paletteName:name});Object.keys(pal).filter(k=>k.startsWith("palette")).forEach(k=>{const el=document.getElementById(k);if(el)el.value=pal[k];});applyAppearance();}
 function applyAppearance(){
-  state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f5f7fb",headerBg:"#3f83c5",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#ff6f73",primaryBtnText:"#ffffff",activeItemBg:"#fff0f1",desktopFontColor:"#20243a",desktopFontSize:14},state.settings||{});
+  state.settings=Object.assign({title:"Tox-Garde",subtitle:"Simple. Équitable. Intelligent",appBg:"#f4f7fa",headerBg:"#16324f",cardBg:"#ffffff",bgImage:"",appLogo:"",centerLogo:"",homeImage:"",primaryBtnBg:"#3b82a0",primaryBtnText:"#ffffff",activeItemBg:"#e8f1f7",desktopFontColor:"#172033",desktopFontSize:14,paletteName:"medical",paletteHeader:"#16324f",paletteSecondary:"#3b82a0",paletteBg:"#f4f7fa",paletteCard:"#ffffff",paletteText:"#172033",paletteSecondaryText:"#64748b",paletteTitle:"#ffffff",paletteSubtitle:"#dceaf4",paletteBorder:"#d9e2ec",paletteActive:"#e8f1f7",paletteInactiveIcon:"#64748b"},state.settings||{});
   document.getElementById("appTitleDisplay").textContent=state.settings.title||"Tox-Garde"; document.getElementById("appSubtitleDisplay").textContent=state.settings.subtitle||"Simple. Équitable. Intelligent";
   document.getElementById("appTitle").value=state.settings.title||"Tox-Garde"; document.getElementById("appSubtitle").value=state.settings.subtitle||"Simple. Équitable. Intelligent"; document.getElementById("appBg").value=state.settings.appBg||"#f5f7fb"; document.getElementById("headerBg").value=state.settings.headerBg||"#3f83c5"; document.getElementById("cardBg").value=state.settings.cardBg||"#ffffff";
-  const pbg=state.settings.primaryBtnBg||"#ff6f73", ptxt=state.settings.primaryBtnText||"#ffffff", abg=state.settings.activeItemBg||"#fff0f1", fcolor=state.settings.desktopFontColor||"#20243a", fsize=Number(state.settings.desktopFontSize)||14;
-  ["primaryBtnBg","primaryBtnText","activeItemBg","desktopFontColor"].forEach((id)=>{const el=document.getElementById(id);if(el)el.value=({primaryBtnBg:pbg,primaryBtnText:ptxt,activeItemBg:abg,desktopFontColor:fcolor}[id]);});
+  const ph={paletteHeader:state.settings.paletteHeader||state.settings.headerBg||"#16324f",paletteSecondary:state.settings.paletteSecondary||state.settings.primaryBtnBg||"#3b82a0",paletteBg:state.settings.paletteBg||state.settings.appBg||"#f4f7fa",paletteCard:state.settings.paletteCard||state.settings.cardBg||"#ffffff",paletteText:state.settings.paletteText||state.settings.desktopFontColor||"#172033",paletteSecondaryText:state.settings.paletteSecondaryText||"#64748b",paletteTitle:state.settings.paletteTitle||state.settings.primaryBtnText||"#ffffff",paletteSubtitle:state.settings.paletteSubtitle||"#dceaf4",paletteBorder:state.settings.paletteBorder||"#d9e2ec",paletteActive:state.settings.paletteActive||state.settings.activeItemBg||"#e8f1f7",paletteInactiveIcon:state.settings.paletteInactiveIcon||"#64748b"};
+  Object.assign(state.settings,ph); state.settings.appBg=ph.paletteBg;state.settings.headerBg=ph.paletteHeader;state.settings.cardBg=ph.paletteCard;state.settings.primaryBtnBg=ph.paletteSecondary;state.settings.primaryBtnText=ph.paletteTitle;state.settings.activeItemBg=ph.paletteActive;state.settings.desktopFontColor=ph.paletteText;
+  Object.keys(ph).forEach(id=>{const el=document.getElementById(id);if(el)el.value=ph[id];});
+  document.getElementById("paletteCurrentName")?.replaceChildren(document.createTextNode(({medical:"Bleu médical premium",sage:"Vert sauge élégant",graphite:"Graphite & cuivre chic",navy:"Bleu nuit institutionnel"}[state.settings.paletteName])||"Palette personnalisée"));
+  document.querySelectorAll(".palette-preset").forEach(b=>b.classList.toggle("active",b.dataset.palette===state.settings.paletteName));
+  const pbg=ph.paletteSecondary, ptxt=ph.paletteTitle, abg=ph.paletteActive, fcolor=ph.paletteText, fsize=Number(state.settings.desktopFontSize)||14;
   const fs=document.getElementById("desktopFontSize"); if(fs)fs.value=String(Math.min(20,Math.max(12,fsize))); const fsv=document.getElementById("desktopFontSizeValue"); if(fsv)fsv.textContent=`${fsize} px`;
   let dyn=document.getElementById("desktopAppearanceDynamic"); if(!dyn){dyn=document.createElement("style");dyn.id="desktopAppearanceDynamic";document.head.appendChild(dyn);}
-  dyn.textContent=`@media (min-width:701px){:root{--desktop-primary-bg:${pbg};--desktop-primary-text:${ptxt};--desktop-active-bg:${abg};--desktop-active-text:${pbg};--desktop-font-color:${fcolor};--desktop-font-size:${fsize}px;}}`;
+  dyn.textContent=`:root{--desktop-primary-bg:${ph.paletteSecondary};--desktop-primary-text:${ph.paletteTitle};--desktop-active-bg:${ph.paletteActive};--desktop-active-text:${ph.paletteSecondary};--desktop-font-color:${ph.paletteText};--desktop-font-size:${fsize}px;--desktop-bg:${ph.paletteBg};--desktop-card:${ph.paletteCard};--desktop-line:${ph.paletteBorder};--desktop-text:${ph.paletteText};--desktop-muted:${ph.paletteSecondaryText};--desktop-accent:${ph.paletteSecondary};--desktop-accent-soft:${ph.paletteActive};--desktop-secondary:${ph.paletteSecondary};--desktop-title:${ph.paletteTitle};--desktop-subtitle:${ph.paletteSubtitle};--desktop-inactive-icon:${ph.paletteInactiveIcon};}header{background:${ph.paletteHeader}!important;color:${ph.paletteTitle}!important}header p{color:${ph.paletteSubtitle}!important}header h1{color:${ph.paletteTitle}!important}nav button{color:${ph.paletteInactiveIcon}!important}nav button:hover{background:${ph.paletteActive}!important;color:${ph.paletteSecondary}!important}nav button.active{background:${ph.paletteActive}!important;color:${ph.paletteSecondary}!important}nav:before{color:${ph.paletteText}!important}.card,.stat,.settings-bar,.header-settings-panel{background:${ph.paletteCard}!important;border-color:${ph.paletteBorder}!important}.card h2,h2,h3{color:${ph.paletteText}!important}label,.hint,.stat span,.stat small{color:${ph.paletteSecondaryText}!important}input,select{border-color:${ph.paletteBorder}!important;color:${ph.paletteText}!important}th{background:${ph.paletteActive}!important;color:${ph.paletteText}!important}th,td{border-color:${ph.paletteBorder}!important}.btn.primary{background:${ph.paletteSecondary}!important;border-color:${ph.paletteSecondary}!important;color:${ph.paletteTitle}!important}`;
   const setImg=(id,src,statusId,yes,no)=>{const el=document.getElementById(id);if(el){el.src=src||"";el.classList.toggle("show",!!src);}const st=document.getElementById(statusId);if(st)st.textContent=src?yes:no;};
   setImg("appLogoDisplay",state.settings.appLogo,"appLogoStatus","Logo enregistré","Aucun logo"); setImg("centerLogoDisplay",state.settings.centerLogo,"centerLogoStatus","Logo enregistré","Aucun logo"); setImg("homeImageDisplay",state.settings.homeImage,"homeImageStatus","Image enregistrée","Aucune image");
   const loginLogo=document.getElementById("loginLogoDisplay"); if(loginLogo){loginLogo.src=state.settings.appLogo||"./icons/icon-192.png";}
@@ -2752,7 +2893,12 @@ function deleteDisplayedPlanning(){
   renderPlanning();
 }
 
-function showCurrentPlanning(){activePlanningView={type:"current",key:null};renderPlanning();}
+function showCurrentPlanning(){
+  const per=getPeriodDates();
+  planningDisplayYear=per.start.getFullYear(); planningDisplayMonth=per.start.getMonth();
+  activePlanningView={type:"current",key:null};
+  renderPlanning();
+}
 function getExportContext(){
   // L'export doit reprendre exactement le planning affiché/validé, y compris
   // les gardes J/N. Certaines synchronisations peuvent laisser state.planning
@@ -2835,12 +2981,39 @@ function buildExportHeaderImage(periodTitle){
   });
 }
 
+function downloadPlanningExcelFallback(ctx){
+  const per=ctx.per, src=ctx.source, dates=datesBetween(per.start,per.end);
+  const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  let html='<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px}th,td{border:1px solid #999;padding:5px;text-align:center}th{background:#eef2f7;font-weight:700}td:first-child,th:first-child{text-align:left;font-weight:700;white-space:nowrap}.j{background:#b7e4c7}.n{background:#f4a6a6}.g{background:#d9d9d9}.f{background:#bfe8ff}</style></head><body>';
+  const title=per.type==='month'?`${months[per.start.getMonth()]} ${per.start.getFullYear()}`:per.type==='week'?`Semaine du ${iso(per.start)} au ${iso(per.end)}`:`${per.weeks} semaines : ${iso(per.start)} au ${iso(per.end)}`;
+  html+=`<h2>${esc(state.settings?.title||'Tox-Garde')} — ${esc(title)}</h2><table><thead><tr><th>Médecin</th>${dates.map(d=>`<th>${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}</th>`).join('')}</tr></thead><tbody>`;
+  state.doctors.filter(d=>d.active).forEach(doc=>{
+    html+=`<tr><td>${esc(doc.name)}</td>`;
+    dates.forEach(d=>{const v=cellFor(doc.name,d,src);const cls=String(v||'').toLowerCase().replace(/[^a-z]/g,'');html+=`<td class="${cls}">${esc(v||'')}</td>`;});
+    html+='</tr>';
+  });
+  html+='</tbody></table></body></html>';
+  const blob=new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`planning_gardes_${ctx.history?'ancien_':''}${ctx.per.key}.xls`; a.style.display='none';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+
 async function exportPlanning(){
-  await ensureXLSX();
-  const ctx=getExportContext(); const per=ctx.per; const src=ctx.source; const dates=datesBetween(per.start,per.end);
-  let rows=[["Médecin",...dates.map(d=>`${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`)]];
-  state.doctors.filter(d=>d.active).forEach(doc=>rows.push([doc.name,...dates.map(d=>cellFor(doc.name,d,src))]));
-  let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Planning"); XLSX.writeFile(wb,`planning_gardes_${ctx.history?"ancien_":""}${per.key}.xlsx`);
+  const ctx=getExportContext();
+  // Excel natif de secours : l'export reste utilisable sur téléphone même
+  // lorsque le CDN SheetJS n'est pas accessible ou qu'un chargement asynchrone
+  // perd le geste utilisateur du bouton.
+  if(window.XLSX){
+    try{
+      const per=ctx.per, src=ctx.source, dates=datesBetween(per.start,per.end);
+      let rows=[["Médecin",...dates.map(d=>`${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`)]];
+      state.doctors.filter(d=>d.active).forEach(doc=>rows.push([doc.name,...dates.map(d=>cellFor(doc.name,d,src))]));
+      let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Planning");
+      XLSX.writeFile(wb,`planning_gardes_${ctx.history?"ancien_":""}${ctx.per.key}.xlsx`); return;
+    }catch(e){console.warn('Export XLSX indisponible, fallback Excel.',e);}
+  }
+  downloadPlanningExcelFallback(ctx);
 }
 
 async function exportPlanningPDF(){
@@ -3209,7 +3382,7 @@ function renderAll(){
   const dash=document.getElementById("dashStats");
   if(dash) dash.innerHTML=`<div class='stat'><span>Médecins actifs</span><b>${state.doctors.filter(d=>d.active).length}</b></div>`;
   renderTodayGuards();
-  if(isAdmin()) renderPlanning(); else {renderDoctorHistorySelect(); const k=activePlanningView?.type==="history"?activePlanningView.key:document.getElementById("doctorHistorySelect")?.value; if(k)showDoctorValidatedPlanning(k);}
+  if(isAdmin()){initPlanningMonthNavigation(); if(activePlanningView?.type==="history" && activePlanningView.key) showHistoryPlanningByKey(activePlanningView.key); else renderPlanning();} else {renderDoctorHistorySelect(); const k=activePlanningView?.type==="history"?activePlanningView.key:document.getElementById("doctorHistorySelect")?.value; if(k)showDoctorValidatedPlanning(k);}
   if(document.getElementById("absences")?.classList.contains("active") && adminAbsView==="leave") renderAdminAbsences();
 }
 function renameDoctor(i,v){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let old=state.doctors[i].name;v=v.trim();if(!v)return;state.doctors[i].name=v;state.absences.forEach(a=>{if(a.doctor===old)a.doctor=v});state.fixed.forEach(a=>{if(a.doctor===old)a.doctor=v});if(state.accounts){state.accounts.forEach(a=>{if(a.doctor===old)a.doctor=v})};save()}
@@ -3501,6 +3674,7 @@ async function save(){
   renderAll();
 }
 let cloudSyncBusy=false;
+let cloudDraftLock=false;
 let cloudPollTimer=null;
 let cloudSyncInFlight=false;
 let cloudSyncLastAt=0;
@@ -3515,6 +3689,7 @@ let lastCloudSnapshot="";
 async function refreshCloudOnStartup(){
   const ses=currentSession(), token=cloudToken();
   if(!ses||!token)return;
+  if(cloudDraftLock)return;
   try{
     const remote=await cloudLoad(token);
     if(remote&&typeof remote==="object"&&Object.keys(remote).length){
@@ -3534,7 +3709,7 @@ async function refreshCloudOnStartup(){
 
 async function pollCloudChanges(force=false){
   const ses=currentSession(), token=cloudToken();
-  if(!ses||!token||cloudSyncBusy||cloudSyncInFlight)return;
+  if(!ses||!token||cloudSyncBusy||cloudSyncInFlight||cloudDraftLock)return;
 
   // Les événements focus/visibility peuvent déclencher une vérification,
   // mais on évite les doublons rapprochés.
@@ -3836,7 +4011,7 @@ function renderMyGuards(){
   el.innerHTML=html;
 }
 function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";document.getElementById("mobileBottomNav")?.classList.remove("doctor-mode");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display="none";return;}
-const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.querySelectorAll(".doctor-only").forEach(el=>el.style.display=admin?"none":"block");const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display="block";const mobileBottomNav=document.getElementById("mobileBottomNav");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileBottomNav)mobileBottomNav.classList.toggle("doctor-mode",!admin);if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display=admin?"none":"flex";document.getElementById("authUserInfo").innerHTML=`${ses.username} — ${admin?"Administrateur":"Médecin"}<button class="btn small" type="button" aria-label="Déconnexion" title="Déconnexion" onclick="logout()">Déconnexion</button>`;
+const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.querySelectorAll(".doctor-only").forEach(el=>el.style.display=admin?"none":"block");const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display="block";const mobileBottomNav=document.getElementById("mobileBottomNav");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileBottomNav)mobileBottomNav.classList.toggle("doctor-mode",!admin);if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display=admin?"none":"flex";const accountDisplay=String(ses.doctor||ses.username||"").replace(/^dr\.?\s*/i,"").replace(/\s+médecin$/i,"").trim().toLocaleUpperCase("fr");document.getElementById("authUserInfo").innerHTML=`<span class="auth-account-name">${escapeHtml(accountDisplay)}</span><button class="btn small" type="button" aria-label="Log out" title="Log out" onclick="logout()">Log out</button>`;
 if(!admin){
   document.getElementById("doctorAbsenceHint").style.display="block";
   const absDoctor=document.getElementById("absDoctor");
@@ -3849,7 +4024,7 @@ if(!admin){
   document.getElementById("doctorAbsenceHint").style.display="none";
   const absDoctor=document.getElementById("absDoctor"); if(absDoctor)absDoctor.disabled=false;
 }
-renderAccountOptions();renderAccounts();renderAll();}
+if(!admin) setAdminAbsView("leave"); renderAccountOptions();renderAccounts();renderAll(); if(!admin) setAdminAbsView("leave");}
 function renderAccountOptions(){const el=document.getElementById("accountDoctor");if(!el)return;el.innerHTML='<option value="">-- Choisir un médecin --</option>'+state.doctors.map(d=>`<option value="${String(d.name).replaceAll('"','&quot;')}">${d.name}</option>`).join("")}
 async function loadCloudAccounts(){if(!isAdmin())return [];const token=cloudToken();if(!token)return [];try{return await supaRpc("toxgarde_list_accounts",{p_token:token})}catch(e){console.error(e);return []}}
 async function renderAccounts(){const el=document.getElementById("accountsBody");if(!el)return;if(!isAdmin()){el.innerHTML='<tr><td colspan="4" class="hint">Accès administrateur.</td></tr>';return;}const accounts=await loadCloudAccounts();el.innerHTML=accounts.map((a,i)=>`<tr><td>${a.doctor||"—"}</td><td>${a.username}</td><td>${a.role==="admin"?"Administrateur":"Médecin"}</td><td>${a.username!==INITIAL_ADMIN.username?`<button class="btn small danger" onclick="deleteDoctorAccount(${i},'${String(a.username).replaceAll("'","\\'")}')">Supprimer</button>`:""}</td></tr>`).join("")||'<tr><td colspan="4" class="hint">Aucun compte médecin créé.</td></tr>'}
@@ -4276,6 +4451,48 @@ if (typeof window.resetJustificationFilters !== 'function') {
   .today-guards-list,.today-status-grid{grid-template-columns:1fr!important}
 }
 
+/* Correctifs mobiles : compte connecté toujours visible + menu Export fiable. */
+@media(max-width:700px){
+  .header-tools{justify-content:space-between!important;flex-wrap:nowrap!important;min-width:0;}
+  .auth-user{flex:1 1 auto!important;min-width:0!important;max-width:none!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;justify-content:flex-start!important;color:var(--text)!important;font-size:12px!important;}
+  .auth-user button{flex:0 0 38px!important;width:38px!important;min-width:38px!important;height:36px!important;margin-left:6px!important;padding:0!important;}
+  #planning .export-menu{flex:0 0 130px!important;min-width:130px!important;}
+  #planning .export-menu-panel{position:fixed!important;left:50%!important;right:auto!important;top:120px!important;transform:translateX(-50%);width:min(300px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px);z-index:9999;}
+  #planning .export-menu-panel .btn{min-height:42px!important;width:100%!important;}
+  /* Mobile uniquement : nom du compte + bouton Déconnexion standard.
+     Le bouton icône reste inchangé sur desktop. */
+  .auth-user{
+    font-size:12px!important;
+    font-weight:700!important;
+    color:var(--text)!important;
+    gap:7px!important;
+  }
+  .auth-account-name{
+    display:inline-block!important;
+    visibility:visible!important;
+    opacity:1!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    min-width:0!important;
+  }
+  .auth-user button{
+    flex:0 0 auto!important;
+    width:auto!important;
+    min-width:92px!important;
+    height:36px!important;
+    margin-left:6px!important;
+    padding:7px 12px!important;
+    font-size:12px!important;
+    line-height:1.2!important;
+    border:1px solid var(--line)!important;
+    border-radius:9px!important;
+    background:var(--card)!important;
+    color:var(--text)!important;
+  }
+  .auth-user button::before{content:none!important;}
+}
+
 /* Correction mobile ciblée : récupération médecin + historique des plannings */
 @media(max-width:650px){
   /* Récupération : le médecin voit une fiche compacte ; l'administrateur
@@ -4316,4 +4533,14 @@ if (typeof window.resetJustificationFilters !== 'function') {
   .history-view-btn,.history-delete-btn{display:inline-flex!important;visibility:visible!important;opacity:1!important;flex:0 0 auto!important;}
 }
 
+</style>
+
+<style>
+/* Correctif ciblé : identité du compte toujours visible sur téléphone. */
+@media (max-width:700px){
+  header .header-tools{display:flex!important;width:100%!important;min-width:0!important;justify-content:flex-start!important;align-items:center!important;flex-wrap:nowrap!important;overflow:visible!important;}
+  header #authUserInfo.auth-user{display:flex!important;visibility:visible!important;opacity:1!important;flex:0 1 auto!important;width:auto!important;max-width:100%!important;min-width:0!important;overflow:visible!important;white-space:nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;}
+  header #authUserInfo .auth-account-name{display:inline-block!important;visibility:visible!important;opacity:1!important;position:static!important;flex:0 1 auto!important;width:auto!important;max-width:45vw!important;min-width:max-content!important;overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;color:var(--text,#172033)!important;font-size:13px!important;font-weight:800!important;line-height:1.3!important;}
+  header #authUserInfo button{flex:0 0 auto!important;width:auto!important;min-width:0!important;height:34px!important;padding:6px 10px!important;font-size:12px!important;margin:0!important;}
+}
 </style>
