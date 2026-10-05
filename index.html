@@ -3656,6 +3656,8 @@ async function login(ev){
     setLoginProgress(100,"Connexion réussie ✓",true);
     await new Promise(resolve=>setTimeout(resolve,350));
     applyAuthUI();
+    // Démarrer la synchronisation automatique immédiatement après une connexion.
+    startCloudPolling();
   }catch(e){
     console.error("Tox-Garde / connexion Supabase :",e);
     if(err){
@@ -3672,7 +3674,7 @@ async function login(ev){
     if(submit)submit.disabled=false;
   }
 }
-async function logout(){stopRealtimeSync();const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
+async function logout(){stopRealtimeSync();if(cloudPollTimer){clearInterval(cloudPollTimer);cloudPollTimer=null;}const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
 async function save(){
   localStorage.setItem("gardeMed",JSON.stringify(state));
   cloudSyncBusy=true;
@@ -3689,8 +3691,7 @@ let cloudSyncLastAt=0;
 let lastCloudSnapshot="";
 
 // Synchronisation cloud optimisée :
-// - plus de polling toutes les 5 secondes ;
-// - contrôle périodique toutes les 2 minutes ;
+// - contrôle périodique toutes les 5 secondes ;
 // - synchronisation immédiate au retour sur l'onglet / à la reconnexion ;
 // - verrou anti-requêtes simultanées ;
 // - aucun historique ni aucune donnée métier supprimés.
@@ -3724,7 +3725,7 @@ async function pollCloudChanges(force=false){
   // Les événements focus/visibility peuvent déclencher une vérification,
   // mais on évite les doublons rapprochés.
   const now=Date.now();
-  if(!force && now-cloudSyncLastAt<15000)return;
+  if(!force && now-cloudSyncLastAt<4000)return;
 
   cloudSyncInFlight=true;
   try{
@@ -3750,8 +3751,10 @@ async function pollCloudChanges(force=false){
 function startCloudPolling(){
   startRealtimeSync();
   if(cloudPollTimer)clearInterval(cloudPollTimer);
-  // Filet de sécurité : une vérification toutes les 2 minutes au lieu de 5 secondes.
-  cloudPollTimer=setInterval(()=>pollCloudChanges(false),120000);
+  // Filet de sécurité : vérification automatique toutes les 5 secondes.
+  // Cela garantit qu'une modification faite par un autre utilisateur apparaît
+  // sans actualiser la page, même si le canal Realtime est indisponible.
+  cloudPollTimer=setInterval(()=>pollCloudChanges(false),5000);
 
   // Synchronisation événementielle : utile lorsqu'un médecin revient sur l'application
   // après qu'un administrateur a modifié/validé un planning.
