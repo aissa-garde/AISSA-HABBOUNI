@@ -229,6 +229,9 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 .history-planning-info{display:flex;flex-direction:column;align-items:flex-start;min-width:0}.history-planning-info strong{font-size:13px}.history-planning-info span{font-size:11px;color:#667085;margin-top:3px}
 .history-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto}.history-view-btn,.history-delete-btn{flex:0 0 auto;border:1px solid #f1b5b5;border-radius:7px;background:#fff5f5;color:#b42318;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer}.history-view-btn{border:1px solid #b8d2ea;border-radius:7px;background:#f4f9ff;color:#24608f;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer}.history-view-btn:hover{background:#e8f3ff}.history-delete-btn:hover{background:#fee4e2}.history-delete-btn:disabled{opacity:.55;cursor:not-allowed}
 .history-current-card{border-color:#8bb8df;background:#f7fbff}.history-current-empty{cursor:default}
+.planning-generation-label{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;white-space:nowrap}
+.planning-generation-label select{min-width:190px;font-weight:600}
+.generation-current-badge{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:999px;font-size:10px;font-weight:800;background:#e8f5ee;color:#18794e;border:1px solid #a7d8bd}
 @media(max-width:560px){.history-planning-card{flex-direction:row!important;align-items:center!important}.history-actions{align-self:center}.history-view-btn,.history-delete-btn{width:22px!important}}
 </style>
 
@@ -295,6 +298,20 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
   .planning-main-actions>#planningTitle{display:none;}
   .planning-main-actions>.btn,.planning-main-actions>.export-menu{flex:0 0 auto!important;}
   #planning .planning-legacy-controls,#planning #historyBlocks{display:none!important;}
+  .planning-month-tabs{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:5px;margin:0 0 10px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 2px 8px rgba(16,24,40,.05);}
+  .planning-month-tab{border:0;background:transparent;color:var(--muted);font-weight:800;font-size:12px;padding:9px 4px;border-radius:9px;cursor:pointer;transition:.15s ease;white-space:nowrap;}
+  .planning-month-tab:hover{background:#f4f7fb;color:var(--text);}
+  .planning-month-tab.active{background:var(--active,#fff0f1);color:var(--text);box-shadow:inset 0 -2px 0 var(--primary,#3f83c5);}
+  .planning-version-tabs{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;margin:0 0 14px;padding:7px 10px;border:1px solid var(--line);border-radius:12px;background:#f8fafc;}
+  .planning-version-tab{border:1px solid #d8e0ea;background:#fff;color:var(--text);border-radius:999px;padding:7px 13px;font-size:12px;font-weight:800;cursor:pointer;}
+  .planning-version-tab:hover{box-shadow:0 2px 7px rgba(16,24,40,.08);}
+  .planning-version-tab.active{border-color:#8fc8aa;background:#eaf7ef;color:#18794e;}
+  .planning-version-tab .version-status{font-size:10px;margin-left:4px;font-weight:800;}
+  .planning-year-label{font-size:12px!important;font-weight:800!important;}
+  .planning-year-label select{min-width:92px!important;height:38px!important;border-radius:10px!important;font-size:14px!important;}
+  .planning-month-nav strong{font-size:20px!important;letter-spacing:.1px;}
+  @media(max-width:800px){.planning-month-tabs{grid-template-columns:repeat(6,minmax(0,1fr));}.planning-month-tab{font-size:11px;padding:8px 2px}.planning-version-tabs{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}.planning-month-nav{justify-content:space-between!important;}.planning-month-nav strong{min-width:0!important;}}
+  @media(max-width:430px){.planning-month-tabs{grid-template-columns:repeat(4,minmax(0,1fr));}}
   @media(max-width:800px){
     .planning-month-nav{justify-content:flex-start;overflow-x:auto;padding-bottom:10px;}
     .planning-month-nav strong{min-width:145px;font-size:16px;}
@@ -710,7 +727,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <section id="team" class="panel">
 <div class="card"><h2>Équipe</h2>
 <div class="actions admin-only" id="teamAdminControls"><input id="newDoctor" placeholder="Nom du médecin" style="max-width:320px"><button class="btn primary" onclick="addDoctor()">Ajouter</button><input type="file" id="teamFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="importTeamFile(event)"><button class="btn" onclick="document.getElementById('teamFile').click()">📥 Importer un fichier</button><button class="btn" onclick="downloadTeamTemplate()">Télécharger modèle équipe</button></div>
-<table id="teamTable"><thead><tr><th class="name">Médecin</th><th>Actif</th><th>Type de garde automatique</th><th>Habilité week-end</th><th>J</th><th>N</th><th>G</th><th>F</th><th>Total</th><th>POINTS</th><th></th></tr></thead><tbody id="teamBody"></tbody></table></div>
+<table id="teamTable"><thead><tr><th class="name">Médecin</th><th>Actif</th><th>Date intégration</th><th>Type de garde automatique</th><th>Habilité week-end</th><th>J</th><th>N</th><th>G</th><th>F</th><th>Total</th><th>POINTS</th><th></th></tr></thead><tbody id="teamBody"></tbody></table></div>
 </section>
 
 <section id="accounts" class="panel">
@@ -743,7 +760,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
   <button type="button" class="btn admin-only adminAbsTab active" data-view="availability" onclick="setAdminAbsView('availability')">+ Ajouter nouveaux</button>
   <button type="button" class="btn adminAbsTab" data-view="weekend" onclick="setAdminAbsView('weekend')">Garde weekend</button>
   <button type="button" class="btn adminAbsTab" data-view="holiday" onclick="setAdminAbsView('holiday')">Garde jours fériés</button>
-  <button type="button" class="btn adminAbsTab" data-view="leave" onclick="setAdminAbsView('leave')">Congés / Indisponibilité / Récup</button>
+  <button type="button" class="btn adminAbsTab" data-view="leave" onclick="setAdminAbsView('leave')">Congés / Indisponibilité / Récup / MLD / Maternité</button>
 </div>
 
 <div id="adminAvailabilityPane">
@@ -751,7 +768,8 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <label>Médecin<select id="absDoctor"></select></label>
 <label>Du<input type="date" id="absStart"></label>
 <label>Au<input type="date" id="absEnd"></label>
-<label>Type<select id="absType"><option>CONGÉ</option><option>INDISPONIBLE</option><option>RÉCUP</option><option>G</option><option>F</option></select></label>
+<label>Type<select id="absType" onchange="updateJustificationRequirement()"><option>CONGÉ</option><option>INDISPONIBLE</option><option>RÉCUP</option><option>MALADIE LONGUE DURÉE</option><option>CONGÉ DE MATERNITÉ</option><option>G</option><option>F</option></select></label>
+<label id="absenceJustificationWrap" style="display:none">Justificatif <input type="file" id="absJustificationFile" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"><small class="hint">Obligatoire pour maladie longue durée et congé de maternité.</small></label>
 </div><br><button class="btn primary" onclick="addAbsence()">Ajouter</button>
 <hr style="margin:20px 0"><h3>Importation Excel</h3>
 <div class="admin-only"><input type="file" id="excelFile" accept=".xlsx,.xls,.csv" onchange="importExcel(event)"></div>
@@ -800,14 +818,14 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <section id="planning" class="panel">
 <div class="card"><h2>Planning</h2>
 <div class="planning-month-nav" aria-label="Navigation du planning">
-  <button type="button" class="btn" onclick="planningChangeMonth(-1)">‹ Mois précédent</button>
-  <strong id="planningMonthLabel">Septembre 2026</strong>
-  <button type="button" class="btn" onclick="planningChangeMonth(1)">Mois suivant ›</button>
   <label class="planning-year-label">Année
-    <select id="planningYearSelect" onchange="planningChangeYear(this.value)"></select>
+    <select id="planningYearSelect" onchange="planningChangeYear(this.value)" aria-label="Choisir l'année"></select>
   </label>
+  <strong id="planningMonthLabel">Septembre 2026</strong>
   <button id="deleteDisplayedPlanningBtn" type="button" class="btn danger admin-only" onclick="deleteDisplayedPlanning()">🗑 Supprimer planning</button>
 </div>
+<div id="planningMonthTabs" class="planning-month-tabs" aria-label="Sélection du mois"></div>
+<div id="planningVersionTabs" class="planning-version-tabs admin-only" aria-label="Versions du planning"></div>
 <div class="actions planning-main-actions"><span id="planningTitle"></span>
 <button class="btn primary admin-only" onclick="manualEditPlanning()">✎ Modifier manuellement</button>
 <details class="export-menu admin-only">
@@ -877,6 +895,21 @@ if(!state.settings) state.settings={title:"Tox-Garde",subtitle:"Simple. Équitab
 if(!state.generationOffset) state.generationOffset=0;
 if(!state.doctors.length) state.doctors=demoDoctors.map(name=>({name,active:true,shift:"BOTH",weekend:true}));
 state.doctors.forEach(d=>{if(!d.shift)d.shift="BOTH";});
+function todayISO(){return iso(new Date());}
+function earliestDoctorHistoryDate(name){
+  let earliest=null;
+  const consider=v=>{const k=normalizeDateKey(v);if(k&&(!earliest||k<earliest))earliest=k;};
+  (state.fixed||[]).filter(x=>x?.doctor===name).forEach(x=>consider(x.date));
+  Object.values(state.planningHistory||{}).forEach(h=>{
+    if(!h?.confirmed) return;
+    Object.values(h.planning||{}).flat().filter(x=>x?.doctor===name).forEach(x=>consider(x.date));
+    (h.fixed||[]).filter(x=>x?.doctor===name).forEach(x=>consider(x.date));
+  });
+  return earliest || "2000-01-01";
+}
+state.doctors.forEach(d=>{
+  if(!d.participationStart) d.participationStart=earliestDoctorHistoryDate(d.name);
+});
 const months=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 months.forEach((m,i)=>document.getElementById("month").innerHTML+=`<option value="${i}">${m}</option>`);
 document.getElementById("month").value=8;
@@ -909,8 +942,67 @@ function initPlanningMonthNavigation(){
     yearEl.value=String(planningDisplayYear);
   }
   if(label)label.textContent=`${months[planningDisplayMonth]} ${planningDisplayYear}`;
+  const tabs=document.getElementById("planningMonthTabs");
+  if(tabs){
+    tabs.innerHTML=months.map((m,i)=>`<button type="button" class="planning-month-tab ${i===planningDisplayMonth?'active':''}" onclick="planningSelectMonth(${i})">${m.slice(0,3)}</button>`).join("");
+  }
 }
 function planningDisplayKey(){return `month_${planningDisplayYear}_${String(planningDisplayMonth+1).padStart(2,"0")}`;}
+function syncGenerationPeriodWithPlanningDisplay(){
+  const typeEl=document.getElementById("periodType");
+  if(typeEl && typeEl.value!=="month") typeEl.value="month";
+  const yearEl=document.getElementById("year");
+  const monthEl=document.getElementById("month");
+  if(yearEl) yearEl.value=String(planningDisplayYear);
+  if(monthEl) monthEl.value=String(planningDisplayMonth);
+}
+function generationNumberForKey(key,h){
+  const n=Number(h?.generationNumber);
+  if(Number.isFinite(n)&&n>0)return Math.floor(n);
+  const hp=historyPeriod(key,h||{});
+  if(!hp?.start)return 1;
+  const same=Object.keys(state.planningHistory||{}).filter(k=>{
+    const x=state.planningHistory[k], p=historyPeriod(k,x||{});
+    return p?.type===hp.type && p.start.getFullYear()===hp.start.getFullYear() && p.start.getMonth()===hp.start.getMonth();
+  }).sort((a,b)=>generatedTimestamp(state.planningHistory[a])-generatedTimestamp(state.planningHistory[b]));
+  return Math.max(1,same.indexOf(key)+1);
+}
+function planningGenerationEntries(year,month){
+  const currentKey=`month_${year}_${String(month+1).padStart(2,"0")}`;
+  const entries=[];
+  Object.keys(state.planningHistory||{}).forEach(k=>{
+    const h=state.planningHistory[k], hp=historyPeriod(k,h||{});
+    if(!hp?.start || hp.type!=="month" || hp.start.getFullYear()!==year || hp.start.getMonth()!==month)return;
+    entries.push({key:k,h,generation:generationNumberForKey(k,h),current:k===currentKey});
+  });
+  return entries.sort((a,b)=>b.generation-a.generation || generatedTimestamp(b.h)-generatedTimestamp(a.h));
+}
+function updatePlanningGenerationSelector(){
+  const sel=document.getElementById("planningGenerationSelect");
+  const tabs=document.getElementById("planningVersionTabs");
+  if(sel)sel.style.display="none";
+  const entries=planningGenerationEntries(planningDisplayYear,planningDisplayMonth);
+  if(tabs){
+    if(!isAdmin()){tabs.innerHTML="";tabs.style.display="none";}
+    else if(!entries.length){tabs.innerHTML='<span class="hint">Aucune version pour ce mois.</span>';tabs.style.display="flex";}
+    else{
+      tabs.style.display="flex";
+      const currentKey=planningDisplayKey();
+      const selected=activePlanningView?.type==="history"?activePlanningView.key:currentKey;
+      tabs.innerHTML=entries.map(x=>{
+        const active=x.key===selected;
+        return `<button type="button" class="planning-version-tab ${active?'active':''}" onclick="planningChangeGeneration('${escapeHtml(x.key)}')">V${x.generation}${x.current?'<span class="version-status">● ACTUELLE</span>':''}</button>`;
+      }).join("");
+    }
+  }
+}
+
+function planningChangeGeneration(key){
+  if(!key)return;
+  const currentKey=planningDisplayKey();
+  if(key===currentKey){showCurrentPlanning();return;}
+  showHistoryPlanningByKey(key);
+}
 function findPlanningHistoryKeyForMonth(year,month){
   const exact=`month_${year}_${String(month+1).padStart(2,"0")}`;
   if(state.planningHistory?.[exact]) return exact;
@@ -925,12 +1017,16 @@ function updatePlanningDeleteButton(enabled){
   if(btn)btn.disabled=!enabled;
 }
 function showPlanningDisplayMonth(){
+  // IMPORTANT : capture the real/current planning period BEFORE syncing the
+  // generation controls to the month the user clicked. Otherwise the sync
+  // would make every selected month look like the current planning period.
+  const actualCurrentPer=getPeriodDates();
+  const actualCurrentKey=actualCurrentPer.key;
   initPlanningMonthNavigation();
-  const currentPer=getPeriodDates();
-  const key=planningDisplayKey();
-  const currentKey=currentPer.key;
+  const selectedKey=planningDisplayKey();
+  syncGenerationPeriodWithPlanningDisplay();
   const historyKey=findPlanningHistoryKeyForMonth(planningDisplayYear,planningDisplayMonth);
-  if(key===currentKey){
+  if(selectedKey===actualCurrentKey){
     activePlanningView={type:"current",key:null};
     renderPlanning();
   }else if(historyKey){
@@ -943,6 +1039,14 @@ function showPlanningDisplayMonth(){
     const title=document.getElementById("planningTitle"); if(title)title.textContent="";
   }
   initPlanningMonthNavigation();
+  updatePlanningGenerationSelector();
+}
+function planningSelectMonth(monthIndex){
+  const m=Number(monthIndex);
+  if(!Number.isInteger(m)||m<0||m>11)return;
+  initPlanningMonthNavigation();
+  planningDisplayMonth=m;
+  showPlanningDisplayMonth();
 }
 function planningChangeMonth(delta){
   initPlanningMonthNavigation();
@@ -1014,7 +1118,7 @@ openTab=function(id){
   if(window.matchMedia("(max-width:700px)").matches)closeMobileNav();
 };
 
-function addDoctor(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let n=document.getElementById("newDoctor").value.trim();if(!n)return;if(state.doctors.some(d=>d.name.toLowerCase()===n.toLowerCase()))return alert("Ce médecin existe déjà.");state.doctors.push({name:n,active:true,shift:"BOTH",weekend:true});document.getElementById("newDoctor").value="";save()}
+function addDoctor(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let n=document.getElementById("newDoctor").value.trim();if(!n)return;if(state.doctors.some(d=>d.name.toLowerCase()===n.toLowerCase()))return alert("Ce médecin existe déjà.");state.doctors.push({name:n,active:true,shift:"BOTH",weekend:true,participationStart:todayISO()});document.getElementById("newDoctor").value="";save()}
 function loadDemo(){state.doctors=demoDoctors.map(name=>({name,active:true,shift:"BOTH",weekend:true}));save()}
 function importTeamFile(ev){if(!isAdmin())return alert("Cette action est réservée aux administrateurs.");
   const f=ev.target.files?.[0]; if(!f)return;
@@ -1037,6 +1141,7 @@ function importTeamFile(ev){if(!isAdmin())return alert("Cette action est réserv
         const activeKey=findKey(keys,["actif","active","disponible"]);
         const shiftKey=findKey(keys,["type de garde","type garde","garde","shift","service"]);
         const weekendKey=findKey(keys,["habilité week-end","habilite week-end","week-end","weekend","garde week-end","garde weekend"]);
+        const participationKey=findKey(keys,["date intégration","date integration","date de début de participation","date debut participation","participationstart"]);
         let active=true;
         if(activeKey){const v=norm(row[activeKey]); if(["non","no","0","false","inactif","inactive"].includes(v))active=false;}
         let raw=shiftKey?norm(row[shiftKey]):"both";
@@ -1054,7 +1159,14 @@ function importTeamFile(ev){if(!isAdmin())return alert("Cette action est réserv
           if(["non","no","0","false","inactif","inactive"].includes(w)) weekend=false;
         }
         if(doctors.some(d=>d.name.toLowerCase()===name.toLowerCase())){skipped++;return;}
-        doctors.push({name,active,shift,weekend});
+        let participationStart="";
+        if(participationKey){
+          const rawDate=row[participationKey];
+          const parsed=parseExcelDate(rawDate);
+          participationStart=parsed?iso(parsed):normalizeDateKey(rawDate);
+        }
+        if(!participationStart) participationStart=active?todayISO():"";
+        doctors.push({name,active,shift,weekend,participationStart});
       });
       if(!doctors.length){alert("Aucun médecin valide trouvé dans le fichier.");return;}
       if(!confirm(`Importer ${doctors.length} médecin(s) et remplacer l'équipe actuelle ?`))return;
@@ -1067,7 +1179,7 @@ function importTeamFile(ev){if(!isAdmin())return alert("Cette action est réserv
 }
 async function downloadTeamTemplate(){
   await ensureXLSX();
-  const rows=[["Médecin","Actif","Type de garde","Habilité week-end"],["Dr Exemple 1","Oui","J","Oui"],["Dr Exemple 2","Oui","N","Oui"],["Dr Exemple 3","Oui","J+N","Oui"]];
+  const rows=[["Médecin","Actif","Type de garde","Habilité week-end","Date intégration"],["Dr Exemple 1","Oui","J","Oui",todayISO()],["Dr Exemple 2","Oui","N","Oui",todayISO()],["Dr Exemple 3","Oui","J+N","Oui",todayISO()]];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Equipe"); XLSX.writeFile(wb,"modele_equipe_tox-garde.xlsx");
 }
 function delDoctor(i){if(!isAdmin())return alert("Accès réservé aux administrateurs.");if(confirm("Supprimer ce médecin ?")){state.doctors.splice(i,1);save()}}
@@ -1112,7 +1224,7 @@ function addAbsence(){
   let type=String(document.getElementById("absType").value||"").trim().toUpperCase(); if(type==="RECUP")type="RÉCUP";
   if(!doctor||!start||!end||end<start)return alert("Vérifie les dates.");
   if(ses.role!=="admin"&&doctor!==ses.doctor)return alert("Un compte Médecin ne peut saisir que ses propres disponibilités/récupérations.");
-  if(ses.role!=="admin"&&!['CONGÉ','INDISPONIBLE','INDISP','RÉCUP'].includes(type))return alert("Un compte Médecin peut uniquement saisir un congé, une indisponibilité ou une récupération.");
+  if(ses.role!=="admin"&&!['CONGÉ','INDISPONIBLE','INDISP','RÉCUP','RECUP','MALADIE LONGUE DURÉE','CONGÉ DE MATERNITÉ'].includes(type))return alert("Un compte Médecin peut uniquement saisir un congé, une indisponibilité, une récupération, une maladie longue durée ou un congé de maternité.");
   if(type==="G"||type==="F"){
     const dates=[];let d=dateFromISO(start),last=dateFromISO(end);while(d<=last){dates.push(iso(d));d.setDate(d.getDate()+1);}
     for(const date of dates){
@@ -1389,6 +1501,8 @@ function specialFixedBlock(doc,date){
 }
 function canAssign(doc,date,type,planning){
   if(!doc.active)return false;
+  const start=normalizeDateKey(doc.participationStart);
+  if(start && iso(date)<start)return false;
   if(doc.shift==="J"&&type!=="J")return false;
   if(doc.shift==="N"&&type!=="N")return false;
   // Aucune garde pendant un congé ou une indisponibilité.
@@ -1580,23 +1694,46 @@ function weeklyRepeatPenalty(doc,date,type,planning){
   }
   return count>=1 ? 1 : 0;
 }
+function absenceTypeExcludedFromEquity(type){
+  const t=String(type||"").trim().toUpperCase();
+  return t==="MALADIE LONGUE DURÉE" || t==="CONGÉ DE MATERNITÉ";
+}
+function effectiveParticipationDays(doc,periodEnd){
+  const startKey=normalizeDateKey(doc?.participationStart)||"2000-01-01";
+  const endKey=iso(periodEnd);
+  if(!startKey||!endKey||startKey>endKey)return 0;
+  let start=dateFromISO(startKey), end=dateFromISO(endKey);
+  let days=Math.floor((end-start)/86400000)+1;
+  for(const a of (state.absences||[])){
+    if(a?.doctor!==doc?.name || !absenceTypeExcludedFromEquity(a.type)) continue;
+    const as=dateFromISO(normalizeDateKey(a.start)), ae=dateFromISO(normalizeDateKey(a.end));
+    if(!as||!ae)continue;
+    const os=as>start?as:start, oe=ae<end?ae:end;
+    if(oe>=os) days-=Math.floor((oe-os)/86400000)+1;
+  }
+  return Math.max(0,days);
+}
+function equityRate(doc,c,monthly,date,planning){
+  const end=date instanceof Date?date:dateFromISO(iso(date));
+  const days=Math.max(1,effectiveParticipationDays(doc,end));
+  const load=workload(c?.[doc.name]||{});
+  // Charge par jour réellement participable. Cela empêche un nouveau médecin
+  // d'être considéré comme "en retard" pendant toute la période antérieure à son arrivée.
+  return load/days;
+}
 function candidateScore(doc,type,c,monthly,date,planning){
   const x=c[doc.name]||{J:0,N:0,G:0,F:0};
   const m=(monthly&&monthly[doc.name])||{J:0,N:0,G:0,F:0};
-  // EQUITE PRIORITAIRE : la charge pondérée cumulée est l'objectif
-  // principal. La charge du mois courant vient ensuite.
-  // Important : chaque cellule G/F représente un jour de garde et vaut 3 points.
-  // Ainsi G+G = 6 points et F+F = 6 points. Ils réduisent naturellement les J/N
-  // attribués ensuite à un médecin déjà très chargé.
-  const total=workload(x);
-  const month=workload(m);
+  const total=workload(x), month=workload(m);
   const weeklyRepeat=weeklyRepeatPenalty(doc,date,type,planning);
   const shiftBalance=type==="J" ? (x.J||0) : (x.N||0)*2;
   const opposite=type==="J" ? (x.N||0)*2 : (x.J||0);
   const imbalance=Math.max(0,shiftBalance-opposite);
-  // La répétition J/J ou N/N est une préférence, pas une interdiction.
-  // Elle n'écrase donc jamais la charge pondérée ni la charge mensuelle.
-  return total*100000 + month*1000 + weeklyRepeat*100 + shiftBalance*20 + imbalance*5;
+  const rate=equityRate(doc,c,monthly,date,planning);
+  // L'équité réelle est prioritaire : comparer une charge normalisée par les
+  // jours réellement participables, et non le nombre brut de jours précédant
+  // l'intégration. Le médecin arrivé tard ne doit jamais "rattraper" le passé.
+  return rate*10000000 + total*1000 + month*20 + weeklyRepeat*100 + shiftBalance*20 + imbalance*5;
 }
 function recoveryDeltaFor(planning, absences){
   const delta={};
@@ -1667,19 +1804,35 @@ function generate(){
   },50);
 }
 function generateCore(){
+  // CORRECTION : le mois/année choisis dans le bloc « Générer le planning »
+  // sont la source de vérité pour la génération. On ne doit plus les remplacer
+  // par l'ancien mois affiché dans la navigation du planning (souvent septembre).
+  const periodType=document.getElementById("periodType")?.value||"month";
   const per=getPeriodDates();
+  if(periodType==="month" && per?.start){
+    // Après avoir lu le mois réellement sélectionné, synchroniser l'affichage
+    // du planning sur ce mois, et non l'inverse.
+    planningDisplayYear=per.start.getFullYear();
+    planningDisplayMonth=per.start.getMonth();
+  }
   const generationAt=new Date().toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
 
-  // Archive/replace an existing draft or confirmed planning for the same period.
+  // Chaque nouvelle génération du même mois reçoit un numéro propre.
+  // La clé exacte du mois reste la génération actuelle ; les précédentes
+  // sont archivées sous des clés historisées. La logique du générateur
+  // (équité, 48 h, G/F, J/N, Jr, AUTO SYNC) n'est pas modifiée.
+  const existingGenerationEntries=planningGenerationEntries(per.start.getFullYear(),per.start.getMonth());
+  const nextGeneration=(existingGenerationEntries.reduce((m,x)=>Math.max(m,x.generation||0),0)||0)+1;
   if(state.planningHistory[per.key]){
     const old=historyData(per.key);
     if(old?.confirmed) undoConfirmedPeriod(old);
     const archiveKey=`${per.key}_historique_${Date.now()}`;
     state.planningHistory[archiveKey]={...JSON.parse(JSON.stringify(old)),
-      includeInEquity:false,confirmed:false,
-      label:`Généré le ${old.generatedAt||'date inconnue'}`,
-      generatedAt:old.generatedAt||'',
-      period:old.period||{start:iso(per.start),end:iso(per.end),type:per.type,weeks:per.weeks||1}};
+      includeInEquity:false,confirmed:false,currentGeneration:false,
+      generationNumber:old?.generationNumber||nextGeneration-1,
+      label:`Génération ${old?.generationNumber||nextGeneration-1}`,
+      generatedAt:old?.generatedAt||'',
+      period:old?.period||{start:iso(per.start),end:iso(per.end),type:per.type,weeks:per.weeks||1}};
     delete state.planningHistory[per.key];
   }
 
@@ -1875,13 +2028,13 @@ function generateCore(){
     }
     Object.values(weekBuckets).forEach(n=>{if(n>1) weeklyRepeats+=n-1;});
     let metric=missing*1e15 + restCount*1e14 + weeklyRepeats*100;
-    const loads=active.map(d=>workload(st.counts[d.name]||{}));
-    const monthLoads=active.map(d=>workload(st.monthly[d.name]||{}));
+    const loads=active.map(d=>equityRate(d,st.counts,st.monthly,per.end,st.planning));
+    const monthLoads=active.map(d=>workload(st.monthly[d.name]||{})/Math.max(1,effectiveParticipationDays(d,per.end)));
     const mean=loads.length?loads.reduce((a,b)=>a+b,0)/loads.length:0;
     const meanM=monthLoads.length?monthLoads.reduce((a,b)=>a+b,0)/monthLoads.length:0;
-    // Equité globale puis équité du mois courant.
-    metric += loads.reduce((s,x)=>s+(x-mean)**2,0)*10000;
-    metric += monthLoads.reduce((s,x)=>s+(x-meanM)**2,0)*500;
+    // Equité proportionnelle à la participation réelle, puis charge mensuelle normalisée.
+    metric += loads.reduce((s,x)=>s+(x-mean)**2,0)*100000000;
+    metric += monthLoads.reduce((s,x)=>s+(x-meanM)**2,0)*50000;
 
     // OBJECTIF J+N = SOUPLE et SUBORDONNE A L'EQUITE.
     // On ne pénalise que légèrement l'absence d'un J ou d'un N chez un
@@ -1937,6 +2090,16 @@ function generateCore(){
   const planning=chosen.planning||{};
   const missing=chosen.missing||[];
 
+  // CONTRAINTE DURE DATE DE PARTICIPATION : aucune garde générée avant
+  // la date réelle d'intégration du médecin.
+  const participationViolations=[];
+  for(const x of Object.values(planning||{}).flat()){
+    if(!x?.doctor || !x?.date || !["J","N"].includes(x.type)) continue;
+    const d=state.doctors.find(v=>v.name===x.doctor);
+    if(d?.participationStart && normalizeDateKey(x.date)<normalizeDateKey(d.participationStart))
+      participationViolations.push(`${x.date} : ${x.doctor} avant sa date d'intégration ${d.participationStart}`);
+  }
+  if(participationViolations.length) missing.push(`Avant date d’intégration : ${participationViolations.slice(0,12).join(" • ")}`);
   // CONTRAINTE DURE ABSENCE/RÉCUPÉRATION :
   // aucune garde générée ne peut coïncider avec un CONGÉ, une INDISPONIBILITÉ
   // ou une RÉCUPÉRATION. Cette vérification finale est indépendante du moteur
@@ -2008,8 +2171,9 @@ function generateCore(){
     fixed:JSON.parse(JSON.stringify(state.fixed)),
     absences:JSON.parse(JSON.stringify(state.absences)),
     period:{start:iso(per.start),end:iso(per.end),type:per.type,weeks:per.weeks||1},
-    includeInEquity:false,confirmed:false,
-    label:`Généré le ${generationAt}`,generatedAt:generationAt,generatedAtISO:Date.now()
+    includeInEquity:false,confirmed:false,currentGeneration:true,
+    generationNumber:nextGeneration,
+    label:`Génération ${nextGeneration}`,generatedAt:generationAt,generatedAtISO:Date.now()
   };
   state.planning=planning;
   state.planningGeneratedAt=Date.now();
@@ -2314,7 +2478,9 @@ function renderHistorySelect(){
         const age=x.current
           ? generatedAgeText(x.h?.generatedAtISO || x.h?.generatedAt)
           : generatedAge(x.h);
-        const label=x.current ? `${months[currentPer.start.getMonth()]} ${currentPer.start.getFullYear()}` : historyPeriodLabel(x.key,x.h);
+        const generation=x.current ? generationNumberForKey(currentKey,x.h||{}) : generationNumberForKey(x.key,x.h);
+        const label=`Génération ${generation}`;
+        const status=x.current?' — ACTUELLE':' — Ancienne';
         const viewBtn=x.current
           ? `<button type="button" class="history-view-btn" title="Voir le tableau" aria-label="Voir le tableau" onclick="event.stopPropagation();selectHistoryBlock('',true)">👁</button>`
           : `<button type="button" class="history-view-btn" title="Voir le tableau" aria-label="Voir le tableau" onclick="event.stopPropagation();selectHistoryBlock('${escapeHtml(x.key)}',false)">👁</button>`;
@@ -2322,7 +2488,7 @@ function renderHistorySelect(){
           ? `<button type="button" class="history-delete-btn" title="Supprimer ce planning" aria-label="Supprimer ce planning" onclick="event.stopPropagation();deleteDisplayedPlanning()">🗑</button>`
           : `<button type="button" class="history-delete-btn" title="Supprimer ce planning" aria-label="Supprimer ce planning" onclick="event.stopPropagation();deleteHistoryBlock('${escapeHtml(x.key)}')">🗑</button>`;
         return `<div class="history-planning-card ${x.current?'history-current-card':''}" role="button" tabindex="0" onclick="selectHistoryBlock('${escapeHtml(x.key)}',${x.current})" onkeydown="if(event.key==='Enter'||event.key===' ')selectHistoryBlock('${escapeHtml(x.key)}',${x.current})">
-          <div class="history-planning-info"><strong>${escapeHtml(label)}${x.current?' — Actuel':''}</strong><span>${age?`Généré ${x.current?'':'il y a '}${escapeHtml(age)}`:(x.current?'Planning actuel':'Date de génération inconnue')}</span></div>
+          <div class="history-planning-info"><strong>${escapeHtml(label)}${status}</strong><span>${age?`Généré ${x.current?'':'il y a '}${escapeHtml(age)}`:(x.current?'Planning actuel':'Date de génération inconnue')}</span></div>
           <div class="history-actions">${viewBtn}${deleteBtn}</div>
         </div>`;
       }).join("");
@@ -2422,6 +2588,8 @@ function showHistoryPlanningByKey(k){
   activePlanningView={type:"history",key:k};
   renderPlanning(h,hp);
   updatePlanningDeleteButton(true);
+  initPlanningMonthNavigation();
+  updatePlanningGenerationSelector();
 }
 
 function doctorCurrentMonthHistoryKey(){
@@ -2634,8 +2802,14 @@ function applyHistoricalInlineEdit(key,name,date,raw){
   const oldFixedIndex=h.fixed.findIndex(x=>x.doctor===name&&x.date===date);
   const sameDayFixed=h.fixed.filter(x=>x.date===date&&x.doctor!==name);
   const otherPlanning=(h.planning[date]||[]).filter(x=>x.doctor!==name);
+  const sameDoctorPlanning=(h.planning[date]||[]).find(x=>x.doctor===name);
+  const sameDoctorFixedIndex=h.fixed.findIndex(x=>x.doctor===name&&x.date===date);
+  const sameDoctorGF=(sameDoctorFixedIndex>=0 && sameDoctorFixedIndex!==oldFixedIndex && ["G","F"].includes(String(h.fixed[sameDoctorFixedIndex]?.type||"").toUpperCase())) || !!(h.planning[date]||[]).find(x=>x.doctor===name&&["G","F"].includes(String(x.type||"").toUpperCase()));
+  if(["J","N"].includes(value) && sameDoctorGF){alert(`CONFLIT : ${name} a déjà une garde G/F le ${date}.\n\nUne garde G/F occupe toute la journée : aucune autre garde ne peut être attribuée le même jour.`);return;}
   if(["J","N"].includes(value) && ([...otherPlanning,...sameDayFixed].some(x=>x.type===value))){alert(`CONFLIT : une garde ${value} est déjà attribuée le ${date} à un autre médecin.`);return;}
   if(["G","F"].includes(value)){
+    if(sameDoctorPlanning){alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorPlanning.type} le ${date}.\n\nUne garde G/F ne peut pas être cumulée avec une autre garde le même jour.`);return;}
+    if(oldFixedIndex<0 && sameDoctorFixedIndex>=0){alert(`CONFLIT : ${name} a déjà une garde ${h.fixed[sameDoctorFixedIndex].type} le ${date}.\n\nUne garde G/F ne peut pas être cumulée avec une autre garde le même jour.`);return;}
     const conflict=h.fixed.find(x=>x.date===date&&x.doctor!==name&&["G","F"].includes(String(x.type).toUpperCase()));
     const conflictP=(h.planning[date]||[]).find(x=>x.date===date&&x.doctor!==name&&["G","F"].includes(String(x.type).toUpperCase()));
     if(conflict||conflictP){const c=conflict||conflictP;alert(`CONFLIT : la période de garde ${c.type} du ${date} est déjà attribuée à ${c.doctor}.`);return;}
@@ -2671,6 +2845,11 @@ function applyHistoricalInlineEdit(key,name,date,raw){
   renderPlanning(hh,historyPeriod(key,hh));
 }
 function startInlineEdit(td,name,date){ editCell(td.querySelector(".cellEditBtn")); }
+function sameDoctorGFOnDate(name,date,excludeFixedIndex=-1){
+  const fixed=(state.fixed||[]).some((x,i)=>i!==excludeFixedIndex&&x?.doctor===name&&x?.date===date&&["G","F"].includes(String(x.type||"").toUpperCase()));
+  const planning=(state.planning?.[date]||[]).some(x=>x?.doctor===name&&["G","F"].includes(String(x.type||"").toUpperCase()));
+  return fixed||planning;
+}
 function applyInlineEdit(name,date,raw){
   if(!isAdmin())return alert("Modification du planning réservée à l'administrateur.");
   let value=String(raw||"").trim().toUpperCase();
@@ -2700,6 +2879,13 @@ function applyInlineEdit(name,date,raw){
       alert(`CONFLIT : une garde ${value} est déjà attribuée le ${date} à ${duplicateSameType[0].doctor}.\\n\\nUn seul ${value} est autorisé par jour.`);
       renderPlanning();return;
     }
+    // Une garde G/F occupe toute la journée : aucune autre garde ne peut être
+    // ajoutée au même médecin le même jour.
+    if(sameDoctorGFOnDate(name,date,oldFixedIndex)){
+      const gf=(state.fixed||[]).find((x,i)=>i!==oldFixedIndex&&x?.doctor===name&&x?.date===date&&["G","F"].includes(String(x.type||"").toUpperCase())) || (state.planning[date]||[]).find(x=>x?.doctor===name&&["G","F"].includes(String(x.type||"").toUpperCase()));
+      alert(`CONFLIT : ${name} a déjà une garde ${gf?.type||"G/F"} le ${date}.\n\nUne garde G/F occupe toute la journée : aucune autre garde ne peut être attribuée le même jour.`);
+      renderPlanning();return;
+    }
     // Un même médecin ne peut jamais cumuler deux postes le même jour.
     if(sameDoctorOtherFixed){
       alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorOtherFixed.type} le ${date}.\\n\\nUn médecin ne peut pas avoir deux gardes le même jour.`);
@@ -2722,7 +2908,12 @@ function applyInlineEdit(name,date,raw){
     // garde. Le conflit ne s'applique donc que lorsqu'il s'agit d'une autre
     // garde fixe du même médecin.
     if(sameDoctorOtherFixed && oldFixedIndex<0){
-      alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorOtherFixed.type} le ${date}.`);
+      alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorOtherFixed.type} le ${date}.\n\nUne garde G/F ne peut pas être cumulée avec une autre garde le même jour.`);
+      renderPlanning();return;
+    }
+    const sameDoctorOtherPlanning=(state.planning[date]||[]).find(x=>x?.doctor===name);
+    if(sameDoctorOtherPlanning){
+      alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorOtherPlanning.type} le ${date}.\n\nUne garde G/F ne peut pas être cumulée avec une autre garde le même jour.`);
       renderPlanning();return;
     }
     // Une période/date de garde G ou F ne peut être attribuée qu’à un seul
@@ -2906,6 +3097,7 @@ function showCurrentPlanning(){
   planningDisplayYear=per.start.getFullYear(); planningDisplayMonth=per.start.getMonth();
   activePlanningView={type:"current",key:null};
   renderPlanning();
+  updatePlanningGenerationSelector();
 }
 function getExportContext(){
   // L'export doit reprendre exactement le planning affiché/validé, y compris
@@ -3214,7 +3406,8 @@ function confirmCurrentPlanning(){
     fixed:JSON.parse(JSON.stringify(state.fixed||[])),
     absences:JSON.parse(JSON.stringify(state.absences||[])),
     period:{start:iso(per.start),end:iso(per.end),type:per.type,weeks:per.weeks||1},
-    confirmed:true,
+    confirmed:true,currentGeneration:true,
+    generationNumber:old?.generationNumber||1,
     confirmedAtISO:now,
     generatedAt:old?.generatedAt||new Date(now).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}),
     generatedAtISO:old?.generatedAtISO||now,
@@ -3364,9 +3557,9 @@ function renderAll(){
   body.innerHTML=state.doctors.map((d,i)=>{
     const x=c[d.name]||{};
     if(!admin){
-      return `<tr><td class="name">${escapeHtml(d.name)}</td><td>${d.active?"Oui":"Non"}</td><td>${d.shift==="J"?"J uniquement":d.shift==="N"?"N uniquement":"J + N"}</td><td>${d.weekend!==false?"Oui":"Non"}</td><td>${x.J||0}</td><td>${x.N||0}</td><td>${x.G||0}</td><td>${x.F||0}</td><td>${x.total||0}</td><td><b>${workload(x)}</b></td><td></td></tr>`;
+      return `<tr><td class="name">${escapeHtml(d.name)}</td><td>${d.active?"Oui":"Non"}</td><td>${normalizeDateKey(d.participationStart)||"—"}</td><td>${d.shift==="J"?"J uniquement":d.shift==="N"?"N uniquement":"J + N"}</td><td>${d.weekend!==false?"Oui":"Non"}</td><td>${x.J||0}</td><td>${x.N||0}</td><td>${x.G||0}</td><td>${x.F||0}</td><td>${x.total||0}</td><td><b>${workload(x)}</b></td><td></td></tr>`;
     }
-    return `<tr><td class='name'><input value="${String(d.name).replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="state.doctors[${i}].active=this.checked;save()"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td><input type="checkbox" ${d.weekend!==false?"checked":""} onchange="state.doctors[${i}].weekend=this.checked;save()"></td><td>${x.J||0}</td><td>${x.N||0}</td><td>${x.G||0}</td><td>${x.F||0}</td><td>${x.total||0}</td><td><b>${workload(x)}</b></td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`;
+    return `<tr><td class='name'><input value="${String(d.name).replaceAll('"','&quot;')}" onchange="renameDoctor(${i},this.value)"></td><td><input type='checkbox' ${d.active?"checked":""} onchange="setDoctorActive(${i},this.checked)"></td><td><input type="date" value="${normalizeDateKey(d.participationStart)||""}" onchange="setParticipationStart(${i},this.value)"></td><td><select onchange="state.doctors[${i}].shift=this.value;save()"><option value="BOTH" ${d.shift==="BOTH"?"selected":""}>J + N</option><option value="J" ${d.shift==="J"?"selected":""}>J uniquement</option><option value="N" ${d.shift==="N"?"selected":""}>N uniquement</option></select></td><td><input type="checkbox" ${d.weekend!==false?"checked":""} onchange="state.doctors[${i}].weekend=this.checked;save()"></td><td>${x.J||0}</td><td>${x.N||0}</td><td>${x.G||0}</td><td>${x.F||0}</td><td>${x.total||0}</td><td><b>${workload(x)}</b></td><td><button class='btn small danger' onclick='delDoctor(${i})'>Supprimer</button></td></tr>`;
   }).join("");
   const opts=state.doctors.map(d=>`<option>${escapeHtml(d.name)}</option>`).join("");
   const absDoctor=document.getElementById("absDoctor");
@@ -3375,7 +3568,7 @@ function renderAll(){
   // Un compte Médecin ne consulte que ses propres congés et indisponibilités.
   // L'administrateur conserve la vue complète, y compris les gardes G/F.
   if(!admin){
-    mergedEntries=mergedEntries.filter(a=>a.kind==="abs" && a.doctor===ses?.doctor && ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(String(a.type||"").toUpperCase()));
+    mergedEntries=mergedEntries.filter(a=>a.kind==="abs" && a.doctor===ses?.doctor && ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(String(a.type||"").toUpperCase()));
   }
   mergedEntries.sort((a,b)=>(a.start||"").localeCompare(b.start||"")||a.doctor.localeCompare(b.doctor));
   const absBody=document.getElementById("absBody");
@@ -3392,6 +3585,20 @@ function renderAll(){
   renderTodayGuards();
   if(isAdmin()){initPlanningMonthNavigation(); if(activePlanningView?.type==="history" && activePlanningView.key) showHistoryPlanningByKey(activePlanningView.key); else renderPlanning();} else {renderDoctorHistorySelect(); const k=activePlanningView?.type==="history"?activePlanningView.key:document.getElementById("doctorHistorySelect")?.value; if(k)showDoctorValidatedPlanning(k);}
   if(document.getElementById("absences")?.classList.contains("active") && adminAbsView==="leave") renderAdminAbsences();
+}
+function setParticipationStart(i,value){
+  const d=state.doctors[i]; if(!d)return;
+  const v=normalizeDateKey(value); if(!v)return;
+  d.participationStart=v;
+  save();
+}
+function setDoctorActive(i,checked){
+  const d=state.doctors[i]; if(!d)return;
+  const was=!!d.active;
+  d.active=!!checked;
+  if(!was && d.active && !normalizeDateKey(d.participationStart)) d.participationStart=todayISO();
+  // Ne jamais écraser une date d'intégration déjà existante.
+  save();
 }
 function renameDoctor(i,v){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let old=state.doctors[i].name;v=v.trim();if(!v)return;state.doctors[i].name=v;state.absences.forEach(a=>{if(a.doctor===old)a.doctor=v});state.fixed.forEach(a=>{if(a.doctor===old)a.doctor=v});if(state.accounts){state.accounts.forEach(a=>{if(a.doctor===old)a.doctor=v})};save()}
 
@@ -3556,6 +3763,7 @@ function notifyRealtimeUpdate(){
 async function cloudSave(){
   const token=cloudToken();
   if(!token)return;
+  state.cloudUpdatedAt=Date.now();
   const snapshot=cleanStateForCloud();
   cloudSaveQueue=cloudSaveQueue.catch(()=>{}).then(()=>supaRpc("toxgarde_save_data",{p_token:token,p_data:snapshot}));
   await cloudSaveQueue;
@@ -3732,6 +3940,10 @@ async function pollCloudChanges(force=false){
     const remote=await cloudLoad(token);
     cloudSyncLastAt=Date.now();
     if(!remote||typeof remote!=="object"||!Object.keys(remote).length)return;
+    const incomingUpdated=Number(remote?.cloudUpdatedAt||0);
+    const localUpdated=Number(state?.cloudUpdatedAt||0);
+    // Une copie distante plus ancienne ne peut pas écraser une modification locale récente.
+    if(incomingUpdated && localUpdated && incomingUpdated<localUpdated) return;
     const incoming=JSON.stringify(remote);
     if(incoming===lastCloudSnapshot)return;
     lastCloudSnapshot=incoming;
@@ -3798,8 +4010,31 @@ function addDoctorRecovery(){
   const msg=document.getElementById("doctorRecoveryMessage"); if(msg){msg.textContent="Récupération enregistrée.";msg.style.display="block";}
   renderAll();
 }
-const _addAbsence=addAbsence;addAbsence=function(){const ses=currentSession();if(ses?.role!=="admin"){const sel=document.getElementById("absDoctor");sel.value=ses.doctor||"";const type=document.getElementById("absType").value.toUpperCase();if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(type))return alert("Un médecin peut saisir uniquement un congé, une indisponibilité ou une récupération.");}return _addAbsence()};
-const _renderAll=renderAll;renderAll=function(){_renderAll();renderHistorySelect();renderMyGuards();const ses=currentSession();if(ses&&ses.role!=="admin"){const sel=document.getElementById("absDoctor");if(sel){sel.innerHTML=`<option>${ses.doctor||""}</option>`;sel.value=ses.doctor||"";sel.disabled=true;}const t=document.getElementById("absType");if(t){[...t.options].forEach(o=>o.disabled=!( ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(o.value.toUpperCase())));if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(t.value.toUpperCase()))t.value="CONGÉ";}renderAccounts();}else renderAccountOptions();};
+const _addAbsence=addAbsence;addAbsence=async function(){
+  const ses=currentSession();
+  if(ses?.role!=="admin"){
+    const sel=document.getElementById("absDoctor"); if(sel)sel.value=ses.doctor||"";
+    const type=document.getElementById("absType").value.toUpperCase();
+    if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(type))return alert("Un médecin peut saisir uniquement un congé, une indisponibilité, une récupération, une maladie longue durée ou un congé de maternité.");
+  }
+  const type=document.getElementById("absType")?.value?.toUpperCase()||"";
+  const file=document.getElementById("absJustificationFile")?.files?.[0]||null;
+  if(isMandatoryJustificationType(type) && !file){ updateJustificationRequirement(); return alert("Une pièce justificative est obligatoire pour une maladie longue durée ou un congé de maternité."); }
+  const before=state.absences.length;
+  await _addAbsence();
+  if(!isMandatoryJustificationType(type))return;
+  const doctor=document.getElementById("absDoctor")?.value||ses?.doctor||"";
+  const start=document.getElementById("absStart")?.value||"";
+  const end=document.getElementById("absEnd")?.value||"";
+  const added=state.absences.slice(before).findIndex(a=>a.doctor===doctor&&a.start===start&&a.end===end&&String(a.type||"").toUpperCase()===type);
+  if(added<0)return;
+  const absoluteIndex=before+added;
+  const ok=await uploadJustification(absoluteIndex,file);
+  if(!ok){ state.absences.splice(absoluteIndex,1); save(); renderAll(); alert("La pièce justificative n'a pas pu être enregistrée. La demande n'a donc pas été conservée."); return; }
+  const input=document.getElementById("absJustificationFile"); if(input)input.value="";
+  updateJustificationRequirement();
+};
+const _renderAll=renderAll;renderAll=function(){_renderAll();renderHistorySelect();renderMyGuards();const ses=currentSession();if(ses&&ses.role!=="admin"){const sel=document.getElementById("absDoctor");if(sel){sel.innerHTML=`<option>${ses.doctor||""}</option>`;sel.value=ses.doctor||"";sel.disabled=true;}const t=document.getElementById("absType");if(t){[...t.options].forEach(o=>o.disabled=!( ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(o.value.toUpperCase())));if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(t.value.toUpperCase()))t.value="CONGÉ";}renderAccounts();}else renderAccountOptions();};
 function guardChangeCandidates(date,type,sourceDoctor,historyKey){
   const sourceDate=dateFromISO(date);
   const source=historyData(historyKey)||{planning:{},fixed:[]};
@@ -3895,11 +4130,25 @@ async function respondGuardChange(id,decision){
   const targetHasFixed=(previousFixed||[]).some(x=>normalizeDateKey(x.date)===normalizeDateKey(req.date)&&x.doctor===req.toDoctor);
   if(targetHasFixed)return alert(`Changement impossible : ${req.toDoctor} a déjà une garde fixe le ${req.date}.`);
   const last=lastGuardDate(targetDoc,targetDate,targetPlanning);
-  if(last && Math.abs((targetDate-last)/36e5)<48)return alert(`Changement impossible : ${req.toDoctor} n’a pas 48 h de repos avant cette garde.`);
   let next=new Date(targetDate); next.setDate(next.getDate()+1);
   const nextKey=iso(next);
   const hasNext=Object.values(targetPlanning).flat().some(x=>x?.doctor===req.toDoctor&&normalizeDateKey(x.date)===nextKey) || (previousFixed||[]).some(x=>x?.doctor===req.toDoctor&&normalizeDateKey(x.date)===nextKey);
-  if(hasNext)return alert(`Changement impossible : ${req.toDoctor} a déjà une garde dans les 24 h suivant le ${req.date}.`);
+
+  // Lors d'un changement manuel, les contrôles de repos 48 h / 24 h restent
+  // informatifs mais ne bloquent pas l'acceptation. Le générateur automatique
+  // conserve, lui, ses règles de repos strictes. Le seul blocage ici reste le
+  // conflit de garde le même jour (notamment G/F), traité ci-dessus.
+  const changeWarnings=[];
+  if(last && Math.abs((targetDate-last)/36e5)<48){
+    changeWarnings.push(`⚠️ Avertissement : ${req.toDoctor} n’a pas 48 h de repos avant la garde du ${req.date}.`);
+  }
+  if(hasNext){
+    changeWarnings.push(`⚠️ Avertissement : ${req.toDoctor} a déjà une garde dans les 24 h suivant le ${req.date}.`);
+  }
+  if(changeWarnings.length){
+    const proceed=confirm(`${changeWarnings.join('\n')}\n\nLa règle de changement manuel autorise néanmoins cette opération. Voulez-vous continuer ?`);
+    if(!proceed)return;
+  }
 
   // Vérifier les autres demandes concurrentes avant d'écrire.
   const concurrent=(state.exchangeRequests||[]).filter(r=>r.id!==req.id&&r.status==='pending'&&normalizeDateKey(r.date)===normalizeDateKey(req.date)&&String(r.type).toUpperCase()===String(req.type).toUpperCase());
@@ -4171,7 +4420,7 @@ function renderAdminAbsences(){
   }else{
     (state.absences||[]).forEach((a,i)=>{
       const t=String(a.type||"").toUpperCase();
-      if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(t))return;
+      if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(t))return;
       if(doctorSearch && a.doctor!==doctorSearch)return;
       if(!doctorMode && !adminMonthMatches(a.start,monthSearch) && !adminMonthMatches(a.end,monthSearch))return;
       rows.push({doctor:a.doctor,start:a.start,end:a.end,type:t,index:i,kind:"abs",createdAt:a.createdAt});
@@ -4201,7 +4450,7 @@ function renderAdminAbsences(){
       const refusal=j?.rejectionReason?`<div class="hint" style="margin-top:4px">Motif : ${escapeHtml(j.rejectionReason)}</div>`:"";
       const period=r.start===r.end ? escapeHtml(r.start) : `Du ${escapeHtml(r.start)}<br>Au ${escapeHtml(r.end)}`;
       const entered=r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : "—";
-      const canJustify=a && ["CONGÉ","RÉCUP","RECUP"].includes(String(a.type||"").toUpperCase());
+      const canJustify=a && ["CONGÉ","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(String(a.type||"").toUpperCase());
       const docCell=hasFile
         ? `<button class="btn small" type="button" onclick="openJustificationFile('${escapeHtml(String(j.id))}')">👁 Voir</button><div class="hint" style="margin-top:4px">${escapeHtml(j.fileName)}</div><small>${escapeHtml(justificationStatusLabel(j.status))}</small>${refusal}${canJustify?`<br><label class="btn small" style="display:inline-block;cursor:pointer;margin-top:4px">📎 Remplacer<input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="uploadJustification(${r.index},this.files[0]);this.value=''"> </label>`:""}`
         : canJustify
@@ -4226,16 +4475,16 @@ function renderAdminAbsences(){
       const status=showStatus?absenceStatus(r):null;
       const a=r.kind==="abs"?state.absences?.[r.index]:null;
       const j=a?latestJustificationByAbsence.get(absenceKey(a)):null;
-      const canJustify=!!a && ["CONGÉ","RÉCUP","RECUP"].includes(String(a.type||"").toUpperCase());
+      const canJustify=!!a && ["CONGÉ","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(String(a.type||"").toUpperCase());
       const docCell=j?.fileName
         ? `<button class="btn small" type="button" onclick="openJustificationFile('${escapeHtml(String(j.id))}')">👁 Voir</button><div class="hint" style="margin-top:4px">${escapeHtml(j.fileName)}</div><small>${escapeHtml(justificationStatusLabel(j.status))}</small>${j.rejectionReason?`<div class="hint" style="margin-top:3px">Motif : ${escapeHtml(j.rejectionReason)}</div>`:""}${canJustify?`<br><label class="btn small" style="display:inline-block;cursor:pointer;margin-top:4px">📎 Remplacer<input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="uploadJustification(${r.index},this.files[0]);this.value=''"> </label>`:""}`
         : canJustify
           ? `<label class="btn small" style="display:inline-block;cursor:pointer">📎 Ajouter<input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="uploadJustification(${r.index},this.files[0]);this.value=''"> </label>`
           : `<span class="hint">—</span>`;
       const hasFile=!!j?.fileName;
-      // Les actions de justificatif ne concernent que les congés / indisponibilités / récupérations.
+      // Les actions de justificatif concernent les congés, récupérations, MLD et maternité.
       // Les gardes de week-end (G) et jours fériés (F) ne doivent jamais afficher ces boutons.
-      const isLeaveEntry=r.kind==="abs" && ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP"].includes(String(r.type||"").toUpperCase());
+      const isLeaveEntry=r.kind==="abs" && ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(String(r.type||"").toUpperCase());
       const viewBtn=isLeaveEntry
         ? (hasFile
           ? `<button class="btn small" type="button" onclick="openJustificationFile('${escapeHtml(String(j.id))}')">👁 Voir</button>`
@@ -4280,7 +4529,19 @@ function justificationForAbsence(a){
 }
 function absenceKey(a){return `${a.doctor}|${a.start}|${a.end}|${String(a.type||"").toUpperCase()}`;}
 function justificationNeedsFile(a){
-  return ["CONGÉ","RÉCUP","RECUP","INDISPONIBILITÉ","INDISPONIBLE","INDISP"].includes(String(a?.type||"").toUpperCase());
+  return ["CONGÉ","RÉCUP","RECUP","INDISPONIBILITÉ","INDISPONIBLE","INDISP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(String(a?.type||"").toUpperCase());
+}
+function isMandatoryJustificationType(type){
+  const t=String(type||"").toUpperCase();
+  return ["MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(t);
+}
+function updateJustificationRequirement(){
+  const type=document.getElementById("absType")?.value||"";
+  const wrap=document.getElementById("absenceJustificationWrap");
+  const file=document.getElementById("absJustificationFile");
+  const mandatory=isMandatoryJustificationType(type);
+  if(wrap) wrap.style.display=mandatory?"block":"none";
+  if(file) file.required=mandatory;
 }
 async function fileToBase64(file){
   return new Promise((resolve,reject)=>{
@@ -4290,7 +4551,7 @@ async function fileToBase64(file){
 async function uploadJustification(absenceIndex,file){
   const ses=currentSession(); if(!ses)return;
   const a=state.absences?.[absenceIndex];
-  if(!a || !justificationNeedsFile(a))return alert("Ce document concerne uniquement un congé, une indisponibilité ou une récupération.");
+  if(!a || !justificationNeedsFile(a))return alert("Ce document concerne un congé, une indisponibilité, une récupération, une maladie longue durée ou un congé de maternité.");
   if(ses.role!=="admin" && a.doctor!==ses.doctor)return alert("Vous ne pouvez justifier que vos propres congés/récupérations.");
   if(!file)return;
   if(!JUST_ALLOWED.includes(file.type))return alert("Format non autorisé. Utilisez PDF, JPG, JPEG ou PNG.");
@@ -4319,7 +4580,8 @@ async function uploadJustification(absenceIndex,file){
     renderJustifications();
     renderAdminAbsences();
     alert("Justificatif envoyé. Il est maintenant en attente de vérification par l'Admin.");
-  }catch(e){console.error(e);alert(e.message||"Erreur lors de l'envoi du justificatif.");}
+    return true;
+  }catch(e){console.error(e);alert(e.message||"Erreur lors de l'envoi du justificatif.");return false;}
 }
 async function openJustificationFile(id){
   const token=cloudToken(); if(!token)return alert("Session Supabase absente. Veuillez vous reconnecter.");
