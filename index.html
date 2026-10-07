@@ -821,7 +821,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
   <label class="planning-year-label">Année
     <select id="planningYearSelect" onchange="planningChangeYear(this.value)" aria-label="Choisir l'année"></select>
   </label>
-  <strong id="planningMonthLabel">Septembre 2026</strong>
+  <strong id="planningMonthLabel"></strong>
   <button id="deleteDisplayedPlanningBtn" type="button" class="btn danger admin-only" onclick="deleteDisplayedPlanning()">🗑 Supprimer planning</button>
 </div>
 <div id="planningMonthTabs" class="planning-month-tabs" aria-label="Sélection du mois"></div>
@@ -912,8 +912,12 @@ state.doctors.forEach(d=>{
 });
 const months=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 months.forEach((m,i)=>document.getElementById("month").innerHTML+=`<option value="${i}">${m}</option>`);
-document.getElementById("month").value=8;
-if(document.getElementById("weekStart"))document.getElementById("weekStart").value="2026-09-01";
+const __todayDefault=new Date();
+const __defaultYear=__todayDefault.getFullYear();
+const __defaultMonth=__todayDefault.getMonth();
+const __yearEl=document.getElementById("year"); if(__yearEl) __yearEl.value=String(__defaultYear);
+document.getElementById("month").value=__defaultMonth;
+if(document.getElementById("weekStart"))document.getElementById("weekStart").value=`${__defaultYear}-${String(__defaultMonth+1).padStart(2,"0")}-01`;
 let activePlanningView={type:"current",key:null};
 let planningDisplayYear=null;
 let planningDisplayMonth=null;
@@ -1317,7 +1321,28 @@ function addAbsence(){
   }
   rebuildRecoveryLedger();save();
 }
-function delAbs(i){const ses=currentSession();if(!ses)return;if(ses.role!=="admin" && (!state.absences[i] || state.absences[i].doctor!==ses.doctor))return alert("Vous ne pouvez supprimer que vos propres congés, indisponibilités ou récupérations.");state.absences.splice(i,1);save()}
+function absenceMatches(a,b){
+  if(!a||!b)return false;
+  const norm=v=>String(v??"").trim().toUpperCase();
+  return norm(a.doctor)===norm(b.doctor) && normalizeDateKey(a.start)===normalizeDateKey(b.start) && normalizeDateKey(a.end)===normalizeDateKey(b.end) && norm(a.type)===norm(b.type);
+}
+function isAbsenceValidated(a){
+  if(!a)return false;
+  const histories=Object.entries(state.planningHistory||{});
+  return histories.some(([key,h])=>{
+    if(!isHistoryConfirmed(key,h))return false;
+    return (h?.absences||[]).some(x=>absenceMatches(x,a));
+  });
+}
+function delAbs(i){
+  const ses=currentSession(); if(!ses)return;
+  const a=state.absences?.[i];
+  if(ses.role!=="admin"){
+    if(!a || a.doctor!==ses.doctor)return alert("Vous ne pouvez supprimer que vos propres congés, indisponibilités ou récupérations.");
+    if(isAbsenceValidated(a))return alert("Suppression impossible : ce congé/cette récupération fait partie d'un planning déjà validé. Seul l'Administrateur peut le supprimer.");
+  }
+  state.absences.splice(i,1);save();
+}
 function editAbsenceAdmin(index){
   if(!isAdmin())return alert("Modification réservée à l'administrateur.");
   const a=state.absences?.[index]; if(!a)return alert("Enregistrement introuvable.");
@@ -1338,7 +1363,17 @@ function editAbsenceAdmin(index){
   }
   rebuildRecoveryLedger(); save(); renderAdminAbsences();
 }
-function deleteMergedEntry(kind,index){const ses=currentSession();if(!ses)return;if(ses.role!=="admin"){if(kind==="fixed")return alert("Un compte Médecin ne peut pas supprimer une garde G/F.");const a=state.absences[index];if(!a||a.doctor!==ses.doctor)return alert("Vous ne pouvez supprimer que vos propres congés, indisponibilités ou récupérations.");}if(kind==="fixed")state.fixed.splice(index,1);else state.absences.splice(index,1);rebuildDerivedGuardData();save()}
+function deleteMergedEntry(kind,index){
+  const ses=currentSession(); if(!ses)return;
+  if(ses.role!=="admin"){
+    if(kind==="fixed")return alert("Un compte Médecin ne peut pas supprimer une garde G/F.");
+    const a=state.absences[index];
+    if(!a||a.doctor!==ses.doctor)return alert("Vous ne pouvez supprimer que vos propres congés, indisponibilités ou récupérations.");
+    if(isAbsenceValidated(a))return alert("Suppression impossible : ce congé/cette récupération fait partie d'un planning déjà validé. Seul l'Administrateur peut le supprimer.");
+  }
+  if(kind==="fixed")state.fixed.splice(index,1);else state.absences.splice(index,1);
+  rebuildDerivedGuardData();save();
+}
 function isWeekend(d){let x=d.getDay();return x===0||x===6}
 function iso(d){
   if(typeof d==='string'){const m=d.match(/^(\d{4}-\d{2}-\d{2})/);if(m)return m[1];}
@@ -2792,57 +2827,88 @@ function editCell(btn){
 }
 function applyHistoricalInlineEdit(key,name,date,raw){
   if(!isAdmin())return alert("Modification du planning réservée à l'administrateur.");
-  const h=state.planningHistory?.[key];
+  const original=state.planningHistory?.[key];
+  if(!original)return alert("Ancien planning introuvable.");
+  const h=historyData(key);
   if(!h)return alert("Ancien planning introuvable.");
   h.planning=h.planning||{}; h.fixed=h.fixed||[]; h.absences=h.absences||[];
   let value=String(raw||"").trim().toUpperCase();
   const allowed=["","J","N","G","F","CONGÉ","CONGE","RECUP","RÉCUP","INDISP","INDISPONIBLE"];
   if(!allowed.includes(value)){alert("Valeur non reconnue. Utilisez J, N, G, F, CONGÉ, RÉCUP, INDISP ou vide.");return;}
   if(value==="CONGE")value="CONGÉ"; if(value==="RECUP")value="RÉCUP"; if(value==="INDISPONIBLE")value="INDISP";
+
   const oldFixedIndex=h.fixed.findIndex(x=>x.doctor===name&&x.date===date);
-  const sameDayFixed=h.fixed.filter(x=>x.date===date&&x.doctor!==name);
-  const otherPlanning=(h.planning[date]||[]).filter(x=>x.doctor!==name);
-  const sameDoctorPlanning=(h.planning[date]||[]).find(x=>x.doctor===name);
-  const sameDoctorFixedIndex=h.fixed.findIndex(x=>x.doctor===name&&x.date===date);
-  const sameDoctorGF=(sameDoctorFixedIndex>=0 && sameDoctorFixedIndex!==oldFixedIndex && ["G","F"].includes(String(h.fixed[sameDoctorFixedIndex]?.type||"").toUpperCase())) || !!(h.planning[date]||[]).find(x=>x.doctor===name&&["G","F"].includes(String(x.type||"").toUpperCase()));
-  if(["J","N"].includes(value) && sameDoctorGF){alert(`CONFLIT : ${name} a déjà une garde G/F le ${date}.\n\nUne garde G/F occupe toute la journée : aucune autre garde ne peut être attribuée le même jour.`);return;}
-  if(["J","N"].includes(value) && ([...otherPlanning,...sameDayFixed].some(x=>x.type===value))){alert(`CONFLIT : une garde ${value} est déjà attribuée le ${date} à un autre médecin.`);return;}
-  if(["G","F"].includes(value)){
-    if(sameDoctorPlanning){alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorPlanning.type} le ${date}.\n\nUne garde G/F ne peut pas être cumulée avec une autre garde le même jour.`);return;}
-    if(oldFixedIndex<0 && sameDoctorFixedIndex>=0){alert(`CONFLIT : ${name} a déjà une garde ${h.fixed[sameDoctorFixedIndex].type} le ${date}.\n\nUne garde G/F ne peut pas être cumulée avec une autre garde le même jour.`);return;}
-    const conflict=h.fixed.find(x=>x.date===date&&x.doctor!==name&&["G","F"].includes(String(x.type).toUpperCase()));
-    const conflictP=(h.planning[date]||[]).find(x=>x.date===date&&x.doctor!==name&&["G","F"].includes(String(x.type).toUpperCase()));
-    if(conflict||conflictP){const c=conflict||conflictP;alert(`CONFLIT : la période de garde ${c.type} du ${date} est déjà attribuée à ${c.doctor}.`);return;}
+  // MODIFICATION MANUELLE ADMIN : aucune contrainte de conflit n'est bloquante.
+  // Même logique que pour le planning courant : l'administrateur peut forcer
+  // J/N/G/F ou une absence/récupération, y compris en présence d'une autre garde.
+
+  // Une modification manuelle d'un planning validé ouvre UNE SEULE version de travail.
+  // Les modifications suivantes (même si plusieurs cellules sont supprimées/ajoutées)
+  // réutilisent cette même version jusqu'à sa validation. Cela évite V2/V3/V4/V5
+  // pour un simple échange de deux gardes.
+  const hp=historyPeriod(key,h);
+  const isManualDraft=h.manualEditDraft===true;
+  let revised=h;
+  let newKey=key;
+
+  if(!isManualDraft){
+    // Première modification : figer l'ancienne version validée dans l'historique.
+    const oldSnapshot=JSON.parse(JSON.stringify(h));
+    const oldGeneration=Number(h.generationNumber)||1;
+    const sameMonth=planningGenerationEntries(hp.start.getFullYear(),hp.start.getMonth());
+    const nextGeneration=(sameMonth.reduce((m,x)=>Math.max(m,x.generation||0),0)||oldGeneration)+1;
+    const archiveKey=`${key}_historique_${Date.now()}`;
+    oldSnapshot.currentGeneration=false;
+    state.planningHistory[archiveKey]=oldSnapshot;
+
+    // Une seule copie de travail est créée pour toute la séquence de modifications.
+    revised=JSON.parse(JSON.stringify(h));
+    revised.generatedAtISO=new Date().toISOString();
+    revised.generatedAt=new Date().toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
+    revised.modifiedAt=revised.generatedAtISO;
+    revised.generationNumber=nextGeneration;
+    revised.label=`Génération ${nextGeneration} — modification manuelle (à valider)`;
+    revised.confirmed=false;
+    revised.includeInEquity=false;
+    revised.currentGeneration=true;
+    revised.manualEditDraft=true;
+    revised.manualEditBaseKey=key;
+    revised.manualEditStartedAt=Date.now();
+    revised.period=revised.period||{start:iso(hp.start),end:iso(hp.end),type:hp.type,weeks:hp.weeks||1};
+    revised.planning=revised.planning||{}; revised.fixed=revised.fixed||[]; revised.absences=revised.absences||[];
+
+    delete state.confirmedPlanningKeys[key];
+    // La clé principale du mois représente désormais la version de travail.
+    state.planningHistory[newKey]=revised;
+  }else{
+    // Modification suivante : NE PAS créer/archiver une nouvelle version.
+    // On continue directement dans le même brouillon.
+    revised.planning=revised.planning||{}; revised.fixed=revised.fixed||[]; revised.absences=revised.absences||[];
+    revised.modifiedAt=new Date().toISOString();
+    revised.generatedAtISO=revised.generatedAtISO||revised.modifiedAt;
+    revised.label=`Génération ${Number(revised.generationNumber)||1} — modification manuelle (à valider)`;
+    revised.currentGeneration=true;
   }
-  // Une modification historique doit respecter les mêmes règles métier que
-  // la génération : médecin actif, habilitation, absence et repos.
+
+  // Appliquer la modification à la version de travail existante.
+  revised.absences=revised.absences.filter(a=>!(a.doctor===name&&a.start===date&&a.end===date));
+  revised.planning[date]=(revised.planning[date]||[]).filter(x=>x.doctor!==name);
+  const revisedFixedIndex=revised.fixed.findIndex(x=>x.doctor===name&&x.date===date);
+  if(revisedFixedIndex>=0 && !["G","F"].includes(value)) revised.fixed.splice(revisedFixedIndex,1);
   if(["G","F"].includes(value)){
-    const problem=validateFixedGuard(name,date);
-    if(problem){alert(problem);return;}
-  }else if(["J","N"].includes(value)){
-    const doc=docByName(name);
-    const tempPlanning={...h.planning,[date]:otherPlanning};
-    if(!doc || !isEligibleForType(doc,value) || absOn(doc,date)) { alert(`CONFLIT : la garde ${value} de ${name} le ${date} ne respecte pas les contraintes du médecin.`); return; }
-    if(!canAssign(doc,dateFromISO(date),value,tempPlanning)){ alert(`CONFLIT : la garde ${value} de ${name} le ${date} ne respecte pas les contraintes de repos ou de garde.`); return; }
-  }
-  h.absences=h.absences.filter(a=>!(a.doctor===name&&a.start===date&&a.end===date));
-  h.planning[date]=(h.planning[date]||[]).filter(x=>x.doctor!==name);
-  if(oldFixedIndex>=0 && !["G","F"].includes(value)) h.fixed.splice(oldFixedIndex,1);
-  if(["G","F"].includes(value)){if(oldFixedIndex>=0)h.fixed[oldFixedIndex].type=value;else h.fixed.push({doctor:name,date,type:value,createdAt:Date.now()});}
-  else if(["J","N"].includes(value)) h.planning[date].push({doctor:name,type:value,date});
-  else if(["CONGÉ","RÉCUP","INDISP"].includes(value)) h.absences.push({doctor:name,start:date,end:date,type:value});
-  h.modifiedAt=new Date().toISOString();
-  // Un planning validé modifié devient une nouvelle révision : il ne doit pas
-  // rester confirmé silencieusement. L'ancienne version reste traçable dans
-  // l'historique et le changement est explicite.
-  h.confirmed=false; h.includeInEquity=false;
-  delete state.confirmedPlanningKeys[key];
+    const fi=revised.fixed.findIndex(x=>x.doctor===name&&x.date===date);
+    if(fi>=0)revised.fixed[fi].type=value;else revised.fixed.push({doctor:name,date,type:value,createdAt:Date.now()});
+  }else if(["J","N"].includes(value)) revised.planning[date].push({doctor:name,type:value,date});
+  else if(["CONGÉ","RÉCUP","INDISP"].includes(value)) revised.absences.push({doctor:name,start:date,end:date,type:value});
+
+  state.planningHistory[newKey]=revised;
+  activePlanningView={type:"history",key:newKey};
   rebuildDerivedGuardData();
   save(); renderAll();
-  // Rendre immédiatement visible le snapshot modifié.
-  activePlanningView={type:"history",key};
-  const hh=state.planningHistory[key];
-  renderPlanning(hh,historyPeriod(key,hh));
+  const hh=state.planningHistory[newKey];
+  renderPlanning(hh,historyPeriod(newKey,hh));
+  initPlanningMonthNavigation();
+  updatePlanningGenerationSelector();
 }
 function startInlineEdit(td,name,date){ editCell(td.querySelector(".cellEditBtn")); }
 function sameDoctorGFOnDate(name,date,excludeFixedIndex=-1){
@@ -2859,77 +2925,15 @@ function applyInlineEdit(name,date,raw){
   if(value==="RECUP")value="RÉCUP";
   if(value==="INDISPONIBLE")value="INDISP";
 
-  const dt=dateFromISO(date), doc=docByName(name);
+  const doc=docByName(name);
   if(!doc){alert("Médecin introuvable.");return;}
 
   const oldFixedIndex=state.fixed.findIndex(x=>x.doctor===name&&x.date===date);
-  const oldPlanningEntries=(state.planning[date]||[]).filter(x=>x.doctor===name);
-  const otherPlanningEntries=(state.planning[date]||[]).filter(x=>x.doctor!==name);
-  const sameDayFixed=(state.fixed||[]).filter(x=>x.date===date&&x.doctor!==name);
-  const sameDoctorOtherFixed=(state.fixed||[]).find(x=>x.date===date&&x.doctor===name);
+  // MODIFICATION MANUELLE ADMIN : aucune règle de conflit n'est bloquante.
+  // La génération automatique conserve toutes ses contraintes via canAssign().
+  // Ici l'administrateur peut volontairement forcer J/N/G/F, y compris avec
+  // une autre garde le même jour, une garde proche ou une incompatibilité.
 
-  // IMPORTANT : effectuer tous les contrôles AVANT de modifier le planning.
-  // Ainsi une tentative refusée ne dévalide ni ne détruit un planning confirmé.
-  if(["J","N"].includes(value)){
-    // Un seul J et un seul N sont autorisés par date, quel que soit le type
-    // de saisie (génération, garde fixe ou modification manuelle).
-    const duplicateSameType=[...otherPlanningEntries,...sameDayFixed]
-      .filter(x=>x && x.type===value);
-    if(duplicateSameType.length){
-      alert(`CONFLIT : une garde ${value} est déjà attribuée le ${date} à ${duplicateSameType[0].doctor}.\\n\\nUn seul ${value} est autorisé par jour.`);
-      renderPlanning();return;
-    }
-    // Une garde G/F occupe toute la journée : aucune autre garde ne peut être
-    // ajoutée au même médecin le même jour.
-    if(sameDoctorGFOnDate(name,date,oldFixedIndex)){
-      const gf=(state.fixed||[]).find((x,i)=>i!==oldFixedIndex&&x?.doctor===name&&x?.date===date&&["G","F"].includes(String(x.type||"").toUpperCase())) || (state.planning[date]||[]).find(x=>x?.doctor===name&&["G","F"].includes(String(x.type||"").toUpperCase()));
-      alert(`CONFLIT : ${name} a déjà une garde ${gf?.type||"G/F"} le ${date}.\n\nUne garde G/F occupe toute la journée : aucune autre garde ne peut être attribuée le même jour.`);
-      renderPlanning();return;
-    }
-    // Un même médecin ne peut jamais cumuler deux postes le même jour.
-    if(sameDoctorOtherFixed){
-      alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorOtherFixed.type} le ${date}.\\n\\nUn médecin ne peut pas avoir deux gardes le même jour.`);
-      renderPlanning();return;
-    }
-
-    // Remplacer la garde J par N (ou inversement) ne doit pas être considéré
-    // comme une seconde garde du même médecin : on teste sur le planning
-    // temporairement débarrassé de son ancienne cellule.
-    const planningForCheck={...state.planning,[date]:otherPlanningEntries};
-    if(!canAssign(doc,dt,value,planningForCheck)){
-      alert(`CONFLIT : la garde ${value} de ${name} le ${date} ne respecte pas les contraintes de garde, congé, indisponibilité, récupération ou repos.`);
-      renderPlanning();return;
-    }
-  }else if(["G","F"].includes(value)){
-    const problem=validateFixedGuard(name,date);
-    if(problem){alert(problem);renderPlanning();return;}
-    // Si la cellule actuellement modifiée est déjà une garde G/F du même
-    // médecin, G↔F est une modification de la même garde et non une seconde
-    // garde. Le conflit ne s'applique donc que lorsqu'il s'agit d'une autre
-    // garde fixe du même médecin.
-    if(sameDoctorOtherFixed && oldFixedIndex<0){
-      alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorOtherFixed.type} le ${date}.\n\nUne garde G/F ne peut pas être cumulée avec une autre garde le même jour.`);
-      renderPlanning();return;
-    }
-    const sameDoctorOtherPlanning=(state.planning[date]||[]).find(x=>x?.doctor===name);
-    if(sameDoctorOtherPlanning){
-      alert(`CONFLIT : ${name} a déjà une garde ${sameDoctorOtherPlanning.type} le ${date}.\n\nUne garde G/F ne peut pas être cumulée avec une autre garde le même jour.`);
-      renderPlanning();return;
-    }
-    // Une période/date de garde G ou F ne peut être attribuée qu’à un seul
-    // médecin. Le contrôle porte volontairement sur G ET F : on ne permet
-    // donc pas G pour un médecin et F pour un autre le même jour.
-    const otherGF=(state.fixed||[]).find(x=>x.date===date&&x.doctor!==name&&["G","F"].includes(String(x.type).toUpperCase()));
-    const otherPlanningGF=(state.planning[date]||[]).find(x=>x.doctor!==name&&["G","F"].includes(String(x.type).toUpperCase()));
-    if(otherGF||otherPlanningGF){
-      const conflict=otherGF||otherPlanningGF;
-      alert(`CONFLIT : la période de garde ${conflict.type} du ${date} est déjà attribuée à ${conflict.doctor}.\n\nUne même période G/F ne peut pas être attribuée à deux médecins.`);
-      renderPlanning();return;
-    }
-  }
-
-  // Toute modification manuelle réellement acceptée d'un planning déjà validé
-  // annule sa validation. Une tentative en conflit ci-dessus ne le fait jamais.
   const per=getPeriodDates();
   const currentHistory=state.planningHistory?.[per.key];
   if(currentHistory?.confirmed){
@@ -2941,18 +2945,17 @@ function applyInlineEdit(name,date,raw){
     delete state.confirmedPlanningKeys[per.key];
   }
 
-  // Maintenant seulement, appliquer la modification.
+  // Appliquer seulement après lecture/normalisation de la valeur.
   state.absences=state.absences.filter(a=>!(a.doctor===name&&a.start===date&&a.end===date));
   state.planning[date]=(state.planning[date]||[]).filter(x=>x.doctor!==name);
-  if(oldFixedIndex>=0 && !["G","F"].includes(value)) state.fixed.splice(oldFixedIndex,1);
+  if(oldFixedIndex>=0)state.fixed.splice(oldFixedIndex,1);
 
   if(["G","F"].includes(value)){
-    if(oldFixedIndex>=0)state.fixed[oldFixedIndex].type=value;
-    else state.fixed.push({doctor:name,date,type:value,createdAt:Date.now()});
+    state.fixed.push({doctor:name,date,type:value,createdAt:Date.now(),manualOverride:true});
   }else if(["J","N"].includes(value)){
-    state.planning[date].push({doctor:name,type:value,date});
+    state.planning[date].push({doctor:name,type:value,date,manualOverride:true});
   }else if(["CONGÉ","RÉCUP","INDISP"].includes(value)){
-    state.absences.push({doctor:name,start:date,end:date,type:value});
+    state.absences.push({doctor:name,start:date,end:date,type:value,manualOverride:true});
   }
   save(); renderAll();
 }
@@ -3388,34 +3391,59 @@ function isConfirmedCurrentPlanningEntry(x){
 }
 function confirmCurrentPlanning(){
   if(!isAdmin())return alert("La validation du planning est réservée à l'administrateur.");
-  const per=getPeriodDates();
-  if(!state.planning || !Object.values(state.planning).flat().length){return alert("Aucun planning à confirmer.");}
-  const old=state.planningHistory?.[per.key];
-  if(old?.confirmed){return alert("Ce planning est déjà validé.");}
-  if(!confirm("Valider ce planning ?"))return;
 
-  const consistency=validateEffectiveGuardConsistency();
-  if(consistency.length){
-    alert(`Validation impossible : ${consistency.slice(0,8).join("\n")}`);
+  // VALIDER = valider exactement le planning actuellement affiché.
+  // Si l'administrateur consulte une version de travail historique créée par
+  // une modification manuelle, on valide cette version, et non state.planning.
+  const displayedHistoryKey=(activePlanningView?.type==="history" && activePlanningView.key)
+    ? activePlanningView.key : null;
+
+  if(displayedHistoryKey){
+    const h=state.planningHistory?.[displayedHistoryKey];
+    if(!h)return alert("Le planning affiché est introuvable.");
+    if(isHistoryConfirmed(displayedHistoryKey,h))return alert("Ce planning est déjà validé.");
+
+    const hp=historyPeriod(displayedHistoryKey,h);
+    const displayedPlanning=h.planning||{};
+    const hasPlanning=Object.values(displayedPlanning).flat().length>0 ||
+      (h.fixed||[]).some(x=>hp?.start&&hp?.end&&x.date>=iso(hp.start)&&x.date<=iso(hp.end)&&["G","F"].includes(x.type));
+    if(!hasPlanning)return alert("Aucun planning à valider dans la version affichée.");
+    if(!confirm("Valider le planning affiché ?"))return;
+
+    h.confirmed=true;
+    h.currentGeneration=true;
+    h.includeInEquity=true;
+    h.confirmedAtISO=Date.now();
+    state.confirmedPlanningKeys[displayedHistoryKey]=true;
+    rebuildRecoveryLedger();
+    awaitSaveAndRender();
     return;
   }
 
+  const per=getPeriodDates();
+  const currentKey=per.key;
+  const h=state.planningHistory?.[currentKey];
+  if(h?.confirmed){return alert("Ce planning est déjà validé.");}
+  if(!state.planning || !Object.values(state.planning).flat().length){return alert("Aucun planning à valider.");}
+  if(!confirm("Valider ce planning ?"))return;
+
+  // Les contrôles de conflit concernent la génération automatique. Une fois
+  // le planning modifié manuellement, l'administrateur peut le valider même
+  // s'il contient volontairement des chevauchements.
   const now=Date.now();
-  state.planningHistory[per.key]={
+  state.planningHistory[currentKey]={
     planning:JSON.parse(JSON.stringify(state.planning)),
     fixed:JSON.parse(JSON.stringify(state.fixed||[])),
     absences:JSON.parse(JSON.stringify(state.absences||[])),
     period:{start:iso(per.start),end:iso(per.end),type:per.type,weeks:per.weeks||1},
     confirmed:true,currentGeneration:true,
-    generationNumber:old?.generationNumber||1,
+    generationNumber:h?.generationNumber||1,
     confirmedAtISO:now,
-    generatedAt:old?.generatedAt||new Date(now).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}),
-    generatedAtISO:old?.generatedAtISO||now,
+    generatedAt:h?.generatedAt||new Date(now).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}),
+    generatedAtISO:h?.generatedAtISO||now,
     includeInEquity:true
   };
-  state.confirmedPlanningKeys[per.key]=true;
-  // Le score est toujours reconstruit depuis les validations : aucune valeur
-  // temporaire n'est ajoutée manuellement au compteur.
+  state.confirmedPlanningKeys[currentKey]=true;
   rebuildRecoveryLedger();
   awaitSaveAndRender();
 }
@@ -3573,8 +3601,9 @@ function renderAll(){
   mergedEntries.sort((a,b)=>(a.start||"").localeCompare(b.start||"")||a.doctor.localeCompare(b.doctor));
   const absBody=document.getElementById("absBody");
   if(absBody) absBody.innerHTML=mergedEntries.map(a=>{
-    const canDelete=ses?.role==="admin" || (a.kind==="abs" && a.doctor===ses?.doctor && !["G","F"].includes(a.type));
-    const action=canDelete?`<button class="btn small danger" onclick='deleteMergedEntry("${a.kind}",${a.index})'>Supprimer</button>`:`<span class="hint">Consultation</span>`;
+    const lockedForDoctor=!admin && a.kind==="abs" && isAbsenceValidated(a);
+    const canDelete=ses?.role==="admin" || (a.kind==="abs" && a.doctor===ses?.doctor && !["G","F"].includes(a.type) && !lockedForDoctor);
+    const action=canDelete?`<button class="btn small danger" onclick='deleteMergedEntry("${a.kind}",${a.index})'>Supprimer</button>`:(lockedForDoctor?`<span class="hint" title="Ce congé/récupération appartient à un planning validé">🔒 Validé — Admin uniquement</span>`:`<span class="hint">Consultation</span>`);
     const status=a.kind==="abs" ? absenceStatus(a) : {label:'—',className:'',details:''};
     const statusTitle=status.details?` title="${escapeHtml(status.details)}"`:'';
     const statusHtml=status.label==='Prise en considération'?`<span class="absence-status considered">${status.label}</span>`:`<span class="absence-status ignored"${statusTitle}>${status.label}</span>`;
@@ -3910,7 +3939,23 @@ async function refreshCloudOnStartup(){
   try{
     const remote=await cloudLoad(token);
     if(remote&&typeof remote==="object"&&Object.keys(remote).length){
+      const incomingUpdated=Number(remote?.cloudUpdatedAt||0);
+      const localUpdated=Number(state?.cloudUpdatedAt||0);
       const incoming=JSON.stringify(remote);
+      // IMPORTANT : ne jamais remplacer une copie locale plus récente par
+      // une copie Supabase plus ancienne. Cela protège une modification faite
+      // hors connexion ou juste avant la fermeture du navigateur.
+      if(localUpdated && incomingUpdated && localUpdated>incomingUpdated){
+        lastCloudSnapshot=JSON.stringify(cleanStateForCloud());
+        cloudSyncLastAt=Date.now();
+        try{
+          await cloudSave();
+          localStorage.setItem("gardeMed",JSON.stringify(state));
+        }catch(syncErr){
+          console.warn("Tox-Garde : copie locale plus récente conservée, synchronisation différée.",syncErr);
+        }
+        return false;
+      }
       lastCloudSnapshot=incoming;
       cloudSyncLastAt=Date.now();
       state=Object.assign(state,remote);
@@ -3919,8 +3964,6 @@ async function refreshCloudOnStartup(){
       return true;
     }
   }catch(e){
-    // En cas de panne réseau, conserver l'état local déjà chargé plutôt que
-    // d'effacer l'écran ou de remplacer les données par un état vide.
     console.error("Tox-Garde / actualisation Supabase :",e);
   }
   return false;
@@ -4019,10 +4062,14 @@ const _addAbsence=addAbsence;addAbsence=async function(){
   }
   const type=document.getElementById("absType")?.value?.toUpperCase()||"";
   const file=document.getElementById("absJustificationFile")?.files?.[0]||null;
-  if(isMandatoryJustificationType(type) && !file){ updateJustificationRequirement(); return alert("Une pièce justificative est obligatoire pour une maladie longue durée ou un congé de maternité."); }
+  // MLD et maternité : le justificatif est facultatif lors de la saisie.
+  // Il peut être ajouté ultérieurement depuis la liste des congés, comme pour les autres congés/récupérations.
   const before=state.absences.length;
   await _addAbsence();
-  if(!isMandatoryJustificationType(type))return;
+  // Si un fichier a été choisi dès la création, on l'enregistre sans rendre
+  // la pièce jointe obligatoire. En cas d'échec, le congé reste conservé.
+  if(!isMandatoryJustificationType(type) && !file)return;
+  if(isMandatoryJustificationType(type) && !file)return;
   const doctor=document.getElementById("absDoctor")?.value||ses?.doctor||"";
   const start=document.getElementById("absStart")?.value||"";
   const end=document.getElementById("absEnd")?.value||"";
@@ -4456,7 +4503,10 @@ function renderAdminAbsences(){
         : canJustify
           ? `<label class="btn small" style="display:inline-block;cursor:pointer">📎 Ajouter<input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="uploadJustification(${r.index},this.files[0]);this.value=''"> </label>`
           : `<span class="hint">—</span>`;
-      const action=`<div class="admin-action-stack"><button class="btn small danger" type="button" onclick="deleteMyAbsence(${r.index})">🗑 Supprimer</button></div>`;
+      const lockedForDoctor=!isAdmin() && a && isAbsenceValidated(a);
+      const action=lockedForDoctor
+        ? `<div class="admin-action-stack"><span class="hint" title="Cette absence appartient à un planning validé">🔒 Validé — Admin uniquement</span></div>`
+        : `<div class="admin-action-stack"><button class="btn small danger" type="button" onclick="deleteMyAbsence(${r.index})">🗑 Supprimer</button></div>`;
       return `<tr><td></td><td class="admin-date-cell">${period}</td><td><b>${escapeHtml(r.type)}</b></td><td>${escapeHtml(entered)}</td><td>${escapeHtml(statusText)}${status.details?`<br><small>${escapeHtml(status.details)}</small>`:""}</td><td>${docCell}</td><td class="admin-action-cell">${action}</td><td></td></tr>`;
     }).join("")}</tbody></table></div>`;
     return;
@@ -4539,9 +4589,12 @@ function updateJustificationRequirement(){
   const type=document.getElementById("absType")?.value||"";
   const wrap=document.getElementById("absenceJustificationWrap");
   const file=document.getElementById("absJustificationFile");
-  const mandatory=isMandatoryJustificationType(type);
-  if(wrap) wrap.style.display=mandatory?"block":"none";
+  const justifiable=["CONGÉ","RÉCUP","RECUP","INDISPONIBILITÉ","INDISPONIBLE","INDISP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(String(type||"").toUpperCase());
+  const mandatory=false; // MLD et maternité ne bloquent jamais la saisie sans pièce jointe.
+  if(wrap) wrap.style.display=justifiable?"block":"none";
   if(file) file.required=mandatory;
+  const hint=wrap?.querySelector(".hint");
+  if(hint) hint.textContent=justifiable?"Facultatif à la saisie. Vous pouvez ajouter le justificatif ultérieurement.":"";
 }
 async function fileToBase64(file){
   return new Promise((resolve,reject)=>{
@@ -4564,7 +4617,12 @@ async function uploadJustification(absenceIndex,file){
       p_token:token,
       p_absence_key:absenceKey(a),
       p_doctor:a.doctor,
-      p_type:String(a.type).toUpperCase()==="RECUP"?"RÉCUP":String(a.type).toUpperCase(),
+      // Compatibilité avec la RPC Supabase actuelle : certains déploiements
+      // n'acceptent encore que CONGÉ/RÉCUP côté p_type. L'absence_key conserve
+      // le vrai type (MLD ou maternité), donc l'affichage reste correct.
+      p_type:["MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(String(a.type||"").toUpperCase())
+        ? "CONGÉ"
+        : (String(a.type).toUpperCase()==="RECUP"?"RÉCUP":String(a.type).toUpperCase()),
       p_start:a.start,
       p_end:a.end,
       p_file_name:file.name,
@@ -4626,7 +4684,15 @@ function deleteMyAbsence(index){
   const ses=currentSession();
   if(!ses || ses.role==='admin')return;
   const a=state.absences?.[index];
-  if(!a || a.doctor!==ses.doctor)return alert("Vous ne pouvez supprimer que vos propres congés, indisponibilités ou récupérations.");
+  if(!a || a.doctor!==ses.doctor)return alert("Vous ne pouvez supprimer que vos propres congés, indisponibilités, récupérations, MLD ou maternité.");
+
+  // REGLE METIER : dès qu'une absence figure dans un planning validé,
+  // elle devient immuable pour le compte Médecin. Seul l'Administrateur
+  // peut encore la supprimer.
+  if(isAbsenceValidated(a)){
+    return alert("Suppression impossible : cette absence (congé, récupération, MLD ou maternité) appartient à un planning déjà validé. Seul l'Administrateur peut la supprimer.");
+  }
+
   const type=String(a.type||"").toUpperCase()==="INDISP"?"INDISPONIBILITÉ":String(a.type||"");
   const period=a.start===a.end ? a.start : `du ${a.start} au ${a.end}`;
   if(!confirm(`Supprimer cette ${type} (${period}) ?\n\nCette action supprimera uniquement votre enregistrement.`))return;
