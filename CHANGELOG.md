@@ -1,3 +1,36 @@
+# CHANGELOG — nouveau style des boutons
+
+Présentation uniquement ; aucune règle métier modifiée.
+
+- Boutons arrondis avec soulèvement au survol, retour à l'appui, anneau de focus clavier et état désactivé lisible.
+- **Les couleurs suivent la palette réglable** : bouton principal en dégradé léger dans la teinte « secondaire » de la palette,
+  boutons secondaires avec fond/bordure/texte de la palette, variante pastel (`btn-soft`) basée sur la couleur « active ».
+- Vert fixe pour valider (`btn-ok` : « Valider » des justificatifs, « Accepter » d'un changement) et rouge fixe pour supprimer/refuser (`danger`),
+  pour que leur sens ne dépende pas de la palette.
+- `sw.js` : cache v39.
+
+# CHANGELOG — nouveau menu
+
+Présentation et organisation du menu uniquement ; aucune règle métier modifiée.
+
+- Menu en carte arrondie, en trois sections : **Principal** (Tableau de bord, Planning, Congés, Génération), **Gestion** (Équipe, Récupération, Bilan, Comptes)
+  et **Mon espace** (Mes gardes, Mon bilan) ; pour l'Admin, cette dernière section s'appelle « Suivi » (Historique des changements).
+- Pastille d'icône colorée par section ; élément actif teinté avec barre d'accent. Mode réduit conservé (sections masquées, badge sur l'icône).
+- **Badge sur « Mes gardes »** (compte Médecin) : nombre de demandes de changement reçues en attente de réponse, dans le menu et dans la barre du bas.
+- Mobile : barre du bas flottante et arrondie ; « Mes gardes » y figure pour les comptes Médecin.
+- `sw.js` : cache v38.
+
+# CHANGELOG — nouveau style du tableau de bord
+
+Présentation uniquement : mêmes données, aucune règle ni calcul métier modifiés.
+
+- Cellules pastel à coins arrondis avec liseré de couleur en bas, une couleur par type : garde J (bleu), N (violet), G (vert), F (ambre) ;
+  congé (rose/bleu), récupération (turquoise), indisponible (orange) ; compteurs en gris-bleu.
+- Trois compteurs en haut : Médecins actifs, **Gardes aujourd'hui** et **Absents aujourd'hui** (calculés avec les données déjà chargées).
+- Sections « Gardes du jour » et « Disponibilités », chaque disponibilité avec un badge de nombre et la liste des noms.
+- Adapté au mobile (2 colonnes pour les gardes, compteurs compacts).
+- `sw.js` : cache v37.
+
 # CHANGELOG — « Mon bilan » (compte médecin)
 
 Ajout uniquement : aucune règle de points, aucun calcul du Bilan Admin, aucune donnée modifiés.

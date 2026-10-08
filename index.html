@@ -749,16 +749,19 @@ body.role-admin #myBilanTab{display:none!important}
 </header>
 <main><img id="homeImageDisplay" class="home-image" alt="Image d’accueil">
 <nav id="sideNav" aria-label="Navigation principale">
-<button class="active" data-tab="dashboard" title="Tableau de bord"><span class="nav-icon">🏠</span><span class="nav-label">Tableau de bord</span></button>
-<button data-tab="team" title="Équipe"><span class="nav-icon">👨‍⚕️</span><span class="nav-label">Équipe</span></button>
-<button data-tab="absences" title="Congés / indisponibilités"><span class="nav-icon">📅</span><span class="nav-label">Congés / indisponibilités</span></button>
-<button class="admin-only" data-tab="generate" title="Génération"><span class="nav-icon">⚙️</span><span class="nav-label">Génération</span></button>
-<button data-tab="planning" title="Planning"><span class="nav-icon">📋</span><span class="nav-label">Planning</span></button>
-<button id="myGuardsTab" data-tab="myGuards" style="display:none" title="Changement"><span class="nav-icon">🕘</span><span class="nav-label">Changement</span></button>
-<button id="myBilanTab" data-tab="myBilan" title="Mon bilan"><span class="nav-icon">📊</span><span class="nav-label">Mon bilan</span></button>
-<button data-tab="stats" title="Récupération"><span class="nav-icon">🔄</span><span class="nav-label">Récupération</span></button>
-<button class="admin-only" data-tab="bilan" title="Bilan"><span class="nav-icon">📊</span><span class="nav-label">Bilan</span></button>
-<button class="admin-only" data-tab="accounts" title="Comptes"><span class="nav-icon">🔐</span><span class="nav-label">Comptes</span></button>
+<div class="nav-group">Principal</div>
+<button class="nv nv-p active" data-tab="dashboard" title="Tableau de bord"><span class="nav-icon">🏠</span><span class="nav-label">Tableau de bord</span></button>
+<button class="nv nv-p" data-tab="planning" title="Planning"><span class="nav-icon">📋</span><span class="nav-label">Planning</span></button>
+<button class="nv nv-p" data-tab="absences" title="Congés / indisponibilités"><span class="nav-icon">📅</span><span class="nav-label">Congés / indisponibilités</span></button>
+<button class="nv nv-p admin-only" data-tab="generate" title="Génération"><span class="nav-icon">⚙️</span><span class="nav-label">Génération</span></button>
+<div class="nav-group">Gestion</div>
+<button class="nv nv-g" data-tab="team" title="Équipe"><span class="nav-icon">👨‍⚕️</span><span class="nav-label">Équipe</span></button>
+<button class="nv nv-g" data-tab="stats" title="Récupération"><span class="nav-icon">🔄</span><span class="nav-label">Récupération</span></button>
+<button class="nv nv-g admin-only" data-tab="bilan" title="Bilan"><span class="nav-icon">📊</span><span class="nav-label">Bilan</span></button>
+<button class="nv nv-g admin-only" data-tab="accounts" title="Comptes"><span class="nav-icon">🔐</span><span class="nav-label">Comptes</span></button>
+<div class="nav-group" id="navGrpMine">Mon espace</div>
+<button class="nv nv-m" id="myGuardsTab" data-tab="myGuards" style="display:none" title="Mes gardes"><span class="nav-icon">📅</span><span class="nav-label">Mes gardes</span></button>
+<button class="nv nv-m" id="myBilanTab" data-tab="myBilan" title="Mon bilan"><span class="nav-icon">📊</span><span class="nav-label">Mon bilan</span></button>
 <button type="button" id="mobileSettingsNav" class="mobile-only-nav admin-only" title="Paramètres"><span class="nav-icon">⚙️</span><span class="nav-label">Paramètres</span></button>
 <button type="button" id="navToggle" class="nav-toggle" title="Réduire le menu" aria-label="Réduire le menu"><span class="nav-icon">◀</span><span class="nav-label">Réduire le menu</span></button>
 </nav>
@@ -3650,22 +3653,34 @@ function renderTodayGuards(){
   const indisponibles=byType(["INDISPONIBLE","INDISP"]);
 
   const guardHtml=unique.length
-    ? unique.map(x=>`<div class="today-guard"><small>Garde ${x.type}</small><b>${escapeHtml(x.doctor)}</b></div>`).join("")
-    : `<div class="today-empty" style="grid-column:1/-1">Aucune garde J, N, G ou F enregistrée pour aujourd’hui (${dateLabel}).</div>`;
+    ? unique.map(x=>`<div class="dc-cell dc-${escapeHtml(x.type)}"><small>Garde ${escapeHtml(x.type)}</small><b>${escapeHtml(x.doctor)}</b></div>`).join("")
+    : `<div class="dc-empty">Aucune garde J, N, G ou F enregistrée pour aujourd’hui (${dateLabel}).</div>`;
 
-  const listHtml=(title,names,emptyLabel)=>`
-    <div class="today-status-box">
-      <div class="today-status-title">${title} <span>${names.length}</span></div>
-      ${names.length?names.map(n=>`<div class="today-status-person">${escapeHtml(n)}</div>`).join(""):`<div class="today-status-empty">${emptyLabel}</div>`}
+  const listHtml=(cls,title,names,emptyLabel)=>`
+    <div class="dc-cell dc-box dc-${cls}">
+      <div class="dc-top"><b>${title}</b><span class="dc-pill">${names.length}</span></div>
+      ${names.length?names.map(n=>`<div class="dc-person">${escapeHtml(n)}</div>`).join(""):`<div class="dc-none">${emptyLabel}</div>`}
+    </div>`;
+
+  // Compteurs du haut (calculés avec les données déjà chargées : aucune requête supplémentaire).
+  const absentCount=new Set([...conges,...recups,...indisponibles]).size;
+  const activeCount=(state.doctors||[]).filter(d=>d.active).length;
+  const dash=document.getElementById("dashStats");
+  if(dash)dash.innerHTML=`<div class="dc-grid dc-g3 dc-kpi">
+      <div class="dc-cell dc-K"><small>Médecins actifs</small><span class="dc-big">${activeCount}</span></div>
+      <div class="dc-cell dc-K"><small>Gardes aujourd’hui</small><span class="dc-big">${unique.length}</span></div>
+      <div class="dc-cell dc-K"><small>Absents aujourd’hui</small><span class="dc-big">${absentCount}</span></div>
     </div>`;
 
   el.innerHTML=`
-    <div class="today-dashboard-title">Aujourd’hui — ${dateLabel}</div>
-    <div class="today-guards-list">${guardHtml}</div>
-    <div class="today-status-grid">
-      ${listHtml("Congé",conges,"Aucun médecin en congé")}
-      ${listHtml("Récupération",recups,"Aucune récupération aujourd’hui")}
-      ${listHtml("Indisponible",indisponibles,"Aucun médecin indisponible")}
+    <div class="dc-head"><span class="dc-date">Aujourd’hui — ${dateLabel}</span></div>
+    <div class="dc-section">Gardes du jour</div>
+    <div class="dc-grid dc-g4">${guardHtml}</div>
+    <div class="dc-section">Disponibilités</div>
+    <div class="dc-grid dc-g3">
+      ${listHtml("C","Congé",conges,"Aucun médecin en congé")}
+      ${listHtml("R","Récupération",recups,"Aucune récupération aujourd’hui")}
+      ${listHtml("I","Indisponible",indisponibles,"Aucun médecin indisponible")}
     </div>`;
 }
 function formatEntryCreatedAt(ts){
@@ -4527,6 +4542,32 @@ function removeExchangeRequestsForPlanning(historyKey){
   state.exchangeRequests=state.exchangeRequests.filter(r=>r.historyKey!==historyKey);
 }
 function guardRequestLabel(status){return ({pending:'En attente',accepted:'Acceptée',refused:'Refusée',cancelled:'Annulée'}[status]||status);}
+/* Badge sur « Mes gardes » : demandes de changement reçues et en attente de ma réponse (compte Médecin). */
+function guardsBadgeCount(){
+  const ses=currentSession();
+  if(!ses||ses.role==="admin")return 0;
+  return (state.exchangeRequests||[]).filter(r=>r.status==="pending"&&r.toDoctor===ses.doctor).length;
+}
+function updateMenuState(){
+  try{
+    const ses=currentSession();
+    const grp=document.getElementById("navGrpMine");
+    if(grp)grp.textContent=(ses&&ses.role==="admin")?"Suivi":"Mon espace";
+    const n=guardsBadgeCount();
+    const label=n>99?"99+":String(n);
+    const targets=[["myGuardsTab","nav-badge"],["mobileMyGuardsBtn","mb-badge"]];
+    targets.forEach(([id,cls])=>{
+      const el=document.getElementById(id);if(!el)return;
+      el.querySelectorAll("."+cls).forEach(x=>x.remove());
+      if(n>0){
+        const b=document.createElement("span");
+        b.className=cls;b.textContent=label;
+        b.setAttribute("aria-label",n+" demande(s) de changement en attente");
+        el.appendChild(b);
+      }
+    });
+  }catch(e){console.error("Menu :",e);}
+}
 function renderMyGuards(){
   const el=document.getElementById('myGuardsContent');
   if(!el)return;
@@ -4560,7 +4601,7 @@ function renderMyGuards(){
   const incoming=(state.exchangeRequests||[]).filter(r=>r.status==='pending'&&r.toDoctor===doctor).sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));
   const outgoing=(state.exchangeRequests||[]).filter(r=>r.fromDoctor===doctor&&r.status==='pending').sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));
   let html='';
-  if(incoming.length){html+=`<div style="border:1px solid #f2c94c;border-radius:10px;padding:12px;margin-bottom:14px;background:#fffbea"><b>🔄 Demandes de changement reçues</b><div style="margin-top:8px">${incoming.map(r=>`<div style="padding:10px 0;border-top:1px solid #eadfba"><div><b>${escapeHtml(r.fromDoctor)}</b> vous propose sa garde du <b>${escapeHtml(fmt(r.date).date)} — ${escapeHtml(r.type)}</b>.</div><div style="margin-top:8px"><button class="btn primary small" onclick="respondGuardChange('${escapeHtml(r.id)}','accept')">Accepter</button> <button class="btn small" onclick="respondGuardChange('${escapeHtml(r.id)}','refuse')">Refuser</button></div></div>`).join('')}</div></div>`;}
+  if(incoming.length){html+=`<div style="border:1px solid #f2c94c;border-radius:10px;padding:12px;margin-bottom:14px;background:#fffbea"><b>🔄 Demandes de changement reçues</b><div style="margin-top:8px">${incoming.map(r=>`<div style="padding:10px 0;border-top:1px solid #eadfba"><div><b>${escapeHtml(r.fromDoctor)}</b> vous propose sa garde du <b>${escapeHtml(fmt(r.date).date)} — ${escapeHtml(r.type)}</b>.</div><div style="margin-top:8px"><button class="btn btn-ok small" onclick="respondGuardChange('${escapeHtml(r.id)}','accept')">Accepter</button> <button class="btn small" onclick="respondGuardChange('${escapeHtml(r.id)}','refuse')">Refuser</button></div></div>`).join('')}</div></div>`;}
   if(outgoing.length){html+=`<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px;background:#f8fafc"><b>⏳ Demandes envoyées</b><div style="margin-top:8px">${outgoing.map(r=>`<div style="padding:8px 0;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div>${escapeHtml(r.date)} — <b>${escapeHtml(r.type)}</b> → ${escapeHtml(r.toDoctor)} <span class="hint">(En attente)</span></div><button class="btn small danger" type="button" onclick="cancelGuardChangeRequest('${escapeHtml(r.id)}')">Annuler la demande</button></div>`).join('')}</div></div>`;}
   const changeHistory=(state.exchangeRequests||[])
     .filter(r=>r.status!=='pending' && (r.fromDoctor===doctor || r.toDoctor===doctor))
@@ -4811,8 +4852,8 @@ function renderAdminAbsences(){
       const canReview=isLeaveEntry && hasFile && j?.status==="pending_review";
       const validateBtn=isLeaveEntry
         ? (canReview
-          ? `<button class="btn small" type="button" onclick="reviewJustification('${escapeHtml(String(j.id))}','approved')">✅ Valider</button>`
-          : `<button class="btn small" type="button" disabled title="Aucun justificatif en attente de validation">✅ Valider</button>`)
+          ? `<button class="btn btn-ok small" type="button" onclick="reviewJustification('${escapeHtml(String(j.id))}','approved')">✅ Valider</button>`
+          : `<button class="btn btn-ok small" type="button" disabled title="Aucun justificatif en attente de validation">✅ Valider</button>`)
         : "";
       const rejectBtn=isLeaveEntry
         ? (canReview
@@ -5424,7 +5465,10 @@ function myBilanSetYear(v){myBilanYear=v;renderMyBilan();}
     prevRenderAll.apply(this,arguments);
     try{if(document.getElementById("bilan")?.classList.contains("active"))renderBilan();}catch(e){console.error("Bilan :",e);}
     try{if(document.getElementById("myBilan")?.classList.contains("active"))renderMyBilan();}catch(e){console.error("Mon bilan :",e);}
+    updateMenuState();
   };
+  const prevRenderMyGuards=renderMyGuards;
+  renderMyGuards=function(){prevRenderMyGuards.apply(this,arguments);updateMenuState();};
 })();
 </script>
 
@@ -5583,3 +5627,88 @@ function myBilanSetYear(v){myBilanYear=v;renderMyBilan();}
   header #authUserInfo button{flex:0 0 auto!important;width:auto!important;min-width:0!important;height:34px!important;padding:6px 10px!important;font-size:12px!important;margin:0!important;}
 }
 </style>
+
+<style id="dashboard-cells">
+/* Tableau de bord : cellules pastel avec liseré de couleur en bas (une couleur par type) */
+.dashboard-card #dashStats{display:block;margin-bottom:0}
+.dashboard-card .today-dashboard{border-top:0;padding-top:0}
+.dc-grid{display:grid;gap:10px}
+.dc-g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.dc-g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.dc-cell{--t:#f1f3f9;--a:#8a93a8;background:var(--t);border-bottom:3px solid var(--a);border-radius:14px;padding:12px 14px;min-height:74px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:2px;text-align:center;min-width:0}
+.dc-cell small{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--a);text-transform:uppercase}
+.dc-cell b{font-size:15px;color:#1b2233;overflow:hidden;text-overflow:ellipsis}
+.dc-big{font-size:28px;line-height:1.1;font-weight:800;color:#1b2233}
+.dc-J{--t:#e8f1fd;--a:#3f83c5}.dc-N{--t:#ece9fd;--a:#6f6bd8}.dc-G{--t:#e3f6ec;--a:#2f9e6b}.dc-F{--t:#fff3d9;--a:#e0a21b}
+.dc-C{--t:#ffe9e9;--a:#4a7fc1}.dc-R{--t:#e0f5f4;--a:#1fa39a}.dc-I{--t:#fdeadb;--a:#e07b2f}.dc-K{--t:#f1f3f9;--a:#8a93a8}
+.dc-box{text-align:left;align-items:stretch;justify-content:flex-start}
+.dc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.dc-top b{font-size:13px}
+.dc-pill{background:var(--a);color:#fff;border-radius:999px;font-size:11px;font-weight:700;padding:1px 9px}
+.dc-person{font-size:13px;padding:3px 0;border-top:1px solid rgba(0,0,0,.08);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1b2233}
+.dc-none,.dc-empty{font-size:12px;color:#667085}
+.dc-empty{grid-column:1/-1;padding:14px;border-radius:14px;background:#f1f3f9;border-bottom:3px solid #8a93a8;text-align:center}
+.dc-head{margin:18px 0 0}
+.dc-date{display:inline-block;background:#f1f3f9;border-bottom:3px solid #8a93a8;border-radius:12px;padding:7px 14px;font-weight:700;font-size:13px;color:#1b2233}
+.dc-section{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#667085;font-weight:700;margin:18px 0 10px}
+@media(max-width:720px){.dc-g4{grid-template-columns:repeat(2,minmax(0,1fr))}.dc-g3{grid-template-columns:1fr}.dc-grid.dc-kpi{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.dc-kpi .dc-cell{padding:8px 4px;min-height:64px}.dc-kpi .dc-cell small{font-size:9px;letter-spacing:0}.dc-kpi .dc-big{font-size:22px}}
+</style>
+
+<style id="menu-modern">
+/* Menu : carte arrondie, sections, pastilles d'icônes colorées, élément actif teinté avec barre d'accent */
+main>nav .nav-group{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b7488;font-weight:700;padding:12px 10px 4px;flex:0 0 auto}
+main>nav .nav-group:first-child{padding-top:2px}
+main>nav{border-radius:22px;box-shadow:0 10px 34px rgba(30,40,80,.08);gap:3px}
+main>nav button.nv{--t:#e8f1fd;--a:#3f83c5;gap:11px!important;min-height:46px;padding:6px 10px!important;border-radius:14px!important;background:transparent!important;color:#1b2233!important;font-size:13px;font-weight:600;position:relative;transform:none!important;box-shadow:none}
+main>nav button.nv.nv-g{--t:#ece9fd;--a:#6f6bd8}
+main>nav button.nv.nv-m{--t:#e3f6ec;--a:#2f9e6b}
+main>nav button.nv .nav-icon{width:34px!important;min-width:34px!important;max-width:34px!important;flex:0 0 34px!important;height:34px!important;border-radius:11px;background:var(--t);border-bottom:2px solid transparent;justify-content:center!important;font-size:16px}
+main>nav button.nv:hover{background:#f3f5fa!important;color:#1b2233!important}
+main>nav button.nv.active{background:var(--t)!important;color:#1b2233!important;box-shadow:inset 4px 0 0 var(--a)}
+main>nav button.nv.active .nav-icon{background:#fff;border-bottom-color:var(--a)}
+main>nav .nav-badge{margin-left:auto;flex:0 0 auto;background:#e5484d;color:#fff;border-radius:999px;font-size:11px;font-weight:800;line-height:1;padding:4px 8px}
+/* menu réduit (bureau) : sections masquées, badge en pastille sur l'icône */
+main.nav-collapsed nav .nav-group{display:none}
+main.nav-collapsed nav button.nv{justify-content:center!important;padding:6px!important}
+main.nav-collapsed nav .nav-badge{position:absolute;top:2px;right:2px;margin:0;font-size:10px;padding:3px 5px}
+/* mobile : tiroir toujours complet + barre du bas flottante */
+.mb-badge{display:none}
+@media(max-width:700px){
+  main.nav-collapsed>nav .nav-group{display:block}
+  main.nav-collapsed>nav .nav-badge{position:static;margin-left:auto;font-size:11px;padding:4px 8px}
+  main>nav button.nv{font-size:14px}
+  .mobile-bottom-nav{left:10px!important;right:10px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;border:1px solid #e4e8f1!important;border-radius:22px!important;box-shadow:0 10px 30px rgba(30,40,80,.16)!important;padding:5px 6px!important;background:#fff!important}
+  .mobile-bottom-nav button{position:relative;border-radius:16px!important}
+  .mobile-bottom-nav button.active{background:#e8f1fd!important;color:#3f83c5!important;box-shadow:inset 0 -3px 0 #3f83c5}
+  .mobile-bottom-nav .mb-badge{display:block;position:absolute;top:2px;right:calc(50% - 22px);background:#e5484d;color:#fff;border-radius:999px;font-size:10px;font-weight:800;line-height:1;padding:3px 5px}
+  main:after{content:"";display:block;height:12px}
+}
+</style>
+
+<style id="buttons-modern">
+/* Boutons : tout dérive de la palette réglable (--desktop-*) ; vert (valider) et rouge (supprimer) restent fixes. */
+body .btn{--bp:var(--desktop-primary-bg,var(--desktop-purple,#6d6ff2));--bc:var(--desktop-card,#fff);--bl:var(--desktop-line,#e4e8f1);--bt:var(--desktop-text,#1b2233);
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;line-height:1.1;padding:11px 18px;border-radius:14px;border:1px solid var(--bl);background:var(--bc);color:var(--bt);cursor:pointer;
+  transition:transform .12s,box-shadow .15s,background .15s,border-color .15s,filter .15s}
+body .btn:hover{background:color-mix(in srgb,var(--bp) 8%,var(--bc));border-color:color-mix(in srgb,var(--bp) 35%,var(--bl));transform:translateY(-1px);box-shadow:0 6px 16px rgba(30,40,80,.10)}
+body .btn:active{transform:translateY(0) scale(.98);box-shadow:none}
+body .btn:focus-visible{outline:3px solid color-mix(in srgb,var(--bp) 40%,transparent);outline-offset:2px}
+body .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+/* principal : dégradé léger dans la teinte de la palette */
+body .btn.primary,body .btn.adminAbsTab.active{background:linear-gradient(135deg,color-mix(in srgb,var(--bp) 86%,#fff),var(--bp))!important;border-color:transparent!important;color:var(--desktop-primary-text,#fff)!important;box-shadow:0 6px 18px color-mix(in srgb,var(--bp) 32%,transparent)}
+body .btn.primary:hover,body .btn.adminAbsTab.active:hover{filter:brightness(1.07);box-shadow:0 10px 24px color-mix(in srgb,var(--bp) 40%,transparent)}
+/* pastel : fond teinté + liseré de couleur en bas */
+body .btn.btn-soft{background:var(--desktop-active-bg,color-mix(in srgb,var(--bp) 12%,var(--bc)));color:var(--desktop-active-text,var(--bp));border-color:transparent;border-bottom:3px solid var(--bp);padding-bottom:9px}
+body .btn.btn-ok{background:color-mix(in srgb,#2f9e6b 14%,var(--bc));color:#23805a;border-color:transparent;border-bottom:3px solid #2f9e6b;padding-bottom:9px}
+body .btn.btn-ok:hover{background:#2f9e6b;color:#fff;border-color:transparent}
+body .btn.danger{background:color-mix(in srgb,#d64550 13%,var(--bc))!important;color:#c23a45!important;border-color:transparent!important;border-bottom:3px solid #d64550!important;padding-bottom:9px}
+body .btn.danger:hover{background:#d64550!important;color:#fff!important}
+body .btn.btn-ghost{background:transparent;border-color:transparent;color:var(--desktop-muted,#6b7488)}
+/* petits boutons (tableaux, listes) */
+body .btn.small{padding:7px 12px;font-size:12px;border-radius:11px}
+body .btn.small.btn-soft,body .btn.small.btn-ok,body .btn.small.danger{padding-bottom:5px;border-bottom-width:2px!important}
+@media(max-width:700px){body .btn:not(.small){min-height:42px}}
+</style>
+
+
+
