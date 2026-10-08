@@ -1,3 +1,17 @@
+# CHANGELOG — « Mon bilan » (compte médecin)
+
+Ajout uniquement : aucune règle de points, aucun calcul du Bilan Admin, aucune donnée modifiés.
+
+- Nouvelle rubrique **Mon bilan** (menu des comptes Médecin, 📊), en lecture seule, avec le même sélecteur d'année que le Bilan Admin
+  (année en cours par défaut, option « Toutes les années »).
+- Affiche : mes points, ma durée de participation, mes points/mois, et la **moyenne de l'équipe** (points/mois) avec l'écart en %.
+  Mêmes chiffres que le Bilan Admin (calcul réutilisé : `bilanComputeYear`).
+- Aucun nom de collègue et aucun classement dans cette rubrique.
+- La comparaison avec l'équipe n'est affichée qu'à partir de 3 médecins participants (en dessous, la moyenne permettrait de déduire
+  les chiffres des autres).
+- Correctif : le bouton « Mon bilan » n'apparaît plus dans le menu du compte Administrateur.
+- `sw.js` : cache v36.
+
 # CHANGELOG — synchronisation allégée (consommation Supabase)
 
 Aucune modification des règles métier, du moteur d'équité, des plannings ni de la structure des données.

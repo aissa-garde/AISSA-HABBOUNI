@@ -688,6 +688,8 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 </style>
 <style id="bilanStyles">
 /* ===== Rubrique Bilan (Admin) : styles isolés, préfixe .bilan- ===== */
+/* « Mon bilan » : réservé aux comptes Médecin (la règle !important du menu empêche d'utiliser .doctor-only) */
+body.role-admin #myBilanTab{display:none!important}
 .bilan-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:6px}
 .bilan-head h2{margin:0}
 .bilan-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
@@ -753,6 +755,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <button class="admin-only" data-tab="generate" title="Génération"><span class="nav-icon">⚙️</span><span class="nav-label">Génération</span></button>
 <button data-tab="planning" title="Planning"><span class="nav-icon">📋</span><span class="nav-label">Planning</span></button>
 <button id="myGuardsTab" data-tab="myGuards" style="display:none" title="Changement"><span class="nav-icon">🕘</span><span class="nav-label">Changement</span></button>
+<button id="myBilanTab" data-tab="myBilan" title="Mon bilan"><span class="nav-icon">📊</span><span class="nav-label">Mon bilan</span></button>
 <button data-tab="stats" title="Récupération"><span class="nav-icon">🔄</span><span class="nav-label">Récupération</span></button>
 <button class="admin-only" data-tab="bilan" title="Bilan"><span class="nav-icon">📊</span><span class="nav-label">Bilan</span></button>
 <button class="admin-only" data-tab="accounts" title="Comptes"><span class="nav-icon">🔐</span><span class="nav-label">Comptes</span></button>
@@ -891,6 +894,19 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <div class="actions doctor-only" style="margin-top:10px"><label style="min-width:360px">Plannings validés<select id="doctorHistorySelect" onchange="showDoctorValidatedPlanning()"></select></label><button class="btn primary" onclick="showDoctorValidatedPlanning()">Afficher</button><button id="doctorPdfBtn" class="btn" type="button" onclick="exportDoctorValidatedPlanningPDF()">📄 Exporter PDF</button></div>
 <div id="doctorPlanningNotice" class="hint doctor-only" style="margin-top:10px"></div>
 <div id="planningTable" style="margin-top:15px"></div></div>
+</section>
+
+<section id="myBilan" class="panel">
+<div class="card bilan-card">
+  <div class="bilan-head">
+    <div><h2>📊 Mon bilan</h2>
+    <p class="bilan-intro">Votre charge de garde rapportée à votre durée réelle de participation, comparée à la moyenne de l'équipe (sans noms). Calculé à partir des plannings validés, année par année.</p></div>
+    <div class="bilan-controls">
+      <label>Année<select id="myBilanYear" onchange="myBilanSetYear(this.value)" aria-label="Choisir l'année"></select></label>
+    </div>
+  </div>
+  <div id="myBilanContent"></div>
+</div>
 </section>
 
 <section id="myGuards" class="panel">
@@ -4288,7 +4304,7 @@ function toggleAccountPassword(){
   p.type=p.type==="password"?"text":"password";
 }
 
-const _openTab=openTab;openTab=function(id){if(!isAdmin()&&!['dashboard','team','planning','absences','stats','myGuards'].includes(id))id="planning";_openTab(id);if(id==="team")renderAll();if(id==="myGuards")renderMyGuards();};
+const _openTab=openTab;openTab=function(id){if(!isAdmin()&&!['dashboard','team','planning','absences','stats','myGuards','myBilan'].includes(id))id="planning";_openTab(id);if(id==="team")renderAll();if(id==="myGuards")renderMyGuards();};
 function addDoctorRecovery(){
   const ses=currentSession(); if(!ses||ses.role==="admin")return alert("Cette saisie est destinée aux comptes Médecin.");
   const date=document.getElementById("doctorRecoveryDate")?.value; if(!date)return alert("Sélectionnez la date de récupération.");
@@ -4571,7 +4587,7 @@ function renderMyGuards(){
   html+=`<div style="border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;background:#f8fafc"><div class="hint">⏰ Prochaine garde</div><div style="font-size:20px;font-weight:800;margin-top:4px">${f.day} ${f.date}</div><div style="margin-top:5px;font-weight:700">${typeLabel(first.type)} — ${when}</div></div><table><thead><tr><th>Date</th><th>Jour</th><th>Type</th><th>Action</th></tr></thead><tbody>${guards.map(g=>{const x=fmt(g.date);const pending=(state.exchangeRequests||[]).some(r=>r.status==='pending'&&r.historyKey===g.historyKey&&r.date===g.date&&r.type===g.type&&r.fromDoctor===doctor);return `<tr><td>${x.date}</td><td>${x.day}</td><td><b>${typeLabel(g.type)}</b></td><td>${pending?'<span class="hint">Demande en attente</span>':`<button class="btn small" type="button" onclick="requestGuardChange('${escapeHtml(g.historyKey)}','${escapeHtml(g.date)}','${escapeHtml(g.type)}','${escapeHtml(doctor)}')">🔄 Changer</button>`}</td></tr>`}).join('')}</tbody></table>`;
   el.innerHTML=html;
 }
-function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";document.getElementById("mobileBottomNav")?.classList.remove("doctor-mode");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display="none";return;}
+function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);document.body.classList.toggle("role-admin",!!ses&&ses.role==="admin");overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";document.getElementById("mobileBottomNav")?.classList.remove("doctor-mode");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display="none";return;}
 const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.querySelectorAll(".doctor-only").forEach(el=>el.style.display=admin?"none":"block");const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display="block";const mobileBottomNav=document.getElementById("mobileBottomNav");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileBottomNav)mobileBottomNav.classList.toggle("doctor-mode",!admin);if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display=admin?"none":"flex";const accountDisplay=String(ses.doctor||ses.username||"").replace(/^dr\.?\s*/i,"").replace(/\s+médecin$/i,"").trim().toLocaleUpperCase("fr");document.getElementById("authUserInfo").innerHTML=`<span class="auth-account-name">${escapeHtml(accountDisplay)}</span><button class="btn small" type="button" aria-label="Log out" title="Log out" onclick="logout()">Log out</button>`;
 if(!admin){
   document.getElementById("doctorAbsenceHint").style.display="block";
@@ -5337,17 +5353,77 @@ async function bilanExportExcel(){
   }catch(err){console.error("Bilan Excel :",err);alert("Impossible de générer le fichier Excel du Bilan.");}
 }
 
+/* ===== Rubrique « Mon bilan » (compte médecin) =====
+   Lecture seule. Réutilise bilanComputeYear() : mêmes chiffres que le Bilan Admin.
+   N'affiche que les chiffres du médecin connecté et des agrégats d'équipe : aucun nom, aucun rang. */
+let myBilanYear=null;            // null | "all" | "2026"
+const MY_BILAN_MIN_TEAM=3;       // comparaison affichée à partir de 3 médecins (sinon la moyenne révélerait les autres)
+function myBilanDoctor(){const s=currentSession();return s&&s.role!=="admin"?String(s.doctor||""):"";}
+function myBilanBlock(Y,showTitle){
+  const d=bilanComputeYear(Y),name=myBilanDoctor();
+  const head=(showTitle?`<h3>Mon bilan ${Y}</h3>`:"")+`<p class="bilan-period">Période observée : ${bilanFrDate(d.winStartKey)} au ${bilanFrDate(d.winEndKey)} — plannings validés uniquement.</p>`;
+  if(!d.hasData)return `<div class="bilan-year-block">${head}<div class="bilan-empty"><b>Aucune garde validée pour ${Y}.</b><br>Le bilan s'appuie uniquement sur les plannings validés.</div></div>`;
+  const me=d.rows.find(r=>r.name===name);
+  if(!me)return `<div class="bilan-year-block">${head}<div class="bilan-empty"><b>Aucune participation enregistrée pour ${Y}.</b></div></div>`;
+  const nbRatios=d.rows.filter(r=>r.ratio!=null).length;
+  const canCompare=nbRatios>=MY_BILAN_MIN_TEAM&&d.avgRatio!=null;
+  const gap=(canCompare&&me.ratio!=null&&d.avgRatio>0)?(me.ratio/d.avgRatio-1)*100:null;
+  const flags=(me.estimated?`<span class="bilan-flag" title="Fin de participation estimée d'après votre dernière garde validée (aucune date de départ enregistrée).">*</span>`:"")+(me.short?`<span class="bilan-flag" title="Participation inférieure à 1 mois : ratio peu représentatif.">⚠</span>`:"");
+  const cards=`<div class="bilan-cards">
+    <div class="bilan-kpi"><span>Mes points</span><b>${bilanFmt(me.points,0)}</b></div>
+    <div class="bilan-kpi"><span>Ma durée de participation</span><b>${escapeHtml(bilanDurLabel(me.months))}${flags}</b></div>
+    <div class="bilan-kpi main"><span>Mes points/mois</span><b>${me.ratio!=null?bilanFmt(me.ratio):"—"}</b></div>
+    <div class="bilan-kpi"><span>Moyenne de l'équipe (points/mois)</span><b>${canCompare?bilanFmt(d.avgRatio):"—"}</b></div>
+  </div>`;
+  let compare="";
+  if(canCompare&&me.ratio!=null){
+    const txt=gap==null?"":`<p class="bilan-intro" style="margin:0 0 14px">${Math.abs(gap)<0.05?"Vous êtes au niveau de la moyenne de l'équipe.":`Vous êtes à <b>${gap>0?"+":""}${bilanFmt(gap,1)} %</b> de la moyenne de l'équipe.`}</p>`;
+    compare=txt+`<div class="bilan-charts">${bilanBars(`Points par mois — ${Y}`,[{label:"Vous",value:me.ratio},{label:"Moyenne de l'équipe",value:d.avgRatio}],{main:true})}</div>`;
+  }else if(!canCompare){
+    compare=`<p class="bilan-note">La comparaison avec la moyenne de l'équipe est affichée à partir de ${MY_BILAN_MIN_TEAM} médecins participants.</p>`;
+  }
+  const note=`<p class="bilan-note">Points/mois = points totaux ÷ durée réelle de participation (calculée avec les jours, sans arrondi). La moyenne de l'équipe est calculée sur l'ensemble des médecins participants, sans les nommer.${me.estimated?"<br>* Fin de participation estimée d'après votre dernière garde validée.":""}${me.short?"<br>⚠ Participation inférieure à 1 mois : le ratio est peu représentatif.":""}<br>Indicateur de répartition de la charge : un ratio plus élevé ou plus faible n'est ni un mérite ni un défaut.</p>`;
+  return `<div class="bilan-year-block">${head}${cards}${compare}${note}</div>`;
+}
+function myBilanEnsureSelection(years){
+  if(myBilanYear==="all"&&years.length>1)return;
+  if(myBilanYear!=null&&myBilanYear!=="all"&&years.includes(Number(myBilanYear)))return;
+  const cur=new Date().getFullYear();
+  myBilanYear=String(years.includes(cur)?cur:years[0]);
+}
+function renderMyBilan(){
+  const host=document.getElementById("myBilanContent");if(!host)return;
+  if(isAdmin()||!myBilanDoctor()){host.innerHTML="";return;}
+  try{
+    const years=bilanAvailableYears();
+    myBilanEnsureSelection(years);
+    const sel=document.getElementById("myBilanYear");
+    if(sel){
+      sel.innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join("")+(years.length>1?`<option value="all">Toutes les années</option>`:"");
+      sel.value=String(myBilanYear);
+    }
+    const list=myBilanYear==="all"?years.slice().sort((a,b)=>a-b):[Number(myBilanYear)];
+    host.innerHTML=list.map(y=>myBilanBlock(y,list.length>1)).join("");
+  }catch(err){
+    console.error("Mon bilan :",err);
+    host.innerHTML=`<div class="bilan-empty">Votre bilan n'a pas pu être calculé. Rechargez l'application ; si le problème persiste, les autres rubriques ne sont pas affectées.</div>`;
+  }
+}
+function myBilanSetYear(v){myBilanYear=v;renderMyBilan();}
+
 /* ---------- Branchement sur l'existant (sans modifier les fonctions d'origine) ---------- */
 (function(){
   const prevOpenTab=openTab;
   openTab=function(id){
     prevOpenTab(id);
     if(id==="bilan"&&isAdmin()){bilanSelectedYear=null;renderBilan();}
+    if(id==="myBilan"&&!isAdmin()){myBilanYear=null;renderMyBilan();}
   };
   const prevRenderAll=renderAll;
   renderAll=function(){
     prevRenderAll.apply(this,arguments);
     try{if(document.getElementById("bilan")?.classList.contains("active"))renderBilan();}catch(e){console.error("Bilan :",e);}
+    try{if(document.getElementById("myBilan")?.classList.contains("active"))renderMyBilan();}catch(e){console.error("Mon bilan :",e);}
   };
 })();
 </script>
