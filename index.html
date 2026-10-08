@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.sheetjs.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://hoxaqlefmdctjyauwymj.supabase.co wss://hoxaqlefmdctjyauwymj.supabase.co; object-src 'self' blob:; frame-src 'self' blob:; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#3f83c5">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -685,6 +686,53 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
   .mobile-menu-btn,.mobile-bottom-nav,.mobile-nav-backdrop{display:none!important}
 }
 </style>
+<style id="bilanStyles">
+/* ===== Rubrique Bilan (Admin) : styles isolés, préfixe .bilan- ===== */
+.bilan-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:6px}
+.bilan-head h2{margin:0}
+.bilan-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.bilan-controls label{min-width:200px}
+.bilan-intro{color:var(--muted);font-size:13px;margin:4px 0 0}
+.bilan-year-block{margin-top:22px}
+.bilan-year-block+.bilan-year-block{border-top:2px solid var(--line);margin-top:32px;padding-top:24px}
+.bilan-year-block>h3{font-size:22px;margin:0 0 4px}
+.bilan-period{color:var(--muted);font-size:13px;margin:0 0 14px}
+.bilan-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.bilan-kpi{background:var(--blue2);border:1px solid #cfe2f3;border-radius:12px;padding:14px;min-width:0}
+.bilan-kpi span{display:block;font-size:12px;color:var(--muted);font-weight:700}
+.bilan-kpi b{display:block;font-size:26px;margin-top:4px;overflow-wrap:anywhere}
+.bilan-kpi.main{background:#fff7dd;border-color:#f3d77a}
+.bilan-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.bilan-chart{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff;min-width:0}
+.bilan-chart.main{grid-column:1 / -1;border:2px solid var(--orange);background:#fffdf5}
+.bilan-chart h4{margin:0 0 10px;font-size:15px}
+.bilan-chart.main h4{font-size:17px}
+.bilan-bar-row{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr);gap:10px;align-items:center;margin:6px 0}
+.bilan-bar-label{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bilan-bar-track{position:relative;display:flex;align-items:center;gap:6px;background:#eef2f7;border-radius:6px;height:24px}
+.bilan-chart.main .bilan-bar-track{height:30px}
+.bilan-bar-fill{height:100%;border-radius:6px;background:var(--blue);min-width:2px}
+.bilan-chart.main .bilan-bar-fill{background:var(--orange)}
+.bilan-bar-val{font-size:12px;font-weight:700;white-space:nowrap}
+.bilan-chart.main .bilan-bar-val{font-size:14px}
+.bilan-avg-line{position:absolute;top:-3px;bottom:-3px;border-left:2px dashed #475467;pointer-events:none}
+.bilan-legend{font-size:12px;color:var(--muted);margin-top:8px}
+.bilan-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px}
+.bilan-table-wrap table{min-width:640px;margin:0}
+.bilan-table-wrap th,.bilan-table-wrap td{border-left:0;border-right:0}
+.bilan-table-wrap th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+.bilan-table-wrap th.sortable:hover{background:#e3eaf3}
+.bilan-table-wrap td.ratio,.bilan-table-wrap th.ratio{background:#fff7dd;font-weight:800}
+.bilan-table-wrap td.ratio{font-size:15px}
+.bilan-table-wrap td.name,.bilan-table-wrap th.name{position:sticky;left:0;background:#fff;z-index:1}
+.bilan-table-wrap th.name{background:#eef2f7}
+.bilan-gap{color:var(--muted);font-size:12px}
+.bilan-flag{cursor:help;margin-left:4px}
+.bilan-note{font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+.bilan-empty{padding:18px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center;background:#fafbfd}
+@media(max-width:900px){.bilan-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.bilan-charts{grid-template-columns:1fr}.bilan-chart.main{grid-column:auto}}
+@media(max-width:560px){.bilan-opt{display:none}.bilan-table-wrap table{min-width:0}.bilan-table-wrap th,.bilan-table-wrap td{padding:7px 4px}.bilan-controls,.bilan-controls label{width:100%}.bilan-kpi b{font-size:21px}.bilan-bar-row{grid-template-columns:84px minmax(0,1fr);gap:6px}.bilan-year-block>h3{font-size:19px}}
+</style>
 </head>
 <body class="auth-locked">
 <div id="authOverlay" aria-live="polite"><form class="auth-card" onsubmit="login(event)"><img id="loginLogoDisplay" class="auth-logo" src="./icons/icon-192.png" alt="Logo Tox-Garde"><h2>🔐 Connexion</h2><p id="loginSubtitleDisplay">Accédez à Tox-Garde avec votre compte.</p><label>Identifiant<input id="loginUsername" autocomplete="username" required></label><label>Mot de passe<input id="loginPassword" type="password" autocomplete="current-password" required></label><label class="remember-row"><input id="keepConnected" type="checkbox"> Rester connecté sur cet appareil</label><button id="loginSubmitBtn" class="btn primary" type="submit" style="width:100%;margin-top:8px">Se connecter</button><div id="loginProgress" class="login-progress" aria-live="polite" aria-hidden="true"><div class="login-progress-head"><span id="loginProgressText">Connexion en cours…</span><strong id="loginProgressPercent">0%</strong></div><div class="login-progress-track"><div id="loginProgressBar" class="login-progress-bar" style="width:0%"></div></div></div><div id="authError" class="auth-error"></div></form></div>
@@ -706,6 +754,7 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 <button data-tab="planning" title="Planning"><span class="nav-icon">📋</span><span class="nav-label">Planning</span></button>
 <button id="myGuardsTab" data-tab="myGuards" style="display:none" title="Changement"><span class="nav-icon">🕘</span><span class="nav-label">Changement</span></button>
 <button data-tab="stats" title="Récupération"><span class="nav-icon">🔄</span><span class="nav-label">Récupération</span></button>
+<button class="admin-only" data-tab="bilan" title="Bilan"><span class="nav-icon">📊</span><span class="nav-label">Bilan</span></button>
 <button class="admin-only" data-tab="accounts" title="Comptes"><span class="nav-icon">🔐</span><span class="nav-label">Comptes</span></button>
 <button type="button" id="mobileSettingsNav" class="mobile-only-nav admin-only" title="Paramètres"><span class="nav-icon">⚙️</span><span class="nav-label">Paramètres</span></button>
 <button type="button" id="navToggle" class="nav-toggle" title="Réduire le menu" aria-label="Réduire le menu"><span class="nav-icon">◀</span><span class="nav-label">Réduire le menu</span></button>
@@ -850,6 +899,26 @@ body.auth-locked header,body.auth-locked main{display:none!important}.admin-only
 
 <section id="stats" class="panel">
 <div class="card"><h2>Recuperation</h2><div class="actions admin-only" style="margin-bottom:12px"><button class="btn danger" onclick="resetAllEquityCounters()">↺ RESET</button><button class="btn primary" onclick="recalculateRecoveryScores()">🔄 AFFICHER SCORE</button></div><div id="statsTable"></div></div>
+</section>
+
+<section id="bilan" class="panel">
+<div class="card bilan-card">
+  <div class="bilan-head">
+    <div><h2>📊 Bilan</h2>
+    <p class="bilan-intro">Charge de garde de chaque médecin rapportée à sa durée réelle de participation. Calculé à partir des plannings validés, année par année.</p></div>
+    <div class="bilan-controls">
+      <label>Année<select id="bilanYear" onchange="bilanSetYear(this.value)" aria-label="Choisir l'année du bilan"></select></label>
+      <details class="export-menu">
+        <summary class="btn primary">Exporter ▾</summary>
+        <div class="export-menu-panel">
+          <button type="button" class="btn" onclick="bilanExportPDF();this.closest('details').open=false">PDF</button>
+          <button type="button" class="btn" onclick="bilanExportExcel();this.closest('details').open=false">Excel</button>
+        </div>
+      </details>
+    </div>
+  </div>
+  <div id="bilanContent"></div>
+</div>
 </section>
 </main>
 
@@ -1122,7 +1191,7 @@ openTab=function(id){
   if(window.matchMedia("(max-width:700px)").matches)closeMobileNav();
 };
 
-function addDoctor(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let n=document.getElementById("newDoctor").value.trim();if(!n)return;if(state.doctors.some(d=>d.name.toLowerCase()===n.toLowerCase()))return alert("Ce médecin existe déjà.");state.doctors.push({name:n,active:true,shift:"BOTH",weekend:true,participationStart:todayISO()});document.getElementById("newDoctor").value="";save()}
+function addDoctor(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let n=cleanDoctorName(document.getElementById("newDoctor").value);if(!n)return;if(state.doctors.some(d=>d.name.toLowerCase()===n.toLowerCase()))return alert("Ce médecin existe déjà.");state.doctors.push({name:n,active:true,shift:"BOTH",weekend:true,participationStart:todayISO()});document.getElementById("newDoctor").value="";save()}
 function loadDemo(){state.doctors=demoDoctors.map(name=>({name,active:true,shift:"BOTH",weekend:true}));save()}
 function importTeamFile(ev){if(!isAdmin())return alert("Cette action est réservée aux administrateurs.");
   const f=ev.target.files?.[0]; if(!f)return;
@@ -1170,7 +1239,7 @@ function importTeamFile(ev){if(!isAdmin())return alert("Cette action est réserv
           participationStart=parsed?iso(parsed):normalizeDateKey(rawDate);
         }
         if(!participationStart) participationStart=active?todayISO():"";
-        doctors.push({name,active,shift,weekend,participationStart});
+        doctors.push({name:cleanDoctorName(name),active,shift,weekend,participationStart});
       });
       if(!doctors.length){alert("Aucun médecin valide trouvé dans le fichier.");return;}
       if(!confirm(`Importer ${doctors.length} médecin(s) et remplacer l'équipe actuelle ?`))return;
@@ -2219,11 +2288,22 @@ function generateCore(){
   cloudDraftLock=true;
   cloudSave().then(()=>{
     lastCloudSnapshot=JSON.stringify(cleanStateForCloud());
-    cloudDraftLock=false;
+    localStorage.setItem('gardeMed',JSON.stringify(state));
   }).catch(err=>{
     console.error('Tox-Garde / sauvegarde du planning généré :',err);
     const msg=document.getElementById('genMessage');
-    if(msg) msg.innerHTML += '<div class="warn"><b>Attention :</b> le planning est conservé sur cet appareil, mais sa sauvegarde en ligne a échoué. Il ne sera pas écrasé automatiquement.</div>';
+    if(err&&err.code==='CLOUD_CONFLICT'){
+      handleCloudConflict(err.remote,'Le planning généré n\'a PAS été enregistré : régénérez-le.');
+      return;
+    }
+    if(msg) msg.innerHTML += '<div class="warn"><b>Attention :</b> le planning est conservé sur cet appareil, mais sa sauvegarde en ligne a échoué. Une nouvelle tentative automatique aura lieu dans 30 secondes.</div>';
+    setTimeout(()=>{
+      cloudSave().then(()=>{lastCloudSnapshot=JSON.stringify(cleanStateForCloud());localStorage.setItem('gardeMed',JSON.stringify(state));})
+        .catch(e2=>{ if(e2&&e2.code==='CLOUD_CONFLICT') handleCloudConflict(e2.remote,'Le planning généré n\'a PAS été enregistré : régénérez-le.'); else console.warn('Tox-Garde : nouvelle tentative de sauvegarde échouée.',e2); });
+    },30000);
+  }).finally(()=>{
+    // Toujours libérer le verrou, succès ou échec : sinon la synchronisation reste bloquée.
+    cloudDraftLock=false;
   });
 
   const loadsFinal=active.map(d=>workload(chosen.counts[d.name]||{}));
@@ -2721,6 +2801,7 @@ function addDoctorRecovery(){
   renderAll();
   if(!isAdmin())openTab("planning");
 }
+function cleanDoctorName(v){return String(v??"").replace(/[<>"`\\\u0000-\u001f]/g,"").replace(/\s+/g," ").trim();}
 function escapeHtml(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
 
 function renderPlanning(source,periodOverride){
@@ -3072,7 +3153,7 @@ function deleteDisplayedPlanning(){
   const currentKey=getPeriodDates().key;
   const h=state.planningHistory?.[currentKey];
   const hasCurrent=Object.values(state.planning||{}).some(v=>Array.isArray(v)&&v.length>0);
-  const hasCurrentFixed=(state.fixed||[]).some(x=>x.date>=getPeriodDates().start.toISOString().slice(0,10)&&x.date<=getPeriodDates().end.toISOString().slice(0,10)&&["G","F"].includes(x.type));
+  const hasCurrentFixed=(state.fixed||[]).some(x=>x.date>=iso(getPeriodDates().start)&&x.date<=iso(getPeriodDates().end)&&["G","F"].includes(x.type));
   if(!h && !hasCurrent && !hasCurrentFixed)return alert("Aucun planning actuel à supprimer.");
   const label=h?historyPeriodLabel(currentKey,h):"planning actuel";
   const linkedRequests=(state.exchangeRequests||[]).filter(r=>r.historyKey===currentKey).length;
@@ -3495,7 +3576,7 @@ function renderStats(){
       const x=c[d.name]||{J:0,N:0,G:0,F:0,total:0,recupAcquise:0,recupPrise:0,recupSolde:0};
       const solde=x.recupSolde||0;
       const clsSolde=solde<0?" style=\"font-weight:700;color:#b42318\"":" style=\"font-weight:700\"";
-      return `<tr><td class="name">${d.name}</td><td>${x.J||0}</td><td>${x.N||0}</td><td>${x.G||0}</td><td>${x.F||0}</td><td><b>${x.total||0}</b></td><td>${x.recupAcquise||0}</td><td>${x.recupPrise||0}</td><td${clsSolde}>${solde}</td></tr>`;
+      return `<tr><td class="name">${escapeHtml(d.name)}</td><td>${x.J||0}</td><td>${x.N||0}</td><td>${x.G||0}</td><td>${x.F||0}</td><td><b>${x.total||0}</b></td><td>${x.recupAcquise||0}</td><td>${x.recupPrise||0}</td><td${clsSolde}>${solde}</td></tr>`;
     }).join("")+`</tbody></table>`;
 }
 function renderTodayGuards(){
@@ -3632,7 +3713,8 @@ function setDoctorActive(i,checked){
 function renameDoctor(i,v){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let old=state.doctors[i].name;v=v.trim();if(!v)return;state.doctors[i].name=v;state.absences.forEach(a=>{if(a.doctor===old)a.doctor=v});state.fixed.forEach(a=>{if(a.doctor===old)a.doctor=v});if(state.accounts){state.accounts.forEach(a=>{if(a.doctor===old)a.doctor=v})};save()}
 
 /* ===== Authentification et rôles : couche ajoutée sans modifier les fonctions métier ===== */
-const INITIAL_ADMIN={username:"Aissahabbouni",password:"202020",role:"admin",doctor:"Administrateur initial"};
+/* Identifiant réservé de l'administrateur initial (le mot de passe n'est plus stocké dans le code). */
+const INITIAL_ADMIN_USERNAME="Aissahabbouni";
 if(!Array.isArray(state.accounts)) state.accounts=[];
 
 /* ===== Authentification et rôles : couche ajoutée sans modifier les fonctions métier ===== */
@@ -3770,6 +3852,8 @@ function startRealtimeSync(){
       if(eventName!=="toxgarde_update")return;
       // Ne jamais remplacer l'état local par le payload du canal : on relit
       // Supabase avec le token courant pour conserver les règles d'accès.
+      // Onglet caché : rien n'est téléchargé, une seule actualisation aura lieu au retour.
+      if(document.visibilityState==="hidden"){cloudPendingWhileHidden=true;cloudJustifPending=true;return;}
       pollCloudChanges(true);
       refreshJustificationsFromServer();
     };
@@ -3789,14 +3873,50 @@ function notifyRealtimeUpdate(){
   toxRealtimeSend("broadcast",{type:"broadcast",event:"toxgarde_update",payload:{at:Date.now()}});
 }
 
-async function cloudSave(){
+/* Contrôle de révision : chaque enregistrement incrémente state.cloudRevision.
+   Avant d'écrire, on relit la révision distante : si quelqu'un d'autre a enregistré
+   entre-temps, on n'écrase PAS ses données (erreur CLOUD_CONFLICT).
+   opts.force=true : écriture volontaire (copie locale plus récente, initialisation). */
+async function cloudSave(opts){
   const token=cloudToken();
   if(!token)return;
-  state.cloudUpdatedAt=Date.now();
-  const snapshot=cleanStateForCloud();
-  cloudSaveQueue=cloudSaveQueue.catch(()=>{}).then(()=>supaRpc("toxgarde_save_data",{p_token:token,p_data:snapshot}));
+  const force=!!(opts&&opts.force);
+  cloudSaveQueue=cloudSaveQueue.catch(()=>{}).then(async()=>{
+    if(!force){
+      // Contrôle de conflit : numéro de révision seul si la fonction SQL légère est installée,
+      // sinon téléchargement complet (ancien fonctionnement).
+      let remote=null, remoteRev=0;
+      const rv=await cloudRemoteRevision(token);
+      if(rv&&(rv.rev||rv.updatedAt)){
+        remoteRev=rv.rev;
+      }else{
+        remote=await cloudLoad(token);
+        remoteRev=Number((remote&&typeof remote==="object"&&remote.cloudRevision)||0);
+      }
+      const baseRev=Number(state.cloudRevision||0);
+      if(remoteRev>baseRev){
+        if(!remote)remote=await cloudLoad(token);
+        const err=new Error("Conflit de synchronisation : les données ont été modifiées par un autre utilisateur.");
+        err.code="CLOUD_CONFLICT"; err.remote=remote;
+        throw err;
+      }
+    }
+    state.cloudRevision=Number(state.cloudRevision||0)+1;
+    state.cloudUpdatedAt=Date.now();
+    await supaRpc("toxgarde_save_data",{p_token:token,p_data:cleanStateForCloud()});
+  });
   await cloudSaveQueue;
   notifyRealtimeUpdate();
+}
+function handleCloudConflict(remote,extra){
+  try{
+    if(remote&&typeof remote==="object"&&Object.keys(remote).length){
+      state=Object.assign(state,remote); state.accounts=[];
+      lastCloudSnapshot=JSON.stringify(remote);
+      localStorage.setItem("gardeMed",JSON.stringify(state));
+    }
+  }catch(e){console.error("Tox-Garde / conflit de synchronisation :",e);}
+  alert("Un autre utilisateur a modifié les données en même temps.\nVos données ont été actualisées et votre dernière modification n'a PAS été enregistrée."+(extra?"\n"+extra:"\nVeuillez la refaire."));
 }
 function authStorage(){return JSON.parse(localStorage.getItem("toxGardeSession")||"null")}
 function persistSession(session,keep){(keep?localStorage:sessionStorage).setItem("toxGardeSession",JSON.stringify(session)); if(keep) sessionStorage.removeItem("toxGardeSession"); else localStorage.removeItem("toxGardeSession")}
@@ -3875,7 +3995,7 @@ async function login(ev){
       setLoginProgress(72,"Initialisation des données administrateur…");
       const localAccounts=Array.isArray(state.accounts)?JSON.parse(JSON.stringify(state.accounts)):[];
       for(const acc of localAccounts){
-        if(acc?.username&&acc?.password&&normalizeUser(acc.username)!==normalizeUser(INITIAL_ADMIN.username)){
+        if(acc?.username&&acc?.password&&normalizeUser(acc.username)!==normalizeUser(INITIAL_ADMIN_USERNAME)){
           await supaRpc("toxgarde_upsert_account",{
             p_token:a.token,
             p_doctor:acc.doctor||"",
@@ -3886,7 +4006,7 @@ async function login(ev){
         }
       }
       setLoginProgress(88,"Finalisation de la synchronisation…");
-      await cloudSave();
+      await cloudSave({force:true});
     }
 
     state.accounts=[];
@@ -3911,12 +4031,25 @@ async function login(ev){
     if(submit)submit.disabled=false;
   }
 }
-async function logout(){stopRealtimeSync();if(cloudPollTimer){clearInterval(cloudPollTimer);cloudPollTimer=null;}const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
+async function logout(){stopRealtimeSync();stopIdleWatch();if(cloudPollTimer){clearInterval(cloudPollTimer);cloudPollTimer=null;}const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
+let cloudFailAlerted=false;
 async function save(){
   localStorage.setItem("gardeMed",JSON.stringify(state));
   cloudSyncBusy=true;
-  try{await cloudSave();lastCloudSnapshot=JSON.stringify(cleanStateForCloud());}
-  catch(e){console.error("Synchronisation Supabase:",e);alert("Données enregistrées localement, mais la synchronisation en ligne a échoué. Vérifiez Internet.");}
+  try{
+    await cloudSave();
+    lastCloudSnapshot=JSON.stringify(cleanStateForCloud());
+    localStorage.setItem("gardeMed",JSON.stringify(state));
+    cloudFailAlerted=false;
+  }
+  catch(e){
+    if(e&&e.code==="CLOUD_CONFLICT"){handleCloudConflict(e.remote);}
+    else{
+      console.error("Synchronisation Supabase:",e);
+      // Un seul message tant que l'échec persiste (évite une alerte bloquante à chaque modification).
+      if(!cloudFailAlerted){cloudFailAlerted=true;alert("Données enregistrées localement, mais la synchronisation en ligne a échoué. Vérifiez Internet.");}
+    }
+  }
   finally{cloudSyncBusy=false;}
   renderAll();
 }
@@ -3928,10 +4061,112 @@ let cloudSyncLastAt=0;
 let lastCloudSnapshot="";
 
 // Synchronisation cloud optimisée :
-// - contrôle périodique toutes les 5 secondes ;
-// - synchronisation immédiate au retour sur l'onglet / à la reconnexion ;
+// - aucun téléchargement tant que l'onglet est caché (une seule vérification au retour) ;
+// - contrôle périodique toutes les 5 minutes (le canal Realtime couvre les changements) ;
+// - avant tout téléchargement complet : vérification légère du numéro de révision
+//   (fonction SQL toxgarde_get_revision ; sans elle, ancien fonctionnement) ;
+// - déconnexion automatique après 15 minutes d'inactivité (avertissement 1 minute avant) ;
 // - verrou anti-requêtes simultanées ;
 // - aucun historique ni aucune donnée métier supprimés.
+let cloudPendingWhileHidden=false;
+let cloudJustifPending=false;
+let cloudRevCheckUnavailable=false;
+
+// Vérification légère : renvoie {rev,updatedAt} ou null (fonction non installée / erreur).
+async function cloudRemoteRevision(token){
+  if(cloudRevCheckUnavailable)return null;
+  try{
+    const r=await supaRpc("toxgarde_get_revision",{p_token:token});
+    const o=Array.isArray(r)?r[0]:r;
+    if(o&&typeof o==="object"&&("rev" in o))return {rev:Number(o.rev||0),updatedAt:Number(o.updatedAt||0)};
+    cloudRevCheckUnavailable=true;
+    return null;
+  }catch(e){
+    // Fonction absente du projet Supabase : on n'insiste plus pendant cette session.
+    if(/Supabase 404|PGRST202|Could not find the function/i.test(String(e&&e.message)))cloudRevCheckUnavailable=true;
+    return null;
+  }
+}
+
+/* ===== Déconnexion automatique après inactivité ===== */
+const IDLE_LIMIT_MS=15*60*1000;
+const IDLE_WARN_MS=60*1000;
+const IDLE_KEY="toxGardeLastActivity";
+let idleActive=false, idleLastActivity=Date.now(), idleLastWrite=0;
+let idleTimer=null, idleWarnTimer=null, idleBanner=null, idleBound=false, idleLoggingOut=false;
+
+function idleMarkActivity(){
+  if(!idleActive)return;
+  const now=Date.now();
+  idleLastActivity=now;
+  if(idleBanner)hideIdleWarning();
+  // Partagé entre onglets ouverts sur le même navigateur (écriture au plus toutes les 10 s).
+  if(now-idleLastWrite>10000){idleLastWrite=now;try{localStorage.setItem(IDLE_KEY,String(now));}catch(_){}}
+}
+function showIdleWarning(remainingMs){
+  const secs=Math.max(0,Math.ceil(remainingMs/1000));
+  if(!idleBanner){
+    const d=document.createElement("div");
+    d.id="idleWarning";
+    d.setAttribute("role","alertdialog");
+    d.setAttribute("aria-live","assertive");
+    d.style.cssText="position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:100000;width:min(460px,calc(100% - 24px));box-sizing:border-box;background:#1f2937;color:#fff;padding:12px 14px;border-radius:14px;box-shadow:0 10px 40px #0006;display:flex;gap:12px;align-items:center;justify-content:space-between;font:14px/1.4 system-ui,-apple-system,Segoe UI,sans-serif";
+    const t=document.createElement("span"); t.id="idleWarningText";
+    const b=document.createElement("button"); b.type="button"; b.textContent="Rester connecté";
+    b.style.cssText="flex:none;border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:600;background:#fff;color:#1f2937;cursor:pointer";
+    b.addEventListener("click",idleMarkActivity);
+    d.appendChild(t); d.appendChild(b);
+    document.body.appendChild(d);
+    idleBanner=d;
+  }
+  const txt=document.getElementById("idleWarningText");
+  if(txt)txt.textContent=secs>0?`Inactivité : déconnexion dans ${secs} s.`:"Déconnexion en cours…";
+  if(!idleWarnTimer)idleWarnTimer=setInterval(idleCheckNow,1000);
+}
+function hideIdleWarning(){
+  if(idleWarnTimer){clearInterval(idleWarnTimer);idleWarnTimer=null;}
+  if(idleBanner){idleBanner.remove();idleBanner=null;}
+}
+function idleCheckNow(){
+  if(!idleActive)return;
+  if(!currentSession()||!cloudToken()){stopIdleWatch();return;}
+  let stored=0;try{stored=Number(localStorage.getItem(IDLE_KEY)||0);}catch(_){}
+  const idle=Date.now()-Math.max(idleLastActivity,stored);
+  if(idle>=IDLE_LIMIT_MS)idleAutoLogout();
+  else if(idle>=IDLE_LIMIT_MS-IDLE_WARN_MS)showIdleWarning(IDLE_LIMIT_MS-idle);
+  else hideIdleWarning();
+}
+async function idleAutoLogout(){
+  if(idleLoggingOut)return;
+  // Ne jamais couper une sauvegarde ou une synchronisation en cours : nouvel essai au prochain contrôle.
+  if(cloudSyncBusy||cloudDraftLock||cloudSyncInFlight){showIdleWarning(0);return;}
+  idleLoggingOut=true;
+  try{
+    hideIdleWarning();
+    await logout();
+    const err=document.getElementById("authError");
+    if(err){err.textContent="Vous avez été déconnecté après 15 minutes d'inactivité.";err.style.display="block";}
+  }finally{idleLoggingOut=false;}
+}
+function startIdleWatch(){
+  if(!currentSession()||!cloudToken())return;
+  idleActive=true;
+  idleLastActivity=Date.now();
+  idleLastWrite=idleLastActivity;
+  try{localStorage.setItem(IDLE_KEY,String(idleLastActivity));}catch(_){}
+  if(!idleBound){
+    idleBound=true;
+    ["pointerdown","mousemove","keydown","touchstart","wheel","scroll"].forEach(ev=>
+      window.addEventListener(ev,idleMarkActivity,{passive:true,capture:true}));
+  }
+  if(!idleTimer)idleTimer=setInterval(idleCheckNow,15000);
+}
+function stopIdleWatch(){
+  idleActive=false;
+  if(idleTimer){clearInterval(idleTimer);idleTimer=null;}
+  hideIdleWarning();
+  try{localStorage.removeItem(IDLE_KEY);}catch(_){}
+}
 async function refreshCloudOnStartup(){
   const ses=currentSession(), token=cloudToken();
   if(!ses||!token)return false;
@@ -3949,7 +4184,8 @@ async function refreshCloudOnStartup(){
         lastCloudSnapshot=JSON.stringify(cleanStateForCloud());
         cloudSyncLastAt=Date.now();
         try{
-          await cloudSave();
+          state.cloudRevision=Math.max(Number(state.cloudRevision||0),Number(remote?.cloudRevision||0));
+          await cloudSave({force:true});
           localStorage.setItem("gardeMed",JSON.stringify(state));
         }catch(syncErr){
           console.warn("Tox-Garde : copie locale plus récente conservée, synchronisation différée.",syncErr);
@@ -3973,13 +4209,26 @@ async function pollCloudChanges(force=false){
   const ses=currentSession(), token=cloudToken();
   if(!ses||!token||cloudSyncBusy||cloudSyncInFlight||cloudDraftLock)return;
 
+  // Onglet caché : aucun téléchargement. Une seule vérification aura lieu au retour sur l'onglet.
+  if(document.visibilityState==="hidden"){cloudPendingWhileHidden=true;return;}
+
   // Les événements focus/visibility peuvent déclencher une vérification,
   // mais on évite les doublons rapprochés.
   const now=Date.now();
-  if(!force && now-cloudSyncLastAt<4000)return;
+  if(!force && !cloudPendingWhileHidden && now-cloudSyncLastAt<4000)return;
+  cloudPendingWhileHidden=false;
 
   cloudSyncInFlight=true;
   try{
+    // Vérification légère : si la révision distante n'est pas plus récente que la copie locale,
+    // on ne télécharge rien.
+    if(lastCloudSnapshot){
+      const rv=await cloudRemoteRevision(token);
+      if(rv&&(rv.rev||rv.updatedAt)){
+        const localRev=Number(state?.cloudRevision||0), localUpd=Number(state?.cloudUpdatedAt||0);
+        if(rv.rev<=localRev && rv.updatedAt<=localUpd){cloudSyncLastAt=Date.now();return;}
+      }
+    }
     const remote=await cloudLoad(token);
     cloudSyncLastAt=Date.now();
     if(!remote||typeof remote!=="object"||!Object.keys(remote).length)return;
@@ -4006,17 +4255,20 @@ async function pollCloudChanges(force=false){
 function startCloudPolling(){
   startRealtimeSync();
   if(cloudPollTimer)clearInterval(cloudPollTimer);
-  // Filet de sécurité : vérification automatique toutes les 5 secondes.
-  // Cela garantit qu'une modification faite par un autre utilisateur apparaît
-  // sans actualiser la page, même si le canal Realtime est indisponible.
-  cloudPollTimer=setInterval(()=>pollCloudChanges(false),5000);
+  // Filet de sécurité : vérification automatique toutes les 5 minutes (le canal Realtime et les
+  // événements focus/visibilité assurent la réactivité). Rien n'est fait si l'onglet est caché.
+  cloudPollTimer=setInterval(()=>pollCloudChanges(false),300000);
+  startIdleWatch();
 
   // Synchronisation événementielle : utile lorsqu'un médecin revient sur l'application
   // après qu'un administrateur a modifié/validé un planning.
   if(!window.__toxGardeSyncEventsBound){
     window.__toxGardeSyncEventsBound=true;
     document.addEventListener("visibilitychange",()=>{
-      if(document.visibilityState==="visible")pollCloudChanges(true);
+      if(document.visibilityState!=="visible")return;
+      idleCheckNow(); // déconnexion immédiate si le délai d'inactivité est dépassé
+      pollCloudChanges(true);
+      if(cloudJustifPending&&currentSession()){cloudJustifPending=false;refreshJustificationsFromServer();}
     });
     window.addEventListener("focus",()=>pollCloudChanges(true));
     window.addEventListener("pageshow",()=>pollCloudChanges(true));
@@ -4081,7 +4333,7 @@ const _addAbsence=addAbsence;addAbsence=async function(){
   const input=document.getElementById("absJustificationFile"); if(input)input.value="";
   updateJustificationRequirement();
 };
-const _renderAll=renderAll;renderAll=function(){_renderAll();renderHistorySelect();renderMyGuards();const ses=currentSession();if(ses&&ses.role!=="admin"){const sel=document.getElementById("absDoctor");if(sel){sel.innerHTML=`<option>${ses.doctor||""}</option>`;sel.value=ses.doctor||"";sel.disabled=true;}const t=document.getElementById("absType");if(t){[...t.options].forEach(o=>o.disabled=!( ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(o.value.toUpperCase())));if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(t.value.toUpperCase()))t.value="CONGÉ";}renderAccounts();}else renderAccountOptions();};
+const _renderAll=renderAll;renderAll=function(){_renderAll();renderHistorySelect();renderMyGuards();const ses=currentSession();if(ses&&ses.role!=="admin"){const sel=document.getElementById("absDoctor");if(sel){sel.innerHTML=`<option>${escapeHtml(ses.doctor||"")}</option>`;sel.value=ses.doctor||"";sel.disabled=true;}const t=document.getElementById("absType");if(t){[...t.options].forEach(o=>o.disabled=!( ["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(o.value.toUpperCase())));if(!["CONGÉ","INDISPONIBLE","INDISP","RÉCUP","RECUP","MALADIE LONGUE DURÉE","CONGÉ DE MATERNITÉ"].includes(t.value.toUpperCase()))t.value="CONGÉ";}renderAccounts();}else renderAccountOptions();};
 function guardChangeCandidates(date,type,sourceDoctor,historyKey){
   const sourceDate=dateFromISO(date);
   const source=historyData(historyKey)||{planning:{},fixed:[]};
@@ -4325,7 +4577,7 @@ if(!admin){
   document.getElementById("doctorAbsenceHint").style.display="block";
   const absDoctor=document.getElementById("absDoctor");
   if(absDoctor){
-    absDoctor.innerHTML=`<option value="${String(ses.doctor||"").replaceAll('"','&quot;')}">${ses.doctor||"Médecin"}</option>`;
+    absDoctor.innerHTML=`<option value="${escapeHtml(ses.doctor||"")}">${escapeHtml(ses.doctor||"Médecin")}</option>`;
     absDoctor.value=ses.doctor||""; absDoctor.disabled=true;
   }
   renderDoctorHistorySelect(); openTab("planning"); showDoctorValidatedPlanning();
@@ -4334,10 +4586,10 @@ if(!admin){
   const absDoctor=document.getElementById("absDoctor"); if(absDoctor)absDoctor.disabled=false;
 }
 if(!admin) setAdminAbsView("leave"); renderAccountOptions();renderAccounts();renderAll(); if(!admin) setAdminAbsView("leave");}
-function renderAccountOptions(){const el=document.getElementById("accountDoctor");if(!el)return;el.innerHTML='<option value="">-- Choisir un médecin --</option>'+state.doctors.map(d=>`<option value="${String(d.name).replaceAll('"','&quot;')}">${d.name}</option>`).join("")}
+function renderAccountOptions(){const el=document.getElementById("accountDoctor");if(!el)return;el.innerHTML='<option value="">-- Choisir un médecin --</option>'+state.doctors.map(d=>`<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join("")}
 async function loadCloudAccounts(){if(!isAdmin())return [];const token=cloudToken();if(!token)return [];try{return await supaRpc("toxgarde_list_accounts",{p_token:token})}catch(e){console.error(e);return []}}
-async function renderAccounts(){const el=document.getElementById("accountsBody");if(!el)return;if(!isAdmin()){el.innerHTML='<tr><td colspan="4" class="hint">Accès administrateur.</td></tr>';return;}const accounts=await loadCloudAccounts();el.innerHTML=accounts.map((a,i)=>`<tr><td>${a.doctor||"—"}</td><td>${a.username}</td><td>${a.role==="admin"?"Administrateur":"Médecin"}</td><td>${a.username!==INITIAL_ADMIN.username?`<button class="btn small danger" onclick="deleteDoctorAccount(${i},'${String(a.username).replaceAll("'","\\'")}')">Supprimer</button>`:""}</td></tr>`).join("")||'<tr><td colspan="4" class="hint">Aucun compte médecin créé.</td></tr>'}
-async function saveDoctorAccount(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");const doctor=document.getElementById("accountDoctor").value,username=document.getElementById("accountUsername").value.trim(),password=document.getElementById("accountPassword").value,role=document.getElementById("accountRole").value;if(!doctor||!username||!password)return alert("Veuillez renseigner le médecin, l’identifiant et le mot de passe.");if(normalizeUser(username)===normalizeUser(INITIAL_ADMIN.username))return alert("Cet identifiant est réservé à l’administrateur initial.");try{await supaRpc("toxgarde_upsert_account",{p_token:cloudToken(),p_doctor:doctor,p_username:username,p_password:password,p_role:role});notifyRealtimeUpdate();document.getElementById("accountUsername").value="";document.getElementById("accountPassword").value="";await renderAccounts();const m=document.getElementById("accountFormMessage");if(m){m.textContent="Compte médecin créé/mis à jour avec succès.";m.style.display="block";}}catch(e){alert("Impossible d'enregistrer le compte : "+e.message)}}
+async function renderAccounts(){const el=document.getElementById("accountsBody");if(!el)return;if(!isAdmin()){el.innerHTML='<tr><td colspan="4" class="hint">Accès administrateur.</td></tr>';return;}const accounts=await loadCloudAccounts();el.innerHTML=accounts.map((a,i)=>`<tr><td>${escapeHtml(a.doctor||"—")}</td><td>${escapeHtml(a.username)}</td><td>${a.role==="admin"?"Administrateur":"Médecin"}</td><td>${a.username!==INITIAL_ADMIN_USERNAME?`<button class="btn small danger" onclick="deleteDoctorAccount(${i},decodeURIComponent('${encodeURIComponent(String(a.username)).replaceAll("'","%27")}'))">Supprimer</button>`:""}</td></tr>`).join("")||'<tr><td colspan="4" class="hint">Aucun compte médecin créé.</td></tr>'}
+async function saveDoctorAccount(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");const doctor=document.getElementById("accountDoctor").value,username=document.getElementById("accountUsername").value.trim(),password=document.getElementById("accountPassword").value,role=document.getElementById("accountRole").value;if(!doctor||!username||!password)return alert("Veuillez renseigner le médecin, l’identifiant et le mot de passe.");if(normalizeUser(username)===normalizeUser(INITIAL_ADMIN_USERNAME))return alert("Cet identifiant est réservé à l’administrateur initial.");try{await supaRpc("toxgarde_upsert_account",{p_token:cloudToken(),p_doctor:doctor,p_username:username,p_password:password,p_role:role});notifyRealtimeUpdate();document.getElementById("accountUsername").value="";document.getElementById("accountPassword").value="";await renderAccounts();const m=document.getElementById("accountFormMessage");if(m){m.textContent="Compte médecin créé/mis à jour avec succès.";m.style.display="block";}}catch(e){alert("Impossible d'enregistrer le compte : "+e.message)}}
 async function deleteDoctorAccount(i,username){if(!isAdmin())return alert("Accès réservé aux administrateurs.");if(!confirm("Supprimer ce compte ?"))return;try{await supaRpc("toxgarde_delete_account",{p_token:cloudToken(),p_username:username});notifyRealtimeUpdate();await renderAccounts()}catch(e){alert("Impossible de supprimer le compte : "+e.message)}}
 function clearDoctorAccountForm(){
   const d=document.getElementById("accountDoctor"),u=document.getElementById("accountUsername"),p=document.getElementById("accountPassword"),r=document.getElementById("accountRole"),m=document.getElementById("accountFormMessage");
@@ -4647,7 +4899,11 @@ async function openJustificationFile(id){
   try{
     const result=await supaRpc("toxgarde_get_justification_file",{p_token:token,p_id:Number(id)});
     if(!result?.success)throw new Error("Fichier introuvable.");
-    const mime=result.mime_type||"application/octet-stream";
+    // Sécurité : un fichier HTML/SVG ouvert via blob: s'exécuterait dans l'origine de l'application
+    // (accès au token en localStorage). On n'ouvre donc que des types sûrs ; le reste est refusé.
+    const SAFE_MIME=["application/pdf","image/png","image/jpeg","image/jpg"];
+    const mime=String(result.mime_type||"").toLowerCase();
+    if(!SAFE_MIME.includes(mime))throw new Error("Type de fichier non autorisé pour l'affichage.");
     const bin=atob(result.file_base64||"");
     const bytes=new Uint8Array(bin.length);
     for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
@@ -4737,6 +4993,365 @@ if (typeof window.resetJustificationFilters !== 'function') {
   };
 }
 </script>
+<script id="bilanScript">
+/* ===== Rubrique Bilan (Admin) =====
+   Lecture seule : aucune donnée n'est modifiée, aucune règle existante n'est changée.
+   Sources réutilisées : recoveryHistoryEntries() (gardes des plannings VALIDÉS, dédoublonnées),
+   guardPoints() (J=1, N=2, G=3, F=3), doctor.participationStart / doctor.active,
+   absenceTypeExcludedFromEquity() (maladie longue durée, congé de maternité). */
+let bilanSelectedYear=null;            // null | "all" | "2026"
+let bilanSort={key:"ratio",dir:"desc"};
+
+function bilanFmt(n,d=2){return Number.isFinite(n)?n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d}):"—";}
+function bilanFrDate(k){const m=String(k||"").match(/^(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}/${m[2]}/${m[1]}`:"—";}
+function bilanDaysBetween(a,b){return Math.round((b-a)/86400000);}
+function bilanAddMonths(d,n){
+  const r=new Date(d.getFullYear(),d.getMonth()+n,1);
+  const last=new Date(r.getFullYear(),r.getMonth()+1,0).getDate();
+  r.setDate(Math.min(d.getDate(),last));return r;
+}
+/* Mois calendaires (avec fraction) entre deux dates incluses. 01/01→31/12 = 12 exactement. */
+function bilanCalendarMonths(start,endIncl){
+  const endEx=new Date(endIncl.getFullYear(),endIncl.getMonth(),endIncl.getDate()+1);
+  if(!(endEx>start))return 0;
+  let m=0;while(m<1200&&bilanAddMonths(start,m+1)<=endEx)m++;
+  const a=bilanAddMonths(start,m),b=bilanAddMonths(start,m+1);
+  const len=bilanDaysBetween(a,b);
+  return m+(len>0?bilanDaysBetween(a,endEx)/len:0);
+}
+/* Périodes exclues (maladie longue durée / maternité), bornées à [s,e] et fusionnées pour ne rien compter deux fois. */
+function bilanExcludedIntervals(name,s,e){
+  const iv=[];
+  (state.absences||[]).forEach(a=>{
+    if(!a||a.doctor!==name||!absenceTypeExcludedFromEquity(a.type))return;
+    const as=normalizeDateKey(a.start),ae=normalizeDateKey(a.end);if(!as||!ae)return;
+    let x=dateFromISO(as),y=dateFromISO(ae);if(y<x)return;
+    if(x<s)x=s;if(y>e)y=e;if(y>=x)iv.push([x,y]);
+  });
+  iv.sort((p,q)=>p[0]-q[0]);
+  const out=[];
+  iv.forEach(([x,y])=>{
+    const last=out[out.length-1];
+    if(!last||x>last[1])out.push([x,y]);
+    else if(y>last[1])last[1]=y;
+  });
+  return out;
+}
+function bilanDurLabel(months){
+  if(!Number.isFinite(months)||months<=0)return "—";
+  let whole=Math.floor(months+1e-9),days=Math.round((months-whole)*30.4375);
+  if(days>=30){whole++;days=0;}
+  const parts=[];
+  if(whole>0)parts.push(`${whole} mois`);
+  if(days>0)parts.push(`${days} jour${days>1?"s":""}`);
+  return parts.length?parts.join(" "):"< 1 jour";
+}
+function bilanEntries(){try{return recoveryHistoryEntries().filter(e=>e&&e.doctor&&normalizeDateKey(e.date));}catch(e){console.error("Bilan : lecture des gardes impossible",e);return[];}}
+function bilanLastValidatedEnd(Y){
+  const ys=String(Y);let best="";
+  Object.entries(state.planningHistory||{}).forEach(([key,raw])=>{
+    const h=raw?.planning?raw:{planning:raw,fixed:[],period:null};
+    if(!historyIsValidForRecovery(h,key))return;
+    const pe=normalizeDateKey(h.period?.end);if(!pe)return;
+    const ps=normalizeDateKey(h.period?.start)||pe;
+    if(ps.slice(0,4)>ys||pe.slice(0,4)<ys)return;
+    const e=pe.slice(0,4)>ys?`${ys}-12-31`:pe;
+    if(e>best)best=e;
+  });
+  return best;
+}
+function bilanAvailableYears(){
+  const ys=new Set();
+  bilanEntries().forEach(e=>{const y=Number(normalizeDateKey(e.date).slice(0,4));if(y>=2000&&y<=2200)ys.add(y);});
+  if(!ys.size)ys.add(new Date().getFullYear());
+  return [...ys].sort((a,b)=>b-a);
+}
+function bilanComputeYear(Y){
+  Y=Number(Y);const ys=String(Y);
+  const all=bilanEntries();
+  const entries=all.filter(e=>normalizeDateKey(e.date).startsWith(ys+"-"));
+  const yStartKey=`${ys}-01-01`,yEndKey=`${ys}-12-31`;
+  const curY=new Date().getFullYear();
+  const sortedKeys=a=>a.map(e=>normalizeDateKey(e.date)).sort();
+  /* Fin de la période observée : année complète pour les années passées ;
+     pour l'année en cours, dernière date couverte par un planning validé. */
+  let winEndKey=yEndKey;
+  if(Y>=curY){
+    winEndKey=bilanLastValidatedEnd(Y)||(entries.length?sortedKeys(entries).pop():"")||(Y===curY?todayISO():yEndKey);
+    if(winEndKey>yEndKey)winEndKey=yEndKey;
+  }
+  const winStart=dateFromISO(yStartKey),winEnd=dateFromISO(winEndKey);
+  const firstAll={},lastAll={};
+  all.forEach(e=>{const k=normalizeDateKey(e.date);
+    if(!firstAll[e.doctor]||k<firstAll[e.doctor])firstAll[e.doctor]=k;
+    if(!lastAll[e.doctor]||k>lastAll[e.doctor])lastAll[e.doctor]=k;});
+  const names=new Set((state.doctors||[]).map(d=>d.name));
+  entries.forEach(e=>names.add(e.doctor));
+  const rows=[];
+  names.forEach(name=>{
+    const doc=(state.doctors||[]).find(d=>d.name===name)||null;
+    const mine=entries.filter(e=>e.doctor===name);
+    const c={J:0,N:0,G:0,F:0};let points=0;
+    mine.forEach(e=>{if(c[e.type]!==undefined)c[e.type]++;points+=guardPoints(e.type);});
+    const mineKeys=sortedKeys(mine);
+    let estimated=false;
+    /* Début de participation : date d'intégration enregistrée ; à défaut (médecin retiré de l'équipe),
+       année entière si déjà présent avant, sinon première garde de l'année. */
+    let startKey=doc?normalizeDateKey(doc.participationStart):"";
+    if(!doc){startKey=(firstAll[name]&&firstAll[name]<yStartKey)?yStartKey:(mineKeys[0]||"");estimated=true;}
+    if(!startKey)startKey=yStartKey;
+    /* Fin de participation : fin de période observée si le médecin est actif ; sinon (inactif ou retiré),
+       aucune date de départ n'existe dans les données → dernière garde validée. */
+    let endKey=winEndKey;
+    if(!doc||!doc.active){
+      if(lastAll[name]){endKey=lastAll[name];estimated=true;}else endKey="";
+    }
+    let pStartKey=startKey>yStartKey?startKey:yStartKey;
+    let pEndKey=endKey&&endKey<winEndKey?endKey:(endKey?winEndKey:"");
+    let months=0;
+    if(pEndKey&&pEndKey>=pStartKey){
+      const s=dateFromISO(pStartKey),e=dateFromISO(pEndKey);
+      months=bilanCalendarMonths(s,e);
+      bilanExcludedIntervals(name,s,e).forEach(([x,y])=>{months-=bilanCalendarMonths(x,y);});
+      months=Math.max(0,months);
+    }
+    if(!Number.isFinite(months)||months<0)months=0;
+    if(!mine.length&&months<=0)return;   // pas participant cette année-là
+    const ratio=months>0?points/months:null;
+    rows.push({name,J:c.J,N:c.N,G:c.G,F:c.F,points,months,ratio:Number.isFinite(ratio)?ratio:null,
+      short:months>0&&months<1,estimated:estimated&&months>0,removed:!doc,noGuard:!mine.length,
+      from:pStartKey,to:pEndKey});
+  });
+  const valid=rows.filter(r=>r.ratio!=null);
+  const r2=x=>Math.round(x*100);
+  valid.slice().sort((a,b)=>b.ratio-a.ratio||a.name.localeCompare(b.name,"fr")).forEach((r,i,arr)=>{
+    r.rank=(i>0&&r2(r.ratio)===r2(arr[i-1].ratio))?arr[i-1].rank:i+1;});
+  const part=rows.filter(r=>r.months>0);
+  const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
+  const avgRatio=avg(valid.map(r=>r.ratio));
+  rows.forEach(r=>{r.gap=(r.ratio!=null&&avgRatio>0)?(r.ratio/avgRatio-1)*100:null;});
+  return {year:Y,rows,hasData:entries.length>0,winStartKey:yStartKey,winEndKey,
+    totalPoints:rows.reduce((s,r)=>s+r.points,0),nbParticipants:part.length,
+    avgMonths:avg(part.map(r=>r.months)),avgRatio};
+}
+function bilanSortedRows(rows){
+  const {key,dir}=bilanSort,f=dir==="asc"?1:-1;
+  const val=r=>key==="name"?r.name:key==="months"?r.months:key==="points"?r.points:r.ratio;
+  return rows.slice().sort((a,b)=>{
+    const va=val(a),vb=val(b);
+    if(key==="ratio"&&(va==null||vb==null)){if(va==null&&vb==null)return a.name.localeCompare(b.name,"fr");return va==null?1:-1;}
+    const d=typeof va==="string"?va.localeCompare(vb,"fr"):(va-vb);
+    return d?d*f:a.name.localeCompare(b.name,"fr");
+  });
+}
+function bilanBars(title,items,opts={}){
+  const fmt=opts.fmt||(v=>bilanFmt(v));
+  const max=Math.max(0,...items.map(i=>i.value));
+  const body=items.length?items.map(i=>{
+    const w=max>0?Math.max(0,i.value/max*85):0;
+    return `<div class="bilan-bar-row"><div class="bilan-bar-label" title="${escapeHtml(i.label)}">${escapeHtml(i.label)}</div><div class="bilan-bar-track"><div class="bilan-bar-fill" style="width:${w.toFixed(2)}%"></div><span class="bilan-bar-val">${escapeHtml(i.text||fmt(i.value))}</span>${opts.avg!=null&&max>0?`<span class="bilan-avg-line" style="left:${Math.min(85,opts.avg/max*85).toFixed(2)}%"></span>`:""}</div></div>`;
+  }).join(""):`<div class="bilan-empty">Aucune donnée.</div>`;
+  const legend=opts.avg!=null&&max>0?`<div class="bilan-legend">┆ Trait pointillé : moyenne (${bilanFmt(opts.avg)} points/mois)</div>`:"";
+  return `<div class="bilan-chart${opts.main?" main":""}"><h4>${escapeHtml(title)}</h4>${body}${legend}</div>`;
+}
+function bilanYearHTML(d,showTitle){
+  const Y=d.year;
+  const head=(showTitle?`<h3>Bilan ${Y}</h3>`:"")+`<p class="bilan-period">Période observée : ${bilanFrDate(d.winStartKey)} au ${bilanFrDate(d.winEndKey)} — plannings validés uniquement.</p>`;
+  if(!d.hasData)return `<div class="bilan-year-block">${head}<div class="bilan-empty"><b>Aucune garde validée pour ${Y}.</b><br>Le Bilan s'appuie uniquement sur les plannings validés ; validez un planning de cette année pour voir apparaître les données.</div></div>`;
+  const rows=d.rows;
+  const cards=`<div class="bilan-cards">
+    <div class="bilan-kpi"><span>Médecins participants</span><b>${d.nbParticipants}</b></div>
+    <div class="bilan-kpi"><span>Total des points</span><b>${bilanFmt(d.totalPoints,0)}</b></div>
+    <div class="bilan-kpi"><span>Durée moyenne de participation</span><b>${escapeHtml(bilanDurLabel(d.avgMonths))}</b></div>
+    <div class="bilan-kpi main"><span>Moyenne des points/mois</span><b>${d.avgRatio!=null?bilanFmt(d.avgRatio):"—"}</b></div>
+  </div>`;
+  const byPts=rows.slice().sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,"fr")).map(r=>({label:r.name,value:r.points,text:bilanFmt(r.points,0)}));
+  const byDur=rows.filter(r=>r.months>0).sort((a,b)=>b.months-a.months||a.name.localeCompare(b.name,"fr")).map(r=>({label:r.name,value:r.months,text:bilanDurLabel(r.months)}));
+  const byRatio=rows.filter(r=>r.ratio!=null).sort((a,b)=>b.ratio-a.ratio||a.name.localeCompare(b.name,"fr")).map(r=>({label:r.name,value:r.ratio}));
+  const charts=`<div class="bilan-charts">
+    ${bilanBars(`Points de garde par médecin — ${Y}`,byPts)}
+    ${bilanBars(`Durée de participation — ${Y}`,byDur)}
+    ${bilanBars(`Points par mois de participation — ${Y}`,byRatio,{main:true,avg:d.avgRatio})}
+  </div>`;
+  const arrow=k=>bilanSort.key===k?(bilanSort.dir==="asc"?" ▲":" ▼"):"";
+  const th=(k,label,cls)=>`<th class="sortable${cls?" "+cls:""}" onclick="bilanSortBy('${k}')" title="Trier">${label}${arrow(k)}</th>`;
+  let anyShort=false,anyEst=false;
+  const trs=bilanSortedRows(rows).map(r=>{
+    if(r.short)anyShort=true;if(r.estimated)anyEst=true;
+    const flags=(r.estimated?`<span class="bilan-flag" title="Fin de participation estimée d'après la dernière garde validée (aucune date de départ enregistrée).">*</span>`:"")+(r.short?`<span class="bilan-flag" title="Participation inférieure à 1 mois : ratio peu représentatif.">⚠</span>`:"");
+    const gap=r.gap==null?"—":`${r.gap>0?"+":""}${bilanFmt(r.gap,1)} %`;
+    return `<tr><td>${r.rank||"—"}</td><td class="name">${escapeHtml(r.name)}${r.removed?` <span class="bilan-gap">(hors équipe)</span>`:""}</td><td>${escapeHtml(bilanDurLabel(r.months))}${flags}</td><td>${bilanFmt(r.points,0)}</td><td class="ratio">${r.ratio!=null?bilanFmt(r.ratio):"—"}</td><td class="bilan-gap bilan-opt">${gap}</td><td class="bilan-gap bilan-opt">${r.J} · ${r.N} · ${r.G} · ${r.F}</td></tr>`;
+  }).join("");
+  const table=`<div class="bilan-table-wrap"><table><thead><tr><th>Rang</th>${th("name","Médecin","name")}${th("months","Participation")}${th("points","Points")}${th("ratio","Points/mois","ratio")}<th class="bilan-opt">Écart / moyenne</th><th class="bilan-opt">J · N · G · F</th></tr></thead><tbody>${trs}</tbody></table></div>
+  <p class="bilan-note">Points/mois = points totaux ÷ durée réelle de participation (calculée avec les jours, sans arrondi). Rang : classement par points/mois décroissant.${anyEst?"<br>* Fin de participation estimée d'après la dernière garde validée (aucune date de départ n'est enregistrée pour ce médecin).":""}${anyShort?"<br>⚠ Participation inférieure à 1 mois : le ratio est peu représentatif.":""}<br>Indicateur d'équité et de répartition de la charge : un ratio plus élevé ou plus faible n'est ni un mérite ni un défaut.</p>`;
+  return `<div class="bilan-year-block">${head}${cards}${charts}<h3 style="margin-top:6px">Détail par médecin</h3>${table}</div>`;
+}
+function bilanYearsToShow(){
+  const years=bilanAvailableYears();
+  if(bilanSelectedYear==="all")return years.slice().sort((a,b)=>a-b);
+  const y=Number(bilanSelectedYear);return Number.isFinite(y)?[y]:[years[0]];
+}
+function bilanEnsureSelection(years){
+  if(bilanSelectedYear==="all"&&years.length>1)return;
+  if(bilanSelectedYear!=null&&bilanSelectedYear!=="all"&&years.includes(Number(bilanSelectedYear)))return;
+  const cur=new Date().getFullYear();
+  bilanSelectedYear=String(years.includes(cur)?cur:years[0]);
+}
+function renderBilan(){
+  const host=document.getElementById("bilanContent");if(!host)return;
+  if(!isAdmin()){host.innerHTML="";return;}
+  try{
+    const years=bilanAvailableYears();
+    bilanEnsureSelection(years);
+    const sel=document.getElementById("bilanYear");
+    if(sel){
+      sel.innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join("")+(years.length>1?`<option value="all">Toutes les années</option>`:"");
+      sel.value=String(bilanSelectedYear);
+    }
+    const list=bilanYearsToShow();
+    host.innerHTML=list.map(y=>bilanYearHTML(bilanComputeYear(y),list.length>1)).join("");
+  }catch(err){
+    console.error("Bilan :",err);
+    host.innerHTML=`<div class="bilan-empty">Le Bilan n'a pas pu être calculé. Rechargez l'application ; si le problème persiste, les autres rubriques ne sont pas affectées.</div>`;
+  }
+}
+function bilanSetYear(v){bilanSelectedYear=v;renderBilan();}
+function bilanSortBy(k){
+  bilanSort=bilanSort.key===k?{key:k,dir:bilanSort.dir==="asc"?"desc":"asc"}:{key:k,dir:k==="name"?"asc":"desc"};
+  renderBilan();
+}
+
+/* ---------- Exports ---------- */
+function bilanRankedRows(d){
+  return d.rows.slice().sort((a,b)=>{
+    if((a.ratio==null)!==(b.ratio==null))return a.ratio==null?1:-1;
+    return (b.ratio||0)-(a.ratio||0)||a.name.localeCompare(b.name,"fr");
+  });
+}
+function bilanPdfBars(doc,y,title,items,fmt,rgb,avg){
+  const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),m=14;
+  const rowH=6.2,need=14+Math.max(1,items.length)*rowH+(avg!=null?5:0);
+  if(y+need>H-16){doc.addPage();y=16;}
+  doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.setTextColor(24,34,48);
+  doc.text(title,m,y);y+=5;
+  if(!items.length){doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(102,112,133);doc.text("Aucune donnée.",m,y+3);return y+8;}
+  const labelW=46,valW=26,x0=m+labelW,areaW=W-m-x0-valW;
+  const max=Math.max(...items.map(i=>i.value));
+  items.forEach(it=>{
+    doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(24,34,48);
+    let lab=it.label;while(lab.length>2&&doc.getTextWidth(lab)>labelW-2)lab=lab.slice(0,-2);
+    if(lab!==it.label)lab=lab.trim()+"…";
+    doc.text(lab,m,y+3.6);
+    doc.setFillColor(238,242,247);doc.rect(x0,y,areaW,4.6,"F");
+    const w=max>0?Math.max(0.3,it.value/max*areaW):0;
+    doc.setFillColor(...rgb);doc.rect(x0,y,w,4.6,"F");
+    doc.setFont("helvetica","bold");doc.text(it.text,x0+areaW+2,y+3.6);
+    y+=rowH;
+  });
+  if(avg!=null&&max>0){
+    const ax=x0+Math.min(areaW,avg/max*areaW);
+    doc.setDrawColor(71,84,103);doc.setLineWidth(0.3);doc.setLineDashPattern([1,1],0);
+    doc.line(ax,y-items.length*rowH-1,ax,y);doc.setLineDashPattern([],0);
+    doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.setTextColor(102,112,133);
+    doc.text(`Trait pointillé : moyenne (${bilanFmt(avg)} points/mois)`,m,y+2);y+=5;
+  }
+  return y+4;
+}
+function bilanPdfYear(doc,d){
+  const W=doc.internal.pageSize.getWidth(),m=14;let y=15;
+  doc.setFont("helvetica","bold");doc.setTextColor(24,34,48);doc.setFontSize(12);
+  doc.text("CENTRE ANTIPOISON",W/2,y,{align:"center"});y+=8;
+  doc.setFontSize(21);doc.setTextColor(63,131,197);doc.text("TOX-GARDE",W/2,y,{align:"center"});y+=7.5;
+  doc.setFontSize(13);doc.setTextColor(24,34,48);doc.text(`BILAN DES GARDES — ANNÉE ${d.year}`,W/2,y,{align:"center"});y+=3.5;
+  doc.setDrawColor(63,131,197);doc.setLineWidth(0.7);doc.line(m,y,W-m,y);y+=6;
+  doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(102,112,133);
+  doc.text(`Période observée : ${bilanFrDate(d.winStartKey)} au ${bilanFrDate(d.winEndKey)} — plannings validés uniquement`,m,y);y+=4.6;
+  doc.text(`Édité le ${new Date().toLocaleDateString("fr-FR")}`,m,y);y+=7;
+  if(!d.hasData){
+    doc.setFontSize(11);doc.setTextColor(24,34,48);
+    doc.text(`Aucune garde validée pour l'année ${d.year}.`,W/2,y+10,{align:"center"});return;
+  }
+  doc.setFont("helvetica","bold");doc.setFontSize(9.5);doc.setTextColor(24,34,48);
+  doc.text(`Médecins participants : ${d.nbParticipants}   |   Total des points : ${bilanFmt(d.totalPoints,0)}   |   Durée moyenne : ${bilanDurLabel(d.avgMonths)}   |   Moyenne : ${d.avgRatio!=null?bilanFmt(d.avgRatio):"—"} points/mois`,m,y);y+=4;
+  const ranked=bilanRankedRows(d);
+  let anyEst=false,anyShort=false;
+  const body=ranked.map(r=>{
+    if(r.estimated)anyEst=true;if(r.short)anyShort=true;
+    return [r.rank||"—",r.name+(r.removed?" (hors équipe)":""),bilanDurLabel(r.months)+(r.estimated?" *":"")+(r.short?" (!)":""),bilanFmt(r.points,0),r.ratio!=null?bilanFmt(r.ratio):"—",r.gap==null?"—":`${r.gap>0?"+":""}${bilanFmt(r.gap,1)} %`,`${r.J} · ${r.N} · ${r.G} · ${r.F}`];
+  });
+  doc.autoTable({
+    head:[["Rang","Médecin","Participation","Points","Points/mois","Écart / moy.","J · N · G · F"]],body,startY:y,theme:"grid",
+    margin:{left:m,right:m},
+    styles:{font:"helvetica",fontSize:9,cellPadding:1.8,halign:"center",valign:"middle",lineWidth:0.15,lineColor:[150,150,150],textColor:[24,34,48]},
+    headStyles:{fillColor:[63,131,197],textColor:[255,255,255],fontStyle:"bold"},
+    columnStyles:{0:{cellWidth:12},1:{halign:"left",fontStyle:"bold",cellWidth:44},4:{fontStyle:"bold",fillColor:[255,247,221],cellWidth:24}},
+    didParseCell:h=>{if(h.section==="head"&&h.column.index===4)h.cell.styles.fillColor=[255,191,0],h.cell.styles.textColor=[24,34,48];}
+  });
+  y=doc.lastAutoTable.finalY+4;
+  doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.setTextColor(102,112,133);
+  let note="Points/mois = points totaux ÷ durée réelle de participation. Indicateur d'équité et de répartition de la charge, sans jugement de valeur.";
+  const lines=doc.splitTextToSize(note,W-2*m);doc.text(lines,m,y);y+=lines.length*3.4;
+  if(anyEst){doc.text("* Fin de participation estimée d'après la dernière garde validée.",m,y);y+=3.4;}
+  if(anyShort){doc.text("(!) Participation inférieure à 1 mois : ratio peu représentatif.",m,y);y+=3.4;}
+  y+=5;
+  const byPts=d.rows.slice().sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,"fr")).map(r=>({label:r.name,value:r.points,text:bilanFmt(r.points,0)}));
+  const byDur=d.rows.filter(r=>r.months>0).sort((a,b)=>b.months-a.months||a.name.localeCompare(b.name,"fr")).map(r=>({label:r.name,value:r.months,text:bilanDurLabel(r.months)}));
+  const byRatio=d.rows.filter(r=>r.ratio!=null).sort((a,b)=>b.ratio-a.ratio||a.name.localeCompare(b.name,"fr")).map(r=>({label:r.name,value:r.ratio,text:bilanFmt(r.ratio)}));
+  y=bilanPdfBars(doc,y,`Points de garde par médecin — ${d.year}`,byPts,null,[63,131,197]);
+  y=bilanPdfBars(doc,y,`Durée de participation — ${d.year}`,byDur,null,[63,131,197]);
+  y=bilanPdfBars(doc,y,`Points par mois de participation — ${d.year}`,byRatio,null,[255,191,0],d.avgRatio);
+}
+async function bilanExportPDF(){
+  if(!isAdmin())return alert("Accès réservé aux administrateurs.");
+  try{
+    await ensurePDF();
+    if(!window.jspdf||!window.jspdf.jsPDF)return alert("L’export PDF n’est pas disponible. Vérifiez votre connexion internet puis réessayez.");
+    const years=bilanYearsToShow();
+    const doc=new window.jspdf.jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+    years.forEach((y,i)=>{if(i>0)doc.addPage();bilanPdfYear(doc,bilanComputeYear(y));});
+    const n=doc.internal.getNumberOfPages(),W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight();
+    for(let p=1;p<=n;p++){doc.setPage(p);doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(120,130,145);doc.text(`Tox-Garde — Bilan des gardes — page ${p}/${n}`,W/2,H-8,{align:"center"});}
+    doc.save(`bilan_gardes_${bilanSelectedYear==="all"?"toutes_annees":bilanSelectedYear}.pdf`);
+  }catch(err){console.error("Bilan PDF :",err);alert("Impossible de générer le PDF du Bilan.");}
+}
+async function bilanExportExcel(){
+  if(!isAdmin())return alert("Accès réservé aux administrateurs.");
+  try{
+    const XLSX=await ensureXLSX();
+    if(!XLSX)return alert("L’export Excel n’est pas disponible. Vérifiez votre connexion internet puis réessayez.");
+    const wb=XLSX.utils.book_new();
+    bilanYearsToShow().forEach(y=>{
+      const d=bilanComputeYear(y);
+      const aoa=[["CENTRE ANTIPOISON"],["TOX-GARDE"],[`BILAN DES GARDES — ANNÉE ${y}`],[`Période observée : ${bilanFrDate(d.winStartKey)} au ${bilanFrDate(d.winEndKey)} (plannings validés uniquement)`],[]];
+      if(!d.hasData)aoa.push([`Aucune garde validée pour l'année ${y}.`]);
+      else{
+        aoa.push(["Rang","Médecin","Participation","Durée (mois)","Points totaux","Points/mois","Écart / moyenne (%)","J","N","G","F","Remarque"]);
+        bilanRankedRows(d).forEach(r=>aoa.push([r.rank||"",r.name,bilanDurLabel(r.months),Number(r.months.toFixed(2)),r.points,r.ratio!=null?Number(r.ratio.toFixed(2)):"",r.gap!=null?Number(r.gap.toFixed(1)):"",r.J,r.N,r.G,r.F,[r.estimated?"Fin estimée":"",r.short?"Participation < 1 mois":"",r.removed?"Hors équipe":""].filter(Boolean).join(" ; ")]));
+        aoa.push([],["Moyenne des points/mois",d.avgRatio!=null?Number(d.avgRatio.toFixed(2)):""],["Total des points",d.totalPoints]);
+      }
+      const ws=XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"]=[{wch:7},{wch:26},{wch:18},{wch:13},{wch:13},{wch:13},{wch:18},{wch:5},{wch:5},{wch:5},{wch:5},{wch:30}];
+      XLSX.utils.book_append_sheet(wb,ws,String(y));
+    });
+    XLSX.writeFile(wb,`bilan_gardes_${bilanSelectedYear==="all"?"toutes_annees":bilanSelectedYear}.xlsx`);
+  }catch(err){console.error("Bilan Excel :",err);alert("Impossible de générer le fichier Excel du Bilan.");}
+}
+
+/* ---------- Branchement sur l'existant (sans modifier les fonctions d'origine) ---------- */
+(function(){
+  const prevOpenTab=openTab;
+  openTab=function(id){
+    prevOpenTab(id);
+    if(id==="bilan"&&isAdmin()){bilanSelectedYear=null;renderBilan();}
+  };
+  const prevRenderAll=renderAll;
+  renderAll=function(){
+    prevRenderAll.apply(this,arguments);
+    try{if(document.getElementById("bilan")?.classList.contains("active"))renderBilan();}catch(e){console.error("Bilan :",e);}
+  };
+})();
+</script>
+
 </body>
 </html><style>
 /* Optimisation mobile — conserve l'affichage desktop inchangé */

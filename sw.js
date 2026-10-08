@@ -1,8 +1,7 @@
-const CACHE_NAME = 'tox-garde-pwa-v31';
+const CACHE_NAME = 'tox-garde-pwa-v34';
 const APP_SHELL = [
   './',
   './index.html',
-  './app.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png'
