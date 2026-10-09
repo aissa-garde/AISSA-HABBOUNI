@@ -1,3 +1,24 @@
+# CHANGELOG — tableau de bord, icône de déconnexion, page « Mon bilan » (09/10/2026)
+
+Aucune règle métier, aucun calcul, aucune donnée modifiés.
+
+- **Tableau de bord** : la cellule « Absents aujourd'hui » est supprimée (2 compteurs restent) ; deux cases ajoutées sous « Disponibilités » : **Congé de maternité** et **Maladie longue durée (MLD)**, visibles par tous les comptes.
+- **Icône de déconnexion** : nouvelle icône « power » (anneau + barre) sur ordinateur et mobile ; l'anneau suit la couleur d'en-tête de la palette et la barre la couleur d'accent.
+- **Pages non autorisées** : à la connexion / déconnexion, une page non autorisée pour le compte (ex. « Mon bilan » resté ouvert dans le compte admin) est remplacée par le tableau de bord ; l'admin ne peut plus ouvrir « Mon bilan ».
+- `sw.js` : cache v41.
+
+# CHANGELOG — corrections planning, menu et icône (09/10/2026)
+
+Aucune règle de points, aucun moteur d'équité, aucune donnée modifiés.
+
+- **Suppression congés/récups (compte Médecin)** : après validation d'un planning, seuls les congés/récups qui chevauchent la **période validée** sont verrouillés (`isAbsenceValidated`). Les autres périodes restent supprimables. L'administrateur peut tout supprimer.
+- **Bouton « 🔍 Aperçu »** (page Planning) : aperçu en lecture seule, plein écran, paysage (verrouillage d'orientation sur mobile, rotation CSS en secours). Bouton animé (reflet + loupe), désactivé si « réduire les animations ».
+- **Menu médecin** : « Paramètres » n'apparaît plus pour un compte Médecin (règle CSS + garde dans le script).
+- **Menu mobile** : fermeture automatique au clic en dehors ; réduction automatique sur tablette / téléphone en paysage ; défilement vertical du menu (téléphone en paysage).
+- **Planning** : ligne des dates figée en haut et colonne « Médecin » figée à gauche, en mode normal et plein écran (le tableau défile dans son cadre).
+- **Icône / écran de démarrage** : logo recentré avec marges, icônes `any` et `maskable` séparées, `apple-touch-icon` dédiée, `background_color` blanc. Pour voir le changement : désinstaller puis réinstaller l'application.
+- `sw.js` : cache v40.
+
 # CHANGELOG — nouveau style des boutons
 
 Présentation uniquement ; aucune règle métier modifiée.

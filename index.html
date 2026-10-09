@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <title>Tox-Garde</title>
 
 <style>
@@ -89,6 +89,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid 
   main>nav .nav-icon{font-size:19px}
   main>nav .nav-label{font-size:14px}
   main>nav .mobile-only-nav{display:flex!important}
+  main>nav .mobile-only-nav.doctor-hidden{display:none!important}
   main>nav .nav-toggle{display:none!important}
   .mobile-nav-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.42);z-index:190;opacity:0;visibility:hidden;transition:opacity .2s ease}
   .mobile-nav-backdrop.mobile-open{opacity:1;visibility:visible}
@@ -735,6 +736,55 @@ body.role-admin #myBilanTab{display:none!important}
 @media(max-width:900px){.bilan-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.bilan-charts{grid-template-columns:1fr}.bilan-chart.main{grid-column:auto}}
 @media(max-width:560px){.bilan-opt{display:none}.bilan-table-wrap table{min-width:0}.bilan-table-wrap th,.bilan-table-wrap td{padding:7px 4px}.bilan-controls,.bilan-controls label{width:100%}.bilan-kpi b{font-size:21px}.bilan-bar-row{grid-template-columns:84px minmax(0,1fr);gap:6px}.bilan-year-block>h3{font-size:19px}}
 </style>
+
+<style id="planningStickyNavStyles">
+/* En-tête du planning figé (mode normal + plein écran) : le tableau défile dans son propre cadre */
+#planningTable{max-height:calc(100dvh - 130px);min-height:220px;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#planningTable .schedule thead th,#planningFsBody .schedule thead th{position:sticky;top:0;z-index:5;box-shadow:0 1px 0 var(--line,#d0d5dd)}
+#planningTable .schedule thead th:not(.weekend):not(.holiday),#planningFsBody .schedule thead th:not(.weekend):not(.holiday){background:var(--card,#fff)}
+#planningTable .schedule tbody td.name,#planningFsBody .schedule tbody td.name{position:sticky;left:0;z-index:3;background:var(--card,#fff);box-shadow:1px 0 0 var(--line,#d0d5dd)}
+#planningTable .schedule thead th.name,#planningFsBody .schedule thead th.name{left:0;top:0;z-index:7;background:var(--card,#fff)}
+/* Menu latéral : défilement vertical (téléphone en paysage, petits écrans) */
+@media (min-width:701px){
+  main>nav{min-height:0!important;height:auto!important;max-height:calc(100dvh - 40px)!important;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+}
+@media (min-width:701px) and (max-height:520px){
+  main>nav{top:8px!important;max-height:calc(100dvh - 16px)!important;padding:8px!important;gap:4px!important}
+  main>nav button{min-height:38px!important;padding-top:6px!important;padding-bottom:6px!important}
+}
+@media (max-width:700px){main>nav{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}}
+</style>
+<style id="dashLogoutStyles">
+/* Tableau de bord : 2 compteurs + 5 cases de disponibilités */
+.dc-g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.dc-grid.dc-kpi.dc-g2{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.dc-g5{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.dc-M{--t:#fdeaf4;--a:#c4478c}.dc-L{--t:#ede9fb;--a:#7c5cc4}
+@media(max-width:720px){.dc-g5{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Icône de déconnexion « power » : anneau = couleur de l'en-tête, barre = couleur d'accent (palette réglable) */
+header .auth-user button{position:relative;width:42px!important;min-width:42px!important;max-width:42px!important;height:38px!important;padding:0!important;font-size:0!important;line-height:0!important;color:transparent!important;display:inline-flex!important;align-items:center;justify-content:center;border-radius:11px!important;overflow:hidden}
+header .auth-user button::before,header .auth-user button::after{content:""!important;position:absolute;left:50%;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;font-size:0!important;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}
+header .auth-user button::before{background:var(--desktop-header,#7a0f2b);-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7.2 5.6a8.2 8.2 0 1 0 9.6 0' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7.2 5.6a8.2 8.2 0 1 0 9.6 0' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E")}
+header .auth-user button::after{background:var(--desktop-secondary,#d9b45a);-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.2v8.4' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.2v8.4' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E")}
+</style>
+<style id="planningFsStyles">
+#planningFsBtn.pfs-btn{position:relative;overflow:hidden;font-weight:700;color:#fff;border:0;background:linear-gradient(135deg,#3f83c5,#2563a8);box-shadow:0 3px 10px rgba(37,99,168,.35);transition:transform .15s ease,box-shadow .15s ease}
+#planningFsBtn.pfs-btn::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.65),transparent);transform:skewX(-20deg);animation:pfsShine 3s ease-in-out infinite}
+#planningFsBtn .pfs-ico{display:inline-block;animation:pfsWobble 3s ease-in-out infinite;transform-origin:60% 60%}
+#planningFsBtn.pfs-btn:active{transform:scale(.95);box-shadow:0 1px 4px rgba(37,99,168,.35)}
+@keyframes pfsShine{0%,60%{left:-70%}100%{left:130%}}
+@keyframes pfsWobble{0%,55%,100%{transform:rotate(0)}65%{transform:rotate(-18deg) scale(1.15)}75%{transform:rotate(14deg) scale(1.15)}85%{transform:rotate(-6deg)}}
+@media (prefers-reduced-motion:reduce){#planningFsBtn.pfs-btn::after,#planningFsBtn .pfs-ico{animation:none}}
+@media print{#planningFsBtn{display:none!important}}
+#planningFsOverlay{position:fixed;inset:0;z-index:9999;background:var(--card,#fff);display:flex;flex-direction:column;overflow:hidden}
+#planningFsOverlay .pfs-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line,#ddd);flex:0 0 auto}
+#planningFsOverlay .pfs-body{flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;padding:6px}
+#planningFsBody .schedule{width:100%;min-width:max-content;table-layout:auto}
+#planningFsBody .schedule th,#planningFsBody .schedule td{font-size:12px;padding:5px 4px;height:auto}
+#planningFsOverlay.pfs-rotated{inset:auto;top:0;left:100%;width:100vh;width:100dvh;height:100vw;transform-origin:top left;transform:rotate(90deg)}
+body.pfs-open{overflow:hidden}
+@media print{#planningFsOverlay{display:none!important}}
+</style>
 </head>
 <body class="auth-locked">
 <div id="authOverlay" aria-live="polite"><form class="auth-card" onsubmit="login(event)"><img id="loginLogoDisplay" class="auth-logo" src="./icons/icon-192.png" alt="Logo Tox-Garde"><h2>🔐 Connexion</h2><p id="loginSubtitleDisplay">Accédez à Tox-Garde avec votre compte.</p><label>Identifiant<input id="loginUsername" autocomplete="username" required></label><label>Mot de passe<input id="loginPassword" type="password" autocomplete="current-password" required></label><label class="remember-row"><input id="keepConnected" type="checkbox"> Rester connecté sur cet appareil</label><button id="loginSubmitBtn" class="btn primary" type="submit" style="width:100%;margin-top:8px">Se connecter</button><div id="loginProgress" class="login-progress" aria-live="polite" aria-hidden="true"><div class="login-progress-head"><span id="loginProgressText">Connexion en cours…</span><strong id="loginProgressPercent">0%</strong></div><div class="login-progress-track"><div id="loginProgressBar" class="login-progress-bar" style="width:0%"></div></div></div><div id="authError" class="auth-error"></div></form></div>
@@ -882,6 +932,7 @@ body.role-admin #myBilanTab{display:none!important}
 <div id="planningMonthTabs" class="planning-month-tabs" aria-label="Sélection du mois"></div>
 <div id="planningVersionTabs" class="planning-version-tabs admin-only" aria-label="Versions du planning"></div>
 <div class="actions planning-main-actions"><span id="planningTitle"></span>
+<button type="button" class="btn pfs-btn" id="planningFsBtn" onclick="openPlanningFullscreen()" aria-label="Aperçu du planning en plein écran"><span class="pfs-ico">🔍</span> Aperçu</button>
 <button class="btn primary admin-only" onclick="manualEditPlanning()">✎ Modifier manuellement</button>
 <details class="export-menu admin-only">
   <summary class="btn primary">Exporter ▾</summary>
@@ -1185,9 +1236,24 @@ mobileNavBackdrop?.addEventListener("click",closeMobileNav);
 
 document.querySelectorAll("[data-mobile-tab]").forEach(b=>b.addEventListener("click",()=>{openTab(b.dataset.mobileTab);closeMobileNav();}));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMobileNav();});
+// Clic/toucher en dehors du menu : le menu se referme (tiroir mobile) ou se réduit (tablette / téléphone en paysage).
+document.addEventListener("click",e=>{
+  const t=e.target;
+  if(!t||!t.closest)return;
+  if(t.closest("#sideNav")||t.closest("#mobileMenuBtn")||t.closest("#mobileMoreBtn"))return;
+  if(sideNav?.classList.contains("mobile-open")){closeMobileNav();return;}
+  const main=document.querySelector("main");
+  const small=window.matchMedia("(max-width:1024px)").matches&&window.matchMedia("(pointer:coarse)").matches;
+  if(small&&main&&!main.classList.contains("nav-collapsed")&&getComputedStyle(sideNav).position!=="fixed"){
+    main.classList.add("nav-collapsed");
+    const tg=document.getElementById("navToggle");
+    if(tg){tg.querySelector(".nav-icon").textContent="▶";tg.querySelector(".nav-label").textContent="Développer le menu";tg.title="Développer le menu";tg.setAttribute("aria-label",tg.title);}
+  }
+});
 
 // Paramètres reste le même composant existant : aucun réglage ni logique n'est dupliqué.
 document.getElementById("mobileSettingsNav")?.addEventListener("click",()=>{
+  if(!isAdmin())return;
   const details=document.querySelector(".header-settings");
   closeMobileNav();
   if(details){details.classList.add("mobile-settings-open");details.open=true;}
@@ -1210,6 +1276,54 @@ openTab=function(id){
   if(window.matchMedia("(max-width:700px)").matches)closeMobileNav();
 };
 
+
+// ===== Aperçu planning plein écran (paysage) : lecture seule, copie de l'affichage courant =====
+function openPlanningFullscreen(){
+  const src=document.getElementById("planningTable");
+  if(!src||!src.querySelector("table"))return alert("Aucun planning à afficher.");
+  closePlanningFullscreen(true);
+  const ov=document.createElement("div");ov.id="planningFsOverlay";
+  const title=(document.getElementById("planningMonthLabel")?.textContent||"").trim();
+  ov.innerHTML='<div class="pfs-bar"><strong>'+escapeHtml(title||"Planning")+'</strong><button type="button" class="btn" id="pfsClose">✕ Fermer</button></div><div class="pfs-body" id="planningFsBody"></div>';
+  const body=ov.querySelector("#planningFsBody");
+  body.innerHTML=src.innerHTML;
+  // Lecture seule : aucune action de modification dans l'aperçu.
+  body.querySelectorAll("*").forEach(el=>{["onclick","ondblclick","onchange","oninput","oncontextmenu","contenteditable","draggable"].forEach(a=>el.removeAttribute(a));});
+  body.querySelectorAll("button,select,input,textarea").forEach(el=>{el.disabled=true;});
+  document.body.appendChild(ov);
+  document.body.classList.add("pfs-open");
+  ov.querySelector("#pfsClose").onclick=()=>closePlanningFullscreen();
+  const portrait=()=>window.innerHeight>window.innerWidth;
+  const finish=()=>{ov.classList.toggle("pfs-rotated",portrait()&&("ontouchstart" in window||navigator.maxTouchPoints>0));};
+  window._pfsResize=finish;window.addEventListener("resize",finish);window.addEventListener("orientationchange",finish);
+  const touch=("ontouchstart" in window||navigator.maxTouchPoints>0);
+  let p=Promise.resolve();
+  try{if(ov.requestFullscreen)p=ov.requestFullscreen({navigationUI:"hide"});}catch(e){}
+  Promise.resolve(p).catch(()=>{}).then(()=>{
+    if(touch&&screen.orientation&&screen.orientation.lock){return screen.orientation.lock("landscape").catch(()=>{});}
+  }).then(()=>setTimeout(finish,250));
+  finish();
+}
+function closePlanningFullscreen(silent){
+  const ov=document.getElementById("planningFsOverlay");
+  if(window._pfsResize){window.removeEventListener("resize",window._pfsResize);window.removeEventListener("orientationchange",window._pfsResize);window._pfsResize=null;}
+  try{if(screen.orientation&&screen.orientation.unlock)screen.orientation.unlock();}catch(e){}
+  try{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});}catch(e){}
+  if(ov)ov.remove();
+  document.body.classList.remove("pfs-open");
+}
+document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement&&document.getElementById("planningFsOverlay")&&!document.getElementById("planningFsOverlay").classList.contains("pfs-rotated")&&!window.matchMedia("(pointer:coarse)").matches)closePlanningFullscreen();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closePlanningFullscreen();});
+
+// Page affichée non autorisée pour le compte connecté (ex. « Mon bilan » resté ouvert après passage au compte admin) → tableau de bord.
+function ensureAllowedTab(){
+  try{
+    const act=document.querySelector(".panel.active");if(!act)return;
+    const id=act.id,admin=isAdmin();
+    const doctorAllowed=["dashboard","team","planning","absences","stats","myGuards","myBilan"];
+    if((admin&&id==="myBilan")||(!admin&&!doctorAllowed.includes(id)))openTab("dashboard");
+  }catch(e){console.warn("ensureAllowedTab",e);}
+}
 function addDoctor(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");let n=cleanDoctorName(document.getElementById("newDoctor").value);if(!n)return;if(state.doctors.some(d=>d.name.toLowerCase()===n.toLowerCase()))return alert("Ce médecin existe déjà.");state.doctors.push({name:n,active:true,shift:"BOTH",weekend:true,participationStart:todayISO()});document.getElementById("newDoctor").value="";save()}
 function loadDemo(){state.doctors=demoDoctors.map(name=>({name,active:true,shift:"BOTH",weekend:true}));save()}
 function importTeamFile(ev){if(!isAdmin())return alert("Cette action est réservée aux administrateurs.");
@@ -1419,6 +1533,13 @@ function isAbsenceValidated(a){
   const histories=Object.entries(state.planningHistory||{});
   return histories.some(([key,h])=>{
     if(!isHistoryConfirmed(key,h))return false;
+    // Verrou limité à la période du planning validé : un congé/une récup hors de cette
+    // période (ou copié dans le snapshot d'un autre mois) reste supprimable.
+    const hp=historyPeriod(key,h);
+    const aStart=normalizeDateKey(a.start), aEnd=normalizeDateKey(a.end)||aStart;
+    if(!hp?.start||!hp?.end||!aStart)return false;
+    const pStart=iso(hp.start), pEnd=iso(hp.end);
+    if(aEnd<pStart||aStart>pEnd)return false;
     return (h?.absences||[]).some(x=>absenceMatches(x,a));
   });
 }
@@ -3098,7 +3219,7 @@ function applyAppearance(){
   const pbg=ph.paletteSecondary, ptxt=ph.paletteTitle, abg=ph.paletteActive, fcolor=ph.paletteText, fsize=Number(state.settings.desktopFontSize)||14;
   const fs=document.getElementById("desktopFontSize"); if(fs)fs.value=String(Math.min(20,Math.max(12,fsize))); const fsv=document.getElementById("desktopFontSizeValue"); if(fsv)fsv.textContent=`${fsize} px`;
   let dyn=document.getElementById("desktopAppearanceDynamic"); if(!dyn){dyn=document.createElement("style");dyn.id="desktopAppearanceDynamic";document.head.appendChild(dyn);}
-  dyn.textContent=`:root{--desktop-primary-bg:${ph.paletteSecondary};--desktop-primary-text:${ph.paletteTitle};--desktop-active-bg:${ph.paletteActive};--desktop-active-text:${ph.paletteSecondary};--desktop-font-color:${ph.paletteText};--desktop-font-size:${fsize}px;--desktop-bg:${ph.paletteBg};--desktop-card:${ph.paletteCard};--desktop-line:${ph.paletteBorder};--desktop-text:${ph.paletteText};--desktop-muted:${ph.paletteSecondaryText};--desktop-accent:${ph.paletteSecondary};--desktop-accent-soft:${ph.paletteActive};--desktop-secondary:${ph.paletteSecondary};--desktop-title:${ph.paletteTitle};--desktop-subtitle:${ph.paletteSubtitle};--desktop-inactive-icon:${ph.paletteInactiveIcon};}header{background:${ph.paletteHeader}!important;color:${ph.paletteTitle}!important}header p{color:${ph.paletteSubtitle}!important}header h1{color:${ph.paletteTitle}!important}nav button{color:${ph.paletteInactiveIcon}!important}nav button:hover{background:${ph.paletteActive}!important;color:${ph.paletteSecondary}!important}nav button.active{background:${ph.paletteActive}!important;color:${ph.paletteSecondary}!important}nav:before{color:${ph.paletteText}!important}.card,.stat,.settings-bar,.header-settings-panel{background:${ph.paletteCard}!important;border-color:${ph.paletteBorder}!important}.card h2,h2,h3{color:${ph.paletteText}!important}label,.hint,.stat span,.stat small{color:${ph.paletteSecondaryText}!important}input,select{border-color:${ph.paletteBorder}!important;color:${ph.paletteText}!important}th{background:${ph.paletteActive}!important;color:${ph.paletteText}!important}th,td{border-color:${ph.paletteBorder}!important}.btn.primary{background:${ph.paletteSecondary}!important;border-color:${ph.paletteSecondary}!important;color:${ph.paletteTitle}!important}`;
+  dyn.textContent=`:root{--desktop-primary-bg:${ph.paletteSecondary};--desktop-primary-text:${ph.paletteTitle};--desktop-active-bg:${ph.paletteActive};--desktop-active-text:${ph.paletteSecondary};--desktop-font-color:${ph.paletteText};--desktop-font-size:${fsize}px;--desktop-bg:${ph.paletteBg};--desktop-card:${ph.paletteCard};--desktop-line:${ph.paletteBorder};--desktop-text:${ph.paletteText};--desktop-muted:${ph.paletteSecondaryText};--desktop-accent:${ph.paletteSecondary};--desktop-accent-soft:${ph.paletteActive};--desktop-secondary:${ph.paletteSecondary};--desktop-title:${ph.paletteTitle};--desktop-subtitle:${ph.paletteSubtitle};--desktop-inactive-icon:${ph.paletteInactiveIcon};--desktop-header:${ph.paletteHeader};}header{background:${ph.paletteHeader}!important;color:${ph.paletteTitle}!important}header p{color:${ph.paletteSubtitle}!important}header h1{color:${ph.paletteTitle}!important}nav button{color:${ph.paletteInactiveIcon}!important}nav button:hover{background:${ph.paletteActive}!important;color:${ph.paletteSecondary}!important}nav button.active{background:${ph.paletteActive}!important;color:${ph.paletteSecondary}!important}nav:before{color:${ph.paletteText}!important}.card,.stat,.settings-bar,.header-settings-panel{background:${ph.paletteCard}!important;border-color:${ph.paletteBorder}!important}.card h2,h2,h3{color:${ph.paletteText}!important}label,.hint,.stat span,.stat small{color:${ph.paletteSecondaryText}!important}input,select{border-color:${ph.paletteBorder}!important;color:${ph.paletteText}!important}th{background:${ph.paletteActive}!important;color:${ph.paletteText}!important}th,td{border-color:${ph.paletteBorder}!important}.btn.primary{background:${ph.paletteSecondary}!important;border-color:${ph.paletteSecondary}!important;color:${ph.paletteTitle}!important}`;
   const setImg=(id,src,statusId,yes,no)=>{const el=document.getElementById(id);if(el){el.src=src||"";el.classList.toggle("show",!!src);}const st=document.getElementById(statusId);if(st)st.textContent=src?yes:no;};
   setImg("appLogoDisplay",state.settings.appLogo,"appLogoStatus","Logo enregistré","Aucun logo"); setImg("centerLogoDisplay",state.settings.centerLogo,"centerLogoStatus","Logo enregistré","Aucun logo"); setImg("homeImageDisplay",state.settings.homeImage,"homeImageStatus","Image enregistrée","Aucune image");
   const loginLogo=document.getElementById("loginLogoDisplay"); if(loginLogo){loginLogo.src=state.settings.appLogo||"./icons/icon-192.png";}
@@ -3651,6 +3772,8 @@ function renderTodayGuards(){
   const conges=byType(["CONGÉ","CONGE"]);
   const recups=byType(["RÉCUP","RECUP"]);
   const indisponibles=byType(["INDISPONIBLE","INDISP"]);
+  const maternites=byType(["CONGÉ DE MATERNITÉ","CONGE DE MATERNITE"]);
+  const mlds=byType(["MALADIE LONGUE DURÉE","MALADIE LONGUE DUREE","MLD"]);
 
   const guardHtml=unique.length
     ? unique.map(x=>`<div class="dc-cell dc-${escapeHtml(x.type)}"><small>Garde ${escapeHtml(x.type)}</small><b>${escapeHtml(x.doctor)}</b></div>`).join("")
@@ -3663,13 +3786,11 @@ function renderTodayGuards(){
     </div>`;
 
   // Compteurs du haut (calculés avec les données déjà chargées : aucune requête supplémentaire).
-  const absentCount=new Set([...conges,...recups,...indisponibles]).size;
   const activeCount=(state.doctors||[]).filter(d=>d.active).length;
   const dash=document.getElementById("dashStats");
-  if(dash)dash.innerHTML=`<div class="dc-grid dc-g3 dc-kpi">
+  if(dash)dash.innerHTML=`<div class="dc-grid dc-g2 dc-kpi">
       <div class="dc-cell dc-K"><small>Médecins actifs</small><span class="dc-big">${activeCount}</span></div>
       <div class="dc-cell dc-K"><small>Gardes aujourd’hui</small><span class="dc-big">${unique.length}</span></div>
-      <div class="dc-cell dc-K"><small>Absents aujourd’hui</small><span class="dc-big">${absentCount}</span></div>
     </div>`;
 
   el.innerHTML=`
@@ -3677,10 +3798,12 @@ function renderTodayGuards(){
     <div class="dc-section">Gardes du jour</div>
     <div class="dc-grid dc-g4">${guardHtml}</div>
     <div class="dc-section">Disponibilités</div>
-    <div class="dc-grid dc-g3">
+    <div class="dc-grid dc-g5">
       ${listHtml("C","Congé",conges,"Aucun médecin en congé")}
       ${listHtml("R","Récupération",recups,"Aucune récupération aujourd’hui")}
       ${listHtml("I","Indisponible",indisponibles,"Aucun médecin indisponible")}
+      ${listHtml("M","Congé de maternité",maternites,"Aucun congé de maternité")}
+      ${listHtml("L","Maladie longue durée",mlds,"Aucun médecin en MLD")}
     </div>`;
 }
 function formatEntryCreatedAt(ts){
@@ -4062,7 +4185,7 @@ async function login(ev){
     if(submit)submit.disabled=false;
   }
 }
-async function logout(){stopRealtimeSync();stopIdleWatch();if(cloudPollTimer){clearInterval(cloudPollTimer);cloudPollTimer=null;}const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI()}
+async function logout(){stopRealtimeSync();stopIdleWatch();if(cloudPollTimer){clearInterval(cloudPollTimer);cloudPollTimer=null;}const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI();try{openTab("dashboard")}catch(e){}}
 let cloudFailAlerted=false;
 async function save(){
   localStorage.setItem("gardeMed",JSON.stringify(state));
@@ -4319,7 +4442,7 @@ function toggleAccountPassword(){
   p.type=p.type==="password"?"text":"password";
 }
 
-const _openTab=openTab;openTab=function(id){if(!isAdmin()&&!['dashboard','team','planning','absences','stats','myGuards','myBilan'].includes(id))id="planning";_openTab(id);if(id==="team")renderAll();if(id==="myGuards")renderMyGuards();};
+const _openTab=openTab;openTab=function(id){if(isAdmin()&&id==="myBilan")id="dashboard";if(!isAdmin()&&!['dashboard','team','planning','absences','stats','myGuards','myBilan'].includes(id))id="planning";_openTab(id);if(id==="team")renderAll();if(id==="myGuards")renderMyGuards();};
 function addDoctorRecovery(){
   const ses=currentSession(); if(!ses||ses.role==="admin")return alert("Cette saisie est destinée aux comptes Médecin.");
   const date=document.getElementById("doctorRecoveryDate")?.value; if(!date)return alert("Sélectionnez la date de récupération.");
@@ -4629,7 +4752,7 @@ function renderMyGuards(){
   el.innerHTML=html;
 }
 function applyAuthUI(){const ses=currentSession(), overlay=document.getElementById("authOverlay");document.body.classList.toggle("auth-locked",!ses);document.body.classList.toggle("role-admin",!!ses&&ses.role==="admin");overlay.style.display=ses?"none":"flex";if(!ses){const remembered=localStorage.getItem("toxGardeRememberedUsername")||"";document.getElementById("loginUsername").value=remembered;document.getElementById("keepConnected").checked=!!localStorage.getItem("toxGardeSession");document.getElementById("authUserInfo").innerHTML="";document.getElementById("mobileBottomNav")?.classList.remove("doctor-mode");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display="none";return;}
-const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.querySelectorAll(".doctor-only").forEach(el=>el.style.display=admin?"none":"block");const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display="block";const mobileBottomNav=document.getElementById("mobileBottomNav");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileBottomNav)mobileBottomNav.classList.toggle("doctor-mode",!admin);if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display=admin?"none":"flex";const accountDisplay=String(ses.doctor||ses.username||"").replace(/^dr\.?\s*/i,"").replace(/\s+médecin$/i,"").trim().toLocaleUpperCase("fr");document.getElementById("authUserInfo").innerHTML=`<span class="auth-account-name">${escapeHtml(accountDisplay)}</span><button class="btn small" type="button" aria-label="Log out" title="Log out" onclick="logout()">Log out</button>`;
+const admin=ses.role==="admin";document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("doctor-hidden",!admin));document.querySelectorAll(".doctor-only").forEach(el=>el.style.display=admin?"none":"block");const myGuardsTab=document.getElementById("myGuardsTab");if(myGuardsTab)myGuardsTab.style.display="block";const mobileBottomNav=document.getElementById("mobileBottomNav");const mobileMyGuardsBtn=document.getElementById("mobileMyGuardsBtn");if(mobileBottomNav)mobileBottomNav.classList.toggle("doctor-mode",!admin);if(mobileMyGuardsBtn)mobileMyGuardsBtn.style.display=admin?"none":"flex";const accountDisplay=String(ses.doctor||ses.username||"").replace(/^dr\.?\s*/i,"").replace(/\s+médecin$/i,"").trim().toLocaleUpperCase("fr");document.getElementById("authUserInfo").innerHTML=`<span class="auth-account-name">${escapeHtml(accountDisplay)}</span><button class="btn small" type="button" aria-label="Log out" title="Log out" onclick="logout()">Log out</button>`;ensureAllowedTab();
 if(!admin){
   document.getElementById("doctorAbsenceHint").style.display="block";
   const absDoctor=document.getElementById("absDoctor");

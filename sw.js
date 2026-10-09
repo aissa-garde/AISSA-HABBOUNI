@@ -1,10 +1,13 @@
-const CACHE_NAME = 'tox-garde-pwa-v39';
+const CACHE_NAME = 'tox-garde-pwa-v41';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './icons/icon-maskable-192.png',
+  './icons/icon-maskable-512.png',
+  './icons/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', event => {
