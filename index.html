@@ -1169,7 +1169,10 @@ function showPlanningDisplayMonth(){
   const selectedKey=planningDisplayKey();
   syncGenerationPeriodWithPlanningDisplay();
   const historyKey=findPlanningHistoryKeyForMonth(planningDisplayYear,planningDisplayMonth);
-  if(selectedKey===actualCurrentKey){
+  // Le brouillon (state.planning) n'est affiché que s'il contient réellement des données pour ce mois ;
+  // sinon (ex. deuxième clic sur le même mois, ou synchronisation ayant vidé le brouillon) on affiche
+  // le planning enregistré dans l'historique plutôt que le message « Aucun planning à afficher ».
+  if(selectedKey===actualCurrentKey && (isAdmin()||!historyKey) && (planningDraftHasDataFor(getPeriodDates())||!historyKey)){
     activePlanningView={type:"current",key:null};
     renderPlanning();
   }else if(historyKey){
@@ -3316,9 +3319,21 @@ function deleteDisplayedPlanning(){
   renderPlanning();
 }
 
+function planningDraftHasDataFor(per){
+  try{
+    const a=iso(per.start),b=iso(per.end);
+    return Object.values(state.planning||{}).flat().some(x=>x&&x.date>=a&&x.date<=b)
+      || (state.fixed||[]).some(x=>x&&x.date>=a&&x.date<=b&&["G","F"].includes(x.type));
+  }catch(e){return false;}
+}
 function showCurrentPlanning(){
   const per=getPeriodDates();
   planningDisplayYear=per.start.getFullYear(); planningDisplayMonth=per.start.getMonth();
+  // Brouillon vide pour cette période mais planning enregistré dans l'historique : on l'affiche (version « ACTUELLE »).
+  if(per.type==="month" && !planningDraftHasDataFor(per)){
+    const hk=findPlanningHistoryKeyForMonth(planningDisplayYear,planningDisplayMonth);
+    if(hk){showHistoryPlanningByKey(hk);return;}
+  }
   activePlanningView={type:"current",key:null};
   renderPlanning();
   updatePlanningGenerationSelector();

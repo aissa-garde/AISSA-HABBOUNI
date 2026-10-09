@@ -1,3 +1,11 @@
+# CHANGELOG — correctif « Aucun planning à afficher » (09/10/2026)
+
+Aucune règle métier, aucun calcul, aucune donnée modifiés.
+
+- Un deuxième clic sur un mois, ou un clic sur la version « V1 ● ACTUELLE », n'affiche plus « Aucun planning à afficher » quand le planning existe dans l'historique :
+  le brouillon (`state.planning`) n'est utilisé que s'il contient des données pour la période ; sinon le planning enregistré est affiché.
+- `sw.js` : cache v42.
+
 # CHANGELOG — tableau de bord, icône de déconnexion, page « Mon bilan » (09/10/2026)
 
 Aucune règle métier, aucun calcul, aucune donnée modifiés.
