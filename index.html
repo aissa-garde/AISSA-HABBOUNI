@@ -803,6 +803,23 @@ body.auth-locked .pwd-header-btn{display:none}
 .pwd-msg.err{color:#c0392b}
 .pwd-msg.ok{color:#1e7e34}
 .pwd-card .pwd-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px}
+/* ===== Indicateurs de chargement ===== */
+@keyframes tgSpin{to{transform:rotate(360deg)}}
+.tg-spinner{flex:0 0 auto;display:inline-block;width:18px;height:18px;box-sizing:border-box;border:3px solid rgba(100,116,139,.25);border-top-color:var(--primary,#3f83c5);border-radius:50%;animation:tgSpin .8s linear infinite}
+@media(prefers-reduced-motion:reduce){.tg-spinner{animation-duration:2s}}
+.tg-status{display:none;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.35}
+.tg-status.show{display:flex}
+.tg-status.busy{background:#eef4fb;color:#1f3b5c}
+.tg-status.ok{background:#e9f7ef;color:#1e6b3a}
+.tg-status.err{background:#fdecea;color:#a1271b}
+.tg-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:10040;display:none;align-items:center;gap:10px;width:max-content;max-width:calc(100% - 32px);box-sizing:border-box;padding:12px 14px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);font-size:14px;line-height:1.35}
+.tg-toast.show{display:flex}
+.tg-toast.busy{background:#fff;color:#1f3b5c;border:1px solid #d8e3f0}
+.tg-toast.ok{background:#e9f7ef;color:#1e6b3a;border:1px solid #bfe5cc}
+.tg-toast.err{background:#fdecea;color:#a1271b;border:1px solid #f5c2bc}
+.tg-toast-close{flex:0 0 auto;border:0;background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
+body.just-uploading label.btn:has(>input[type=file]),body.just-uploading button[onclick="addAbsence()"],body.just-uploading #absJustificationFile{pointer-events:none;opacity:.5}
+@media(max-width:700px){.tg-toast{bottom:92px}}
 @media(max-width:700px){.pwd-header-btn{width:38px;height:36px;font-size:16px}.pwd-card{padding:16px}.pwd-card .pwd-actions .btn{flex:1 1 auto}}
 </style>
 </head>
@@ -4258,25 +4275,30 @@ async function login(ev){
 }
 async function logout(){closePasswordModal(true);closeResetModal();stopRealtimeSync();stopIdleWatch();if(cloudPollTimer){clearInterval(cloudPollTimer);cloudPollTimer=null;}const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI();try{openTab("dashboard")}catch(e){}}
 let cloudFailAlerted=false;
-async function save(){
+// Renvoie true si Supabase a confirmé l'enregistrement, sinon "conflict" ou false.
+// opts.quiet : pas d'alerte en cas d'échec réseau (l'appelant affiche son propre message).
+async function save(opts){
   localStorage.setItem("gardeMed",JSON.stringify(state));
   cloudSyncBusy=true;
+  let result=false;
   try{
     await cloudSave();
     lastCloudSnapshot=JSON.stringify(cleanStateForCloud());
     localStorage.setItem("gardeMed",JSON.stringify(state));
     cloudFailAlerted=false;
+    result=true;
   }
   catch(e){
-    if(e&&e.code==="CLOUD_CONFLICT"){handleCloudConflict(e.remote);}
+    if(e&&e.code==="CLOUD_CONFLICT"){handleCloudConflict(e.remote);result="conflict";}
     else{
       console.error("Synchronisation Supabase:",e);
       // Un seul message tant que l'échec persiste (évite une alerte bloquante à chaque modification).
-      if(!cloudFailAlerted){cloudFailAlerted=true;alert("Données enregistrées localement, mais la synchronisation en ligne a échoué. Vérifiez Internet.");}
+      if(!(opts&&opts.quiet)&&!cloudFailAlerted){cloudFailAlerted=true;alert("Données enregistrées localement, mais la synchronisation en ligne a échoué. Vérifiez Internet.");}
     }
   }
   finally{cloudSyncBusy=false;}
   renderAll();
+  return result;
 }
 let cloudSyncBusy=false;
 let cloudDraftLock=false;
@@ -4603,20 +4625,67 @@ function requestGuardChange(historyKey,date,type,fromDoctor){
   const modal=document.createElement('div');
   modal.id='guardChangeModal';
   modal.style.cssText='position:fixed;inset:0;background:#0008;z-index:10000;display:flex;align-items:center;justify-content:center;padding:18px;';
-  modal.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#111);width:min(460px,100%);border-radius:14px;padding:20px;box-shadow:0 18px 60px #0004"><h3 style="margin-top:0">🔄 Changer une garde</h3><p style="margin:6px 0 14px">Garde : <b>${escapeHtml(dateFromISO(date).toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}))} — ${escapeHtml(type)}</b></p><label>Choisir le médecin<select id="guardChangeDoctor" style="width:100%;margin-top:6px"><option value="">Sélectionner...</option>${options}</select></label><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button class="btn" type="button" onclick="document.getElementById('guardChangeModal')?.remove()">Annuler</button><button class="btn primary" type="button" onclick="submitGuardChangeRequest('${escapeHtml(historyKey)}','${escapeHtml(date)}','${escapeHtml(type)}','${escapeHtml(fromDoctor)}')">Envoyer la demande</button></div></div>`;
+  modal.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#111);width:min(460px,100%);border-radius:14px;padding:20px;box-shadow:0 18px 60px #0004"><h3 style="margin-top:0">🔄 Changer une garde</h3><p style="margin:6px 0 14px">Garde : <b>${escapeHtml(dateFromISO(date).toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}))} — ${escapeHtml(type)}</b></p><label>Choisir le médecin<select id="guardChangeDoctor" style="width:100%;margin-top:6px"><option value="">Sélectionner...</option>${options}</select></label><div id="guardChangeStatus" class="tg-status" aria-live="polite"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button class="btn" type="button" id="guardChangeCancelBtn" onclick="if(!guardChangeSending)document.getElementById('guardChangeModal')?.remove()">Annuler</button><button class="btn primary" type="button" id="guardChangeSendBtn" onclick="submitGuardChangeRequest('${escapeHtml(historyKey)}','${escapeHtml(date)}','${escapeHtml(type)}','${escapeHtml(fromDoctor)}')">Envoyer la demande</button></div></div>`;
   document.body.appendChild(modal);
 }
+/* ===== Indicateurs de chargement (opérations en attente de Supabase) ===== */
+function tgStatusHtml(kind,text){
+  const icon=kind==='busy'?'<span class="tg-spinner" aria-hidden="true"></span>':(kind==='ok'?'<span aria-hidden="true">✅</span>':'<span aria-hidden="true">⚠️</span>');
+  return `${icon}<span>${escapeHtml(text)}</span>`;
+}
+function setTgStatus(id,kind,text){
+  const el=document.getElementById(id); if(!el)return;
+  el.className='tg-status show '+kind;
+  el.setAttribute('role',kind==='err'?'alert':'status');
+  el.innerHTML=tgStatusHtml(kind,text);
+}
+// Bandeau flottant non bloquant : l'application reste utilisable pendant l'envoi.
+let tgToastTimer=null;
+function showTgToast(kind,text){
+  let t=document.getElementById('tgToast');
+  if(!t){t=document.createElement('div');t.id='tgToast';document.body.appendChild(t);}
+  if(tgToastTimer){clearTimeout(tgToastTimer);tgToastTimer=null;}
+  t.className='tg-toast show '+kind;
+  t.setAttribute('role',kind==='err'?'alert':'status');
+  t.innerHTML=tgStatusHtml(kind,text)+(kind==='busy'?'':'<button type="button" class="tg-toast-close" aria-label="Fermer" onclick="hideTgToast()">×</button>');
+  if(kind==='ok')tgToastTimer=setTimeout(hideTgToast,6000);
+}
+function hideTgToast(){const t=document.getElementById('tgToast');if(t)t.className='tg-toast';if(tgToastTimer){clearTimeout(tgToastTimer);tgToastTimer=null;}}
+let guardChangeSending=false;
 async function submitGuardChangeRequest(historyKey,date,type,fromDoctor){
+  if(guardChangeSending)return; // évite les doubles clics / envois multiples
   const target=document.getElementById('guardChangeDoctor')?.value;
   if(!target)return alert('Sélectionnez un médecin.');
   const existing=(state.exchangeRequests||[]).find(r=>r.status==='pending'&&r.historyKey===historyKey&&r.date===date&&r.type===type&&r.fromDoctor===fromDoctor);
   if(existing)return alert('Une demande pour cette garde est déjà en attente.');
+  if(!cloudToken())return alert('Session expirée. Veuillez vous reconnecter.');
   const req={id:'chg_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),historyKey,date,type,fromDoctor,toDoctor:target,status:'pending',createdAt:new Date().toISOString()};
+  const send=document.getElementById('guardChangeSendBtn'), cancel=document.getElementById('guardChangeCancelBtn'), select=document.getElementById('guardChangeDoctor');
+  const setBusy=busy=>{[send,cancel,select].forEach(el=>{if(el)el.disabled=busy;});};
+  guardChangeSending=true; setBusy(true);
+  setTgStatus('guardChangeStatus','busy','Envoi de la demande de changement de garde en cours…');
   state.exchangeRequests.push(req);
-  document.getElementById('guardChangeModal')?.remove();
-  await save();
-  alert(`Demande envoyée à ${target}.`);
+  let result=false;
+  try{ result=await save({quiet:true}); }
+  finally{ guardChangeSending=false; }
+  if(result===true){
+    setTgStatus('guardChangeStatus','ok',`Demande envoyée à ${target}.`);
+    if(send)send.style.display='none';
+    if(cancel){cancel.disabled=false;cancel.textContent='Fermer';}
+    renderMyGuards();
+    setTimeout(()=>document.getElementById('guardChangeModal')?.remove(),2500);
+    return;
+  }
+  // Échec : la demande n'a pas été reçue par Supabase, elle est retirée pour pouvoir être renvoyée.
+  if(result!=='conflict'){
+    state.exchangeRequests=(state.exchangeRequests||[]).filter(r=>r.id!==req.id);
+    localStorage.setItem('gardeMed',JSON.stringify(state));
+  }
   renderMyGuards();
+  setBusy(false);
+  setTgStatus('guardChangeStatus','err',result==='conflict'
+    ? 'Les données ont été modifiées entre-temps : la demande n’a pas été envoyée. Vérifiez puis renvoyez-la.'
+    : 'Échec de l’envoi : la demande n’a pas été transmise. Vérifiez votre connexion et réessayez.');
 }
 async function respondGuardChange(id,decision){
   const ses=currentSession();
@@ -5227,6 +5296,7 @@ function resetAdminAbsFilters(){
    ========================================================= */
 const JUST_ALLOWED=["application/pdf","image/jpeg","image/png"];
 const JUST_MAX_BYTES=10*1024*1024;
+let justUploadBusy=false;
 
 function justificationStatusLabel(s){
   return ({pending_file:"🟠 En attente de justificatif",pending_review:"🟡 En cours de validation",approved:"🟢 Accepté",rejected:"🔴 Refusé",unjustified:"⚫ Non justifié"})[s]||s||"—";
@@ -5268,6 +5338,11 @@ async function uploadJustification(absenceIndex,file){
   if(!file)return;
   if(!JUST_ALLOWED.includes(file.type))return alert("Format non autorisé. Utilisez PDF, JPG, JPEG ou PNG.");
   if(file.size>JUST_MAX_BYTES)return alert("Fichier trop volumineux. Taille maximale : 10 Mo.");
+  // Un seul envoi à la fois : évite les doubles clics et les envois multiples.
+  if(justUploadBusy){showTgToast("busy","Envoi de la pièce justificative en cours…");return false;}
+  justUploadBusy=true;
+  document.body.classList.add("just-uploading");
+  showTgToast("busy","Envoi de la pièce justificative en cours…");
   try{
     const token=cloudToken(); if(!token)throw new Error("Session Supabase absente.");
     const dataUrl=await fileToBase64(file);
@@ -5296,9 +5371,17 @@ async function uploadJustification(absenceIndex,file){
     notifyRealtimeUpdate();
     renderJustifications();
     renderAdminAbsences();
-    alert("Justificatif envoyé. Il est maintenant en attente de vérification par l'Admin.");
+    // Message de succès uniquement après la confirmation de Supabase (result.success).
+    showTgToast("ok","Justificatif envoyé. Il est maintenant en attente de vérification par l'Admin.");
     return true;
-  }catch(e){console.error(e);alert(e.message||"Erreur lors de l'envoi du justificatif.");return false;}
+  }catch(e){
+    console.error(e);
+    showTgToast("err","Échec de l’envoi de la pièce justificative : "+String(e?.message||"erreur inconnue").replace(/^Supabase \d+\s+—\s+/,""));
+    return false;
+  }finally{
+    justUploadBusy=false;
+    document.body.classList.remove("just-uploading");
+  }
 }
 async function openJustificationFile(id){
   const token=cloudToken(); if(!token)return alert("Session Supabase absente. Veuillez vous reconnecter.");
