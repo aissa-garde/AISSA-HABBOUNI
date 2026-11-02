@@ -4256,6 +4256,8 @@ async function login(ev){
     applyAuthUI();
     // Démarrer la synchronisation automatique immédiatement après une connexion.
     startCloudPolling();
+    // Recharger les justificatifs du compte connecté (et non ceux de la session précédente).
+    refreshJustificationsFromServer();
     checkPasswordResetRequired(pw);
   }catch(e){
     console.error("Tox-Garde / connexion Supabase :",e);
@@ -4917,6 +4919,10 @@ if(!admin){
 }else{
   document.getElementById("doctorAbsenceHint").style.display="none";
   const absDoctor=document.getElementById("absDoctor"); if(absDoctor)absDoctor.disabled=false;
+  // Effacer la vue « Congés » laissée par une session Médecin précédente :
+  // types d'absence réactivés et vue Admin par défaut (rétablit tableau, import et filtres).
+  const absType=document.getElementById("absType"); if(absType)[...absType.options].forEach(o=>o.disabled=false);
+  if(typeof setAdminAbsView==="function")setAdminAbsView("availability");
 }
 if(!admin) setAdminAbsView("leave"); renderAccountOptions();renderAccounts();renderAll(); if(!admin) setAdminAbsView("leave");}
 function renderAccountOptions(){const el=document.getElementById("accountDoctor");if(!el)return;el.innerHTML='<option value="">-- Choisir un médecin --</option>'+state.doctors.map(d=>`<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join("")}
