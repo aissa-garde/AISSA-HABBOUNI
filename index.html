@@ -44,7 +44,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid 
 .statgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}.stat b{font-size:24px;display:block}
 #planning{overflow-x:auto;overflow-y:visible}.schedule{width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse}.schedule th,.schedule td{min-width:0;width:auto;height:38px;padding:5px 2px;overflow:hidden}.schedule th:not(:first-child),.schedule td:not(:first-child){width:auto}.schedule td[data-edit-name]{cursor:pointer;user-select:none}.schedule td[data-edit-name]:hover{outline:2px solid #3f83c5;outline-offset:-2px}.cellEditBtn{display:block;width:100%;height:100%;min-height:36px;border:0;background:transparent;font:inherit;cursor:pointer;padding:4px}.settings-bar{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:18px;box-shadow:0 2px 8px #1018280d}.settings-bar summary{padding:12px 16px;cursor:pointer;font-weight:700;color:var(--text);list-style:none}.settings-bar summary::-webkit-details-marker{display:none}.settings-panel{padding:0 16px 16px;border-top:1px solid var(--line)}.today-guards{display:flex;flex-wrap:wrap;gap:10px}.today-guard{border:1px solid var(--line);border-radius:9px;padding:10px 14px;font-weight:700}.today-guard small{display:block;font-weight:600;color:var(--muted);margin-bottom:3px}.today-empty{color:var(--muted);padding:6px 0}.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.settings-grid input[type=text],.settings-grid input[type=color]{width:100%}.schedule th:first-child,.schedule td:first-child{width:160px;min-width:160px;position:sticky;left:0;z-index:2}.schedule th:first-child{background:#eef2f7}.schedule td:first-child{background:white}
 .dayhead{font-size:11px}.weekend{background:#d9d9d9!important}.holiday{background:#bfe8ff!important}
-.cellEdit{width:100%;height:30px;margin:0;padding:3px;text-align:center;font-weight:bold;border:1px solid #777;border-radius:4px}.cellJ{background:#b7e4c7;font-weight:bold}.cellN{background:#f4a6a6;font-weight:bold}.cellC,.cellR,.cellI{background:#ffe36e;font-weight:bold}.cellG{background:#d9d9d9;font-weight:bold}.cellF{background:#bfe8ff;font-weight:bold}
+.cellEdit{width:100%;height:30px;margin:0;padding:3px;text-align:center;font-weight:bold;border:1px solid #777;border-radius:4px}.cellJ{background:#b7e4c7;font-weight:bold}.cellN{background:#f4a6a6;font-weight:bold}.cellC,.cellR,.cellI{background:#ffe36e;font-weight:bold}.cellG{background:#d9d9d9;font-weight:bold}.cellF{background:#bfe8ff;font-weight:bold}.cellJN{background:linear-gradient(90deg,#b7e4c7 50%,#f4a6a6 50%);font-weight:bold}
 .warn{background:#fff7d6;border:1px solid #e8c84a;padding:10px;border-radius:8px;margin-bottom:12px}.ok{background:#e7f7eb;border:1px solid #8ac99a;padding:10px;border-radius:8px}
 @media(max-width:1200px){.schedule th,.schedule td{font-size:12px}.schedule th:first-child,.schedule td:first-child{width:145px;min-width:145px}}@media(max-width:900px){.grid,.statgrid{grid-template-columns:1fr 1fr}.schedule th,.schedule td{font-size:11px}.schedule th:first-child,.schedule td:first-child{width:125px;min-width:125px}}@media(max-width:600px){.grid,.statgrid{grid-template-columns:1fr}main{padding:10px}.schedule th,.schedule td{font-size:10px;padding:4px 1px}.schedule th:first-child,.schedule td:first-child{width:105px;min-width:105px}.schedule .dayhead{font-size:9px}}
 .bottom-bars{margin-top:24px;display:flex;flex-direction:column;gap:10px}.bottom-bars .settings-bar{margin-bottom:0}.bottom-bars .settings-panel ul{margin:0;padding-left:22px}
@@ -784,17 +784,62 @@ header .auth-user button::after{background:var(--desktop-secondary,#d9b45a);-web
 #planningFsOverlay.pfs-rotated{inset:auto;top:0;left:100%;width:100vh;width:100dvh;height:100vw;transform-origin:top left;transform:rotate(90deg)}
 body.pfs-open{overflow:hidden}
 @media print{#planningFsOverlay{display:none!important}}
+/* ===== Gestion des mots de passe ===== */
+.pwd-header-btn{flex:0 0 auto;width:42px;height:38px;border-radius:11px;border:1px solid var(--line,#d8dee9);background:#fff;color:var(--text,#20243a);font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.pwd-header-btn:hover{background:#f3f6fb}
+body.auth-locked .pwd-header-btn{display:none}
+.pwd-modal{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.55);box-sizing:border-box}
+.pwd-modal.show{display:flex}
+.pwd-card{background:var(--card,#fff);color:var(--text,#20243a);width:min(440px,100%);max-height:calc(100vh - 32px);overflow:auto;border-radius:16px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.25);box-sizing:border-box}
+.pwd-card h3{margin:0 0 6px;font-size:18px}
+.pwd-card p{margin:0 0 6px}
+.pwd-card label.pwd-field{display:block;margin-top:12px;font-weight:600}
+.pwd-card label.pwd-field input{display:block;width:100%;box-sizing:border-box;margin-top:4px}
+.pwd-card .pwd-show{display:flex!important;flex-direction:row!important;align-items:center;justify-content:flex-start;gap:8px;margin-top:12px;font-weight:400;cursor:pointer}
+.pwd-card .pwd-show input[type=checkbox]{flex:0 0 auto;width:18px!important;height:18px!important;min-width:0!important;margin:0!important;padding:0!important}
+.pwd-card .pwd-row{display:flex;gap:8px;align-items:center;margin-top:4px}
+.pwd-card .pwd-row input{flex:1 1 auto;min-width:0;margin-top:0!important;font-family:ui-monospace,Consolas,monospace}
+.pwd-msg{margin-top:10px;font-size:13px;min-height:1em}
+.pwd-msg.err{color:#c0392b}
+.pwd-msg.ok{color:#1e7e34}
+.pwd-card .pwd-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px}
+@media(max-width:700px){.pwd-header-btn{width:38px;height:36px;font-size:16px}.pwd-card{padding:16px}.pwd-card .pwd-actions .btn{flex:1 1 auto}}
 </style>
 </head>
 <body class="auth-locked">
 <div id="authOverlay" aria-live="polite"><form class="auth-card" onsubmit="login(event)"><img id="loginLogoDisplay" class="auth-logo" src="./icons/icon-192.png" alt="Logo Tox-Garde"><h2>🔐 Connexion</h2><p id="loginSubtitleDisplay">Accédez à Tox-Garde avec votre compte.</p><label>Identifiant<input id="loginUsername" autocomplete="username" required></label><label>Mot de passe<input id="loginPassword" type="password" autocomplete="current-password" required></label><label class="remember-row"><input id="keepConnected" type="checkbox"> Rester connecté sur cet appareil</label><button id="loginSubmitBtn" class="btn primary" type="submit" style="width:100%;margin-top:8px">Se connecter</button><div id="loginProgress" class="login-progress" aria-live="polite" aria-hidden="true"><div class="login-progress-head"><span id="loginProgressText">Connexion en cours…</span><strong id="loginProgressPercent">0%</strong></div><div class="login-progress-track"><div id="loginProgressBar" class="login-progress-bar" style="width:0%"></div></div></div><div id="authError" class="auth-error"></div></form></div>
 
+<div id="pwdModal" class="pwd-modal" role="dialog" aria-modal="true" aria-labelledby="pwdModalTitle"><form class="pwd-card" onsubmit="submitPasswordChange(event)" autocomplete="off">
+<h3 id="pwdModalTitle">🔑 Modifier mon mot de passe</h3>
+<p id="pwdModalIntro" class="hint">Compte : <b id="pwdModalUser"></b></p>
+<input type="text" id="pwdModalUsername" autocomplete="username" hidden>
+<label class="pwd-field" id="pwdCurrentWrap">Mot de passe actuel<input id="pwdCurrent" type="password" autocomplete="current-password"></label>
+<label class="pwd-field">Nouveau mot de passe<input id="pwdNew" type="password" autocomplete="new-password" minlength="8" oninput="checkPasswordForm()"></label>
+<label class="pwd-field">Confirmer le nouveau mot de passe<input id="pwdConfirm" type="password" autocomplete="new-password" minlength="8" oninput="checkPasswordForm()"></label>
+<label class="pwd-show"><input type="checkbox" id="pwdShow" onchange="togglePasswordFields('pwdModal',this.checked)"> Afficher les mots de passe</label>
+<p class="hint" style="margin-top:8px">8 caractères minimum.</p>
+<div id="pwdMsg" class="pwd-msg" aria-live="polite"></div>
+<div class="pwd-actions"><button type="button" class="btn" id="pwdCancelBtn" onclick="closePasswordModal()">Annuler</button><button type="button" class="btn" id="pwdLogoutBtn" style="display:none" onclick="closePasswordModal(true);logout()">Se déconnecter</button><button type="submit" class="btn primary" id="pwdSubmitBtn" disabled>Enregistrer</button></div>
+</form></div>
+
+<div id="pwdResetModal" class="pwd-modal" role="dialog" aria-modal="true" aria-labelledby="pwdResetTitle"><form class="pwd-card" onsubmit="submitPasswordReset(event)" autocomplete="off">
+<h3 id="pwdResetTitle">🔑 Réinitialiser le mot de passe</h3>
+<p>Compte Médecin : <b id="pwdResetUser"></b></p>
+<p class="hint">L’ancien mot de passe ne peut pas être consulté ; il est remplacé par un mot de passe temporaire. Le médecin devra définir son propre mot de passe à sa prochaine connexion.</p>
+<label class="pwd-field">Mot de passe temporaire<span class="pwd-row"><input id="pwdResetTemp" type="password" autocomplete="new-password" minlength="8" oninput="checkResetForm()"><button type="button" class="btn small" onclick="copyResetPassword()">Copier</button></span></label>
+<label class="pwd-show"><input type="checkbox" id="pwdResetShow" onchange="togglePasswordFields('pwdResetModal',this.checked)"> Afficher le mot de passe</label>
+<div class="actions" style="margin-top:8px"><button type="button" class="btn small" onclick="generateResetPassword()">↻ Générer un autre</button></div>
+<div id="pwdResetMsg" class="pwd-msg" aria-live="polite"></div>
+<div class="pwd-actions"><button type="button" class="btn" id="pwdResetCancelBtn" onclick="closeResetModal()">Annuler</button><button type="submit" class="btn primary" id="pwdResetSubmitBtn">Réinitialiser</button></div>
+</form></div>
+
 <header>
 <button type="button" id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
 <div class="brand-wrap"><img id="appLogoDisplay" class="brand-logo" alt="Logo application"><div><h1 id="appTitleDisplay">Tox-Garde</h1><p id="appSubtitleDisplay">Simple. Équitable. Intelligent</p></div><img id="centerLogoDisplay" class="brand-logo" alt="Logo Centre Antipoison"></div>
 <div class="header-tools"><div id="authUserInfo" class="auth-user"></div>
+<button type="button" id="pwdHeaderBtn" class="pwd-header-btn" title="Modifier mon mot de passe" aria-label="Modifier mon mot de passe" onclick="openPasswordModal()">🔑</button>
 
-<details class="header-settings admin-only"><summary>⚙ Paramètres</summary><div class="header-settings-panel"><div class="settings-grid"><label>Nom / titre de l’application<input type="text" id="appTitle" placeholder="Tox-Garde"></label><label>Phrase sous le titre<input type="text" id="appSubtitle" placeholder="Simple. Équitable. Intelligent"></label><div class="appearance-palette"><div class="palette-title-row"><div><strong>Palette de couleurs</strong><small>Moderne, chic et harmonisée pour ordinateur et téléphone</small></div><span id="paletteCurrentName" class="palette-current">Bleu médical premium</span></div><div class="palette-presets"><button type="button" class="palette-preset active" data-palette="medical" onclick="selectPalette('medical')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Bleu médical</b><small>Premium</small></button><button type="button" class="palette-preset" data-palette="sage" onclick="selectPalette('sage')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Vert sauge</b><small>Élégant</small></button><button type="button" class="palette-preset" data-palette="graphite" onclick="selectPalette('graphite')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Graphite</b><small>Cuivre chic</small></button><button type="button" class="palette-preset" data-palette="navy" onclick="selectPalette('navy')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Bleu nuit</b><small>Institutionnel</small></button></div><div class="palette-fields"><label>En-tête principal<input type="color" id="paletteHeader" value="#3f83c5"></label><label>Bleu secondaire<input type="color" id="paletteSecondary" value="#ff6f73"></label><label>Fond général<input type="color" id="paletteBg" value="#f5f7fb"></label><label>Cartes<input type="color" id="paletteCard" value="#ffffff"></label><label>Texte principal<input type="color" id="paletteText" value="#20243a"></label><label>Texte secondaire<input type="color" id="paletteSecondaryText" value="#667085"></label><label>Texte du titre<input type="color" id="paletteTitle" value="#ffffff"></label><label>Texte de la phrase d’en-tête<input type="color" id="paletteSubtitle" value="#dceaf4"></label><label>Bordures / séparateurs<input type="color" id="paletteBorder" value="#d8dee9"></label><label>Accueil sélectionné<input type="color" id="paletteActive" value="#fff0f1"></label><label>Icônes inactives<input type="color" id="paletteInactiveIcon" value="#667085"></label></div></div><label class="desktop-only-setting">Taille de la police (ordinateur)<input type="range" id="desktopFontSize" min="12" max="20" step="1" value="14"><small id="desktopFontSizeValue">14 px</small></label><input type="color" id="appBg" value="#f5f7fb" hidden><input type="color" id="headerBg" value="#3f83c5" hidden><input type="color" id="cardBg" value="#ffffff" hidden><input type="color" id="primaryBtnBg" value="#ff6f73" hidden><input type="color" id="primaryBtnText" value="#ffffff" hidden><input type="color" id="activeItemBg" value="#fff0f1" hidden><input type="color" id="desktopFontColor" value="#20243a" hidden><label>Logo de l’application<input type="file" id="appLogoFile" accept="image/*"><small id="appLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('appLogo','appLogoFile')">🗑 Supprimer</button></label><label>Logo du Centre Antipoison<input type="file" id="centerLogoFile" accept="image/*"><small id="centerLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('centerLogo','centerLogoFile')">🗑 Supprimer</button></label><label>Image d’arrière-plan<input type="file" id="bgImageFile" accept="image/*"><small id="bgImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('bgImage','bgImageFile')">🗑 Supprimer</button></label><label>Image d’accueil<input type="file" id="homeImageFile" accept="image/*"><small id="homeImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('homeImage','homeImageFile')">🗑 Supprimer</button></label></div><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="saveAppearance()">Enregistrer l’apparence</button><button class="btn" onclick="removeImages()">Supprimer les images/logos</button><button class="btn" onclick="resetAppearance()">Réinitialiser</button></div><p class="hint">Les réglages de couleur ci-dessus s’appliquent à l’ordinateur et au téléphone.</p></div></details>
+<details class="header-settings admin-only"><summary>⚙ Paramètres</summary><div class="header-settings-panel"><div class="settings-grid"><label>Nom / titre de l’application<input type="text" id="appTitle" placeholder="Tox-Garde"></label><label>Phrase sous le titre<input type="text" id="appSubtitle" placeholder="Simple. Équitable. Intelligent"></label><div class="appearance-palette"><div class="palette-title-row"><div><strong>Palette de couleurs</strong><small>Moderne, chic et harmonisée pour ordinateur et téléphone</small></div><span id="paletteCurrentName" class="palette-current">Bleu médical premium</span></div><div class="palette-presets"><button type="button" class="palette-preset active" data-palette="medical" onclick="selectPalette('medical')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Bleu médical</b><small>Premium</small></button><button type="button" class="palette-preset" data-palette="sage" onclick="selectPalette('sage')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Vert sauge</b><small>Élégant</small></button><button type="button" class="palette-preset" data-palette="graphite" onclick="selectPalette('graphite')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Graphite</b><small>Cuivre chic</small></button><button type="button" class="palette-preset" data-palette="navy" onclick="selectPalette('navy')"><span class="palette-dots"><i></i><i></i><i></i><i></i></span><b>Bleu nuit</b><small>Institutionnel</small></button></div><div class="palette-fields"><label>En-tête principal<input type="color" id="paletteHeader" value="#3f83c5"></label><label>Bleu secondaire<input type="color" id="paletteSecondary" value="#ff6f73"></label><label>Fond général<input type="color" id="paletteBg" value="#f5f7fb"></label><label>Cartes<input type="color" id="paletteCard" value="#ffffff"></label><label>Texte principal<input type="color" id="paletteText" value="#20243a"></label><label>Texte secondaire<input type="color" id="paletteSecondaryText" value="#667085"></label><label>Texte du titre<input type="color" id="paletteTitle" value="#ffffff"></label><label>Texte de la phrase d’en-tête<input type="color" id="paletteSubtitle" value="#dceaf4"></label><label>Bordures / séparateurs<input type="color" id="paletteBorder" value="#d8dee9"></label><label>Accueil sélectionné<input type="color" id="paletteActive" value="#fff0f1"></label><label>Icônes inactives<input type="color" id="paletteInactiveIcon" value="#667085"></label></div></div><label class="desktop-only-setting">Taille de la police (ordinateur)<input type="range" id="desktopFontSize" min="12" max="20" step="1" value="14"><small id="desktopFontSizeValue">14 px</small></label><input type="color" id="appBg" value="#f5f7fb" hidden><input type="color" id="headerBg" value="#3f83c5" hidden><input type="color" id="cardBg" value="#ffffff" hidden><input type="color" id="primaryBtnBg" value="#ff6f73" hidden><input type="color" id="primaryBtnText" value="#ffffff" hidden><input type="color" id="activeItemBg" value="#fff0f1" hidden><input type="color" id="desktopFontColor" value="#20243a" hidden><label>Logo de l’application<input type="file" id="appLogoFile" accept="image/*"><small id="appLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('appLogo','appLogoFile')">🗑 Supprimer</button></label><label>Logo du Centre Antipoison<input type="file" id="centerLogoFile" accept="image/*"><small id="centerLogoStatus">Aucun logo</small><button type="button" class="btn small danger" onclick="removeOneImage('centerLogo','centerLogoFile')">🗑 Supprimer</button></label><label>Image d’arrière-plan<input type="file" id="bgImageFile" accept="image/*"><small id="bgImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('bgImage','bgImageFile')">🗑 Supprimer</button></label><label>Image d’accueil<input type="file" id="homeImageFile" accept="image/*"><small id="homeImageStatus">Aucune image</small><button type="button" class="btn small danger" onclick="removeOneImage('homeImage','homeImageFile')">🗑 Supprimer</button></label></div><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="saveAppearance()">Enregistrer l’apparence</button><button class="btn" onclick="removeImages()">Supprimer les images/logos</button><button class="btn" onclick="resetAppearance()">Réinitialiser</button><button class="btn" type="button" onclick="openPasswordModal()">🔑 Modifier mon mot de passe</button></div><p class="hint">Les réglages de couleur ci-dessus s’appliquent à l’ordinateur et au téléphone.</p></div></details>
 </div>
 </header>
 <main><img id="homeImageDisplay" class="home-image" alt="Image d’accueil">
@@ -838,6 +883,7 @@ body.pfs-open{overflow:hidden}
 <section id="accounts" class="panel">
 <div class="card admin-only" id="accountsManager">
 <h2>🔐 Comptes</h2>
+<div class="actions" style="margin-bottom:12px"><button class="btn" type="button" onclick="openPasswordModal()">🔑 Modifier mon mot de passe</button></div>
 
 <div class="grid">
 <label>Médecin<select id="accountDoctor"></select></label>
@@ -2479,7 +2525,7 @@ function cellFor(doc,date){
   return "";
 }
 function isHoliday(date){return fixedAny(date).some(x=>x.type==="F")}
-function cls(v){return {J:"cellJ",N:"cellN","CONGÉ":"cellC","INDISP":"cellI","RÉCUP":"cellR",G:"cellG",F:"cellF"}[v]||""}
+function cls(v){return {J:"cellJ",N:"cellN","J+N":"cellJN","CONGÉ":"cellC","INDISP":"cellI","RÉCUP":"cellR",G:"cellG",F:"cellF"}[v]||""}
 function generatedAgeText(value){
   if(value==null || value==='') return '';
   let t=null;
@@ -2600,6 +2646,12 @@ function syncFixedFromAcceptedExchange(req){
     return true;
   });
 }
+/* Cumul J+N toléré uniquement s'il résulte d'un changement de garde (J ou N) accepté vers ce médecin. */
+function isAcceptedJPlusNException(date,doctor,types){
+  if(!types||types.size!==2||!types.has('J')||!types.has('N'))return false;
+  const d=normalizeDateKey(date);
+  return (state.exchangeRequests||[]).some(r=>r?.status==='accepted'&&normalizeDateKey(r.date)===d&&['J','N'].includes(String(r.type||'').toUpperCase())&&r.toDoctor===doctor);
+}
 function validateEffectiveGuardConsistency(){
   const errors=[];
   // Contrôle de chaque snapshot : deux affectations identiques dans un même
@@ -2623,7 +2675,7 @@ function validateEffectiveGuardConsistency(){
       }
     }
     for(const [dk,types] of byDateDoctor){
-      if(types.size>1)errors.push(`${key} — ${dk.split('|')[0]} : ${dk.split('|')[1]} possède plusieurs gardes (${[...types].join(', ')}).`);
+      if(types.size>1&&!isAcceptedJPlusNException(dk.split('|')[0],dk.split('|')[1],types))errors.push(`${key} — ${dk.split('|')[0]} : ${dk.split('|')[1]} possède plusieurs gardes (${[...types].join(', ')}).`);
     }
     for(const [date,gf] of byDateGF){
       const unique=new Map(gf.map(x=>[`${x.type}|${x.doctor}`,x]));
@@ -2642,7 +2694,7 @@ function validateEffectiveGuardConsistency(){
     const types=currentByDateDoctor.get(dk)||new Set();types.add(type);currentByDateDoctor.set(dk,types);
     if(['G','F'].includes(type)){const gf=currentGF.get(date)||[];gf.push({type,doctor:x.doctor});currentGF.set(date,gf);}
   }
-  for(const [dk,types] of currentByDateDoctor)if(types.size>1)errors.push(`État courant — ${dk.split('|')[0]} : ${dk.split('|')[1]} possède plusieurs gardes (${[...types].join(', ')}).`);
+  for(const [dk,types] of currentByDateDoctor)if(types.size>1&&!isAcceptedJPlusNException(dk.split('|')[0],dk.split('|')[1],types))errors.push(`État courant — ${dk.split('|')[0]} : ${dk.split('|')[1]} possède plusieurs gardes (${[...types].join(', ')}).`);
   for(const [date,gf] of currentGF){const unique=new Map(gf.map(x=>[`${x.type}|${x.doctor}`,x]));if(unique.size>1)errors.push(`État courant — ${date} : plusieurs gardes G/F (${[...unique.values()].map(x=>x.type+' → '+x.doctor).join(', ')}).`);}
 
   // Contrôle de la vue effective après résolution des snapshots + échanges.
@@ -2650,8 +2702,9 @@ function validateEffectiveGuardConsistency(){
   const byDate=new Map();
   for(const g of map.values()){const d=byDate.get(g.date)||[];d.push(g);byDate.set(g.date,d);}
   for(const [date,guards] of byDate){
-    const docs=new Set();
-    for(const g of guards){if(docs.has(g.doctor))errors.push(`${date} : ${g.doctor} possède plusieurs gardes effectives.`);docs.add(g.doctor);}
+    const typesByDoc=new Map();
+    for(const g of guards){const t=typesByDoc.get(g.doctor)||[];t.push(String(g.type).toUpperCase());typesByDoc.set(g.doctor,t);}
+    for(const [doc,t] of typesByDoc){if(t.length>1&&!(t.length===2&&isAcceptedJPlusNException(date,doc,new Set(t))))errors.push(`${date} : ${doc} possède plusieurs gardes effectives.`);}
     const gf=guards.filter(g=>['G','F'].includes(g.type));
     if(gf.length>1)errors.push(`${date} : plusieurs gardes G/F effectives (${gf.map(g=>g.type+' → '+g.doctor).join(', ')}).`);
   }
@@ -2670,14 +2723,16 @@ function cellFor(doc,date,source){
   // Priorité : garde fixe -> garde du planning -> absence/récupération.
   const fx=(src.fixed||[]).find(x=>x.doctor===doc&&x.date===k);
   if(fx)return fx.type;
-  const p=(src.planning?.[k]||[]).find(x=>x.doctor===doc);
+  const dayGuards=(src.planning?.[k]||[]).filter(x=>x.doctor===doc);
+  if(dayGuards.some(x=>x.type==="J")&&dayGuards.some(x=>x.type==="N"))return "J+N";
+  const p=dayGuards[0];
   if(p)return p.type;
   const a=(src.absences||[]).find(x=>x.doctor===doc&&date>=dateFromISO(x.start)&&date<=dateFromISO(x.end));
   if(a)return a.type==="CONGÉ"?"CONGÉ":(a.type==="RÉCUP"?"RÉCUP":"INDISP");
   return "";
 }
 function isHoliday(date){return state.fixed.some(x=>x.date===iso(date)&&x.type==="F")}
-function cls(v){return {J:"cellJ",N:"cellN","CONGÉ":"cellC","INDISP":"cellI","RÉCUP":"cellR",G:"cellG",F:"cellF"}[v]||""}
+function cls(v){return {J:"cellJ",N:"cellN","J+N":"cellJN","CONGÉ":"cellC","INDISP":"cellI","RÉCUP":"cellR",G:"cellG",F:"cellF"}[v]||""}
 function renderHistorySelect(){
   const el=document.getElementById("historySelect");
   const blocks=document.getElementById("historyBlocks");
@@ -3423,7 +3478,7 @@ function buildExportHeaderImage(periodTitle){
 function downloadPlanningExcelFallback(ctx){
   const per=ctx.per, src=ctx.source, dates=datesBetween(per.start,per.end);
   const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  let html='<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px}th,td{border:1px solid #999;padding:5px;text-align:center}th{background:#eef2f7;font-weight:700}td:first-child,th:first-child{text-align:left;font-weight:700;white-space:nowrap}.j{background:#b7e4c7}.n{background:#f4a6a6}.g{background:#d9d9d9}.f{background:#bfe8ff}</style></head><body>';
+  let html='<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px}th,td{border:1px solid #999;padding:5px;text-align:center}th{background:#eef2f7;font-weight:700}td:first-child,th:first-child{text-align:left;font-weight:700;white-space:nowrap}.j{background:#b7e4c7}.n{background:#f4a6a6}.g{background:#d9d9d9}.f{background:#bfe8ff}.jn{background:#ffd59a}</style></head><body>';
   const title=per.type==='month'?`${months[per.start.getMonth()]} ${per.start.getFullYear()}`:per.type==='week'?`Semaine du ${iso(per.start)} au ${iso(per.end)}`:`${per.weeks} semaines : ${iso(per.start)} au ${iso(per.end)}`;
   html+=`<h2>${esc(state.settings?.title||'Tox-Garde')} — ${esc(title)}</h2><table><thead><tr><th>Médecin</th>${dates.map(d=>`<th>${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}</th>`).join('')}</tr></thead><tbody>`;
   state.doctors.filter(d=>d.active).forEach(doc=>{
@@ -3477,7 +3532,7 @@ async function exportPlanningPDF(){
     const headerX=center-(headerWidth/2);
     doc.addImage(headerImage,"PNG",headerX,margin,headerWidth,headerHeight);
 
-    const colors={J:[183,228,199],N:[244,166,166],G:[217,217,217],F:[191,232,255],"CONGÉ":[255,227,110],"RÉCUP":[255,227,110],INDISP:[255,227,110]};
+    const colors={J:[183,228,199],N:[244,166,166],G:[217,217,217],F:[191,232,255],"J+N":[255,213,154],"CONGÉ":[255,227,110],"RÉCUP":[255,227,110],INDISP:[255,227,110]};
     const fillFor=v=>colors[v]||[255,255,255];
     const tableWidth=pageWidth-(margin*2);
     const doctorColWidth=37.0;
@@ -3577,7 +3632,7 @@ function wordImageRun(relId,cx,cy){
   return `<w:r><w:rPr><w:noProof/></w:rPr><w:drawing><wp:inline xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="1" name="Tox-Garde Header"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="header.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${relId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
 }
 function buildDocxWord(periodTitle,headerImage,dates,src,ctx,title){
-  const colors={J:'B7E4C7',N:'F4A6A6',G:'D9D9D9',F:'BFE8FF','CONGÉ':'FFE36E','RÉCUP':'FFE36E',INDISP:'FFE36E'};
+  const colors={J:'B7E4C7',N:'F4A6A6',G:'D9D9D9',F:'BFE8FF','J+N':'FFD59A','CONGÉ':'FFE36E','RÉCUP':'FFE36E',INDISP:'FFE36E'};
   const dayNames=['D','L','M','M','J','V','S'];
   const firstW=1850, tableW=16118, dayW=Math.max(180,Math.floor((tableW-firstW)/Math.max(1,dates.length)));
   const grid=[`<w:gridCol w:w="${firstW}"/>`,...dates.map(()=>`<w:gridCol w:w="${dayW}"/>`)].join('');
@@ -4184,6 +4239,7 @@ async function login(ev){
     applyAuthUI();
     // Démarrer la synchronisation automatique immédiatement après une connexion.
     startCloudPolling();
+    checkPasswordResetRequired(pw);
   }catch(e){
     console.error("Tox-Garde / connexion Supabase :",e);
     if(err){
@@ -4200,7 +4256,7 @@ async function login(ev){
     if(submit)submit.disabled=false;
   }
 }
-async function logout(){stopRealtimeSync();stopIdleWatch();if(cloudPollTimer){clearInterval(cloudPollTimer);cloudPollTimer=null;}const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI();try{openTab("dashboard")}catch(e){}}
+async function logout(){closePasswordModal(true);closeResetModal();stopRealtimeSync();stopIdleWatch();if(cloudPollTimer){clearInterval(cloudPollTimer);cloudPollTimer=null;}const token=cloudToken();if(token){try{await supaRpc("toxgarde_logout",{p_token:token})}catch(e){}}localStorage.removeItem("toxGardeSession");sessionStorage.removeItem("toxGardeSession");localStorage.removeItem("toxGardeCloudToken");sessionStorage.removeItem("toxGardeCloudToken");applyAuthUI();try{openTab("dashboard")}catch(e){}}
 let cloudFailAlerted=false;
 async function save(){
   localStorage.setItem("gardeMed",JSON.stringify(state));
@@ -4588,7 +4644,17 @@ async function respondGuardChange(id,decision){
   const targetDate=dateFromISO(req.date);
   const absence=(state.absences||[]).find(a=>a.doctor===req.toDoctor&&targetDate>=dateFromISO(a.start)&&targetDate<=dateFromISO(a.end));
   if(absence)return alert(`Changement impossible : ${req.toDoctor} a une ${absence.type.toLowerCase()} le ${req.date}.`);
-  if((source.fixed||[]).some(x=>normalizeDateKey(x.date)===normalizeDateKey(req.date)&&x.doctor===req.toDoctor) || (source.planning?.[req.date]||[]).some(x=>x.doctor===req.toDoctor))
+  // Garde(s) déjà détenue(s) par le médecin cible à cette date. Seul cas toléré :
+  // le médecin cible n'a QU'UNE garde J ce jour-là et reçoit une N, ou n'a QU'UNE garde N
+  // et reçoit une J (cumul J+N). Tout autre cas (G, F, garde de même type...) reste bloqué.
+  const targetSameDay=[
+    ...(source.fixed||[]).filter(x=>normalizeDateKey(x.date)===normalizeDateKey(req.date)&&x.doctor===req.toDoctor),
+    ...(source.planning?.[req.date]||[]).filter(x=>x.doctor===req.toDoctor)
+  ];
+  const reqTypeUp=String(req.type).toUpperCase();
+  const existingTypeUp=targetSameDay.length===1?String(targetSameDay[0].type).toUpperCase():'';
+  const allowJPlusN=((reqTypeUp==='N'&&existingTypeUp==='J')||(reqTypeUp==='J'&&existingTypeUp==='N'));
+  if(targetSameDay.length && !allowJPlusN)
     return alert(`Changement impossible : ${req.toDoctor} a déjà une garde le ${req.date}.`);
 
   // Repos 48 h avant/après : on retire temporairement la garde source du
@@ -4607,6 +4673,9 @@ async function respondGuardChange(id,decision){
   // conserve, lui, ses règles de repos strictes. Le seul blocage ici reste le
   // conflit de garde le même jour (notamment G/F), traité ci-dessus.
   const changeWarnings=[];
+  if(allowJPlusN){
+    changeWarnings.push(`⚠️ Avertissement : ${req.toDoctor} a déjà une garde ${existingTypeUp} le ${req.date} et cumulera J + N ce jour-là (24 h).`);
+  }
   if(last && Math.abs((targetDate-last)/36e5)<48){
     changeWarnings.push(`⚠️ Avertissement : ${req.toDoctor} n’a pas 48 h de repos avant la garde du ${req.date}.`);
   }
@@ -4783,7 +4852,7 @@ if(!admin){
 if(!admin) setAdminAbsView("leave"); renderAccountOptions();renderAccounts();renderAll(); if(!admin) setAdminAbsView("leave");}
 function renderAccountOptions(){const el=document.getElementById("accountDoctor");if(!el)return;el.innerHTML='<option value="">-- Choisir un médecin --</option>'+state.doctors.map(d=>`<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join("")}
 async function loadCloudAccounts(){if(!isAdmin())return [];const token=cloudToken();if(!token)return [];try{return await supaRpc("toxgarde_list_accounts",{p_token:token})}catch(e){console.error(e);return []}}
-async function renderAccounts(){const el=document.getElementById("accountsBody");if(!el)return;if(!isAdmin()){el.innerHTML='<tr><td colspan="4" class="hint">Accès administrateur.</td></tr>';return;}const accounts=await loadCloudAccounts();el.innerHTML=accounts.map((a,i)=>`<tr><td>${escapeHtml(a.doctor||"—")}</td><td>${escapeHtml(a.username)}</td><td>${a.role==="admin"?"Administrateur":"Médecin"}</td><td>${a.username!==INITIAL_ADMIN_USERNAME?`<button class="btn small danger" onclick="deleteDoctorAccount(${i},decodeURIComponent('${encodeURIComponent(String(a.username)).replaceAll("'","%27")}'))">Supprimer</button>`:""}</td></tr>`).join("")||'<tr><td colspan="4" class="hint">Aucun compte médecin créé.</td></tr>'}
+async function renderAccounts(){const el=document.getElementById("accountsBody");if(!el)return;if(!isAdmin()){el.innerHTML='<tr><td colspan="4" class="hint">Accès administrateur.</td></tr>';return;}const accounts=await loadCloudAccounts();el.innerHTML=accounts.map((a,i)=>`<tr><td>${escapeHtml(a.doctor||"—")}</td><td>${escapeHtml(a.username)}</td><td>${a.role==="admin"?"Administrateur":"Médecin"}</td><td>${a.role!=="admin"?`<button class="btn small" type="button" title="Réinitialiser le mot de passe" onclick="openResetPasswordModal(decodeURIComponent('${encodeURIComponent(String(a.username)).replaceAll("'","%27")}'))">🔑 Réinitialiser le mot de passe</button> `:""}${a.username!==INITIAL_ADMIN_USERNAME?`<button class="btn small danger" onclick="deleteDoctorAccount(${i},decodeURIComponent('${encodeURIComponent(String(a.username)).replaceAll("'","%27")}'))">Supprimer</button>`:""}</td></tr>`).join("")||'<tr><td colspan="4" class="hint">Aucun compte médecin créé.</td></tr>'}
 async function saveDoctorAccount(){if(!isAdmin())return alert("Accès réservé aux administrateurs.");const doctor=document.getElementById("accountDoctor").value,username=document.getElementById("accountUsername").value.trim(),password=document.getElementById("accountPassword").value,role=document.getElementById("accountRole").value;if(!doctor||!username||!password)return alert("Veuillez renseigner le médecin, l’identifiant et le mot de passe.");if(normalizeUser(username)===normalizeUser(INITIAL_ADMIN_USERNAME))return alert("Cet identifiant est réservé à l’administrateur initial.");try{await supaRpc("toxgarde_upsert_account",{p_token:cloudToken(),p_doctor:doctor,p_username:username,p_password:password,p_role:role});notifyRealtimeUpdate();document.getElementById("accountUsername").value="";document.getElementById("accountPassword").value="";await renderAccounts();const m=document.getElementById("accountFormMessage");if(m){m.textContent="Compte médecin créé/mis à jour avec succès.";m.style.display="block";}}catch(e){alert("Impossible d'enregistrer le compte : "+e.message)}}
 async function deleteDoctorAccount(i,username){if(!isAdmin())return alert("Accès réservé aux administrateurs.");if(!confirm("Supprimer ce compte ?"))return;try{await supaRpc("toxgarde_delete_account",{p_token:cloudToken(),p_username:username});notifyRealtimeUpdate();await renderAccounts()}catch(e){alert("Impossible de supprimer le compte : "+e.message)}}
 function clearDoctorAccountForm(){
@@ -4799,6 +4868,148 @@ function toggleAccountPassword(){
   p.type=p.type==="password"?"text":"password";
 }
 
+/* ===== Gestion des mots de passe =====
+   Modification par le titulaire, réinitialisation d'un compte Médecin par l'Admin.
+   Tout passe par les RPC Supabase (supabase_password_management.sql) : les mots de passe
+   ne sont ni stockés ni relus côté navigateur ; seule l'empreinte est remplacée côté serveur. */
+const PWD_MIN_LENGTH=8;
+let pwdForced=false, pwdResetTarget="";
+function passwordRpcError(e){
+  const m=String(e&&e.message||e||"");
+  if(/Supabase 404|PGRST202|Could not find the function/i.test(m))return "Fonction de gestion des mots de passe non installée sur Supabase (exécuter supabase_password_management.sql).";
+  return m.replace(/^Supabase \d+\s+—\s+/,"")||"Opération impossible.";
+}
+function togglePasswordFields(modalId,show){
+  document.querySelectorAll(`#${modalId} input[type=password],#${modalId} input[data-pwd]`).forEach(i=>{i.dataset.pwd="1";i.type=show?"text":"password";});
+}
+function setPwdMsg(id,text,ok){const m=document.getElementById(id);if(!m)return;m.textContent=text||"";m.className="pwd-msg"+(text?(ok?" ok":" err"):"");}
+function checkPasswordForm(){
+  const n=document.getElementById("pwdNew").value, c=document.getElementById("pwdConfirm").value;
+  let msg="";
+  if(n&&n.length<PWD_MIN_LENGTH)msg=`Le nouveau mot de passe doit contenir au moins ${PWD_MIN_LENGTH} caractères.`;
+  else if(c&&n!==c)msg="Les deux nouveaux mots de passe ne sont pas identiques.";
+  setPwdMsg("pwdMsg",msg,false);
+  const valid=n.length>=PWD_MIN_LENGTH&&n===c;
+  document.getElementById("pwdSubmitBtn").disabled=!valid;
+  return valid;
+}
+function openPasswordModal(opts){
+  const ses=currentSession(); if(!ses)return;
+  opts=opts||{};
+  pwdForced=!!opts.forced;
+  document.querySelector(".header-settings[open]")?.removeAttribute("open");
+  document.getElementById("pwdModalUsername").value=ses.username||"";
+  document.getElementById("pwdModalTitle").textContent=pwdForced?"🔑 Définir un nouveau mot de passe":"🔑 Modifier mon mot de passe";
+  const intro=document.getElementById("pwdModalIntro");
+  intro.innerHTML=(pwdForced?"Votre mot de passe a été réinitialisé par un administrateur. Définissez votre propre mot de passe pour continuer.<br>":"")+"Compte : <b></b>";
+  intro.querySelector("b").textContent=ses.username||"";
+  // Après une connexion avec le mot de passe temporaire, inutile de le ressaisir.
+  const curWrap=document.getElementById("pwdCurrentWrap");
+  document.getElementById("pwdCurrent").value=opts.current||"";
+  curWrap.style.display=opts.current?"none":"block";
+  curWrap.firstChild.textContent=pwdForced?"Mot de passe temporaire":"Mot de passe actuel";
+  document.getElementById("pwdNew").value="";
+  document.getElementById("pwdConfirm").value="";
+  document.getElementById("pwdShow").checked=false;
+  togglePasswordFields("pwdModal",false);
+  document.getElementById("pwdCancelBtn").style.display=pwdForced?"none":"";
+  document.getElementById("pwdLogoutBtn").style.display=pwdForced?"":"none";
+  setPwdMsg("pwdMsg","");
+  checkPasswordForm();
+  document.getElementById("pwdModal").classList.add("show");
+  setTimeout(()=>document.getElementById(opts.current?"pwdNew":"pwdCurrent").focus(),50);
+}
+function closePasswordModal(force){
+  if(pwdForced&&!force)return;
+  pwdForced=false;
+  ["pwdCurrent","pwdNew","pwdConfirm"].forEach(id=>{const i=document.getElementById(id);if(i)i.value="";});
+  document.getElementById("pwdModal").classList.remove("show");
+}
+async function submitPasswordChange(ev){
+  ev.preventDefault();
+  const ses=currentSession(); if(!ses)return closePasswordModal(true);
+  const current=document.getElementById("pwdCurrent").value;
+  const next=document.getElementById("pwdNew").value;
+  if(!current){document.getElementById("pwdCurrentWrap").style.display="block";return setPwdMsg("pwdMsg","Veuillez saisir votre mot de passe actuel.");}
+  if(!checkPasswordForm())return;
+  if(next===current)return setPwdMsg("pwdMsg","Le nouveau mot de passe doit être différent de l’actuel.");
+  const btn=document.getElementById("pwdSubmitBtn"); btn.disabled=true;
+  setPwdMsg("pwdMsg","Enregistrement…",true);
+  try{
+    await supaRpc("toxgarde_change_password",{p_token:cloudToken(),p_username:ses.username,p_current_password:current,p_new_password:next});
+    ["pwdCurrent","pwdNew","pwdConfirm"].forEach(id=>document.getElementById(id).value="");
+    setPwdMsg("pwdMsg","Mot de passe modifié avec succès ✓",true);
+    setTimeout(()=>closePasswordModal(true),1200);
+  }catch(e){
+    console.error("Tox-Garde / modification du mot de passe :",e);
+    if(/actuel incorrect/i.test(String(e&&e.message))){document.getElementById("pwdCurrent").value="";document.getElementById("pwdCurrentWrap").style.display="block";}
+    setPwdMsg("pwdMsg",passwordRpcError(e));
+    btn.disabled=false;
+  }
+}
+/* Après connexion (ou rechargement) : compte réinitialisé par l'Admin -> nouveau mot de passe obligatoire.
+   Si la fonction SQL n'est pas installée, l'application fonctionne comme avant. */
+async function checkPasswordResetRequired(currentPassword){
+  const ses=currentSession(), token=cloudToken();
+  if(!ses||!token)return;
+  try{
+    const r=await supaRpc("toxgarde_password_status",{p_token:token,p_username:ses.username});
+    const o=Array.isArray(r)?r[0]:r;
+    if(o&&o.mustChange)openPasswordModal({forced:true,current:currentPassword||""});
+  }catch(e){console.warn("Tox-Garde / statut du mot de passe :",e);}
+}
+function generateResetPassword(){
+  const chars="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  const buf=new Uint32Array(12); crypto.getRandomValues(buf);
+  document.getElementById("pwdResetTemp").value=Array.from(buf,x=>chars[x%chars.length]).join("");
+  checkResetForm();
+}
+function checkResetForm(){
+  const v=document.getElementById("pwdResetTemp").value;
+  const ok=v.length>=PWD_MIN_LENGTH;
+  setPwdMsg("pwdResetMsg",ok||!v?"":`Au moins ${PWD_MIN_LENGTH} caractères.`);
+  document.getElementById("pwdResetSubmitBtn").disabled=!ok;
+  return ok;
+}
+async function copyResetPassword(){
+  const v=document.getElementById("pwdResetTemp").value; if(!v)return;
+  try{await navigator.clipboard.writeText(v);setPwdMsg("pwdResetMsg","Mot de passe copié.",true);}
+  catch(_){document.getElementById("pwdResetShow").checked=true;togglePasswordFields("pwdResetModal",true);document.getElementById("pwdResetTemp").select();}
+}
+function openResetPasswordModal(username){
+  if(!isAdmin())return alert("Accès réservé aux administrateurs.");
+  pwdResetTarget=String(username||"");
+  document.getElementById("pwdResetUser").textContent=pwdResetTarget;
+  document.getElementById("pwdResetShow").checked=false;
+  togglePasswordFields("pwdResetModal",false);
+  document.getElementById("pwdResetTemp").readOnly=false;
+  document.getElementById("pwdResetCancelBtn").textContent="Annuler";
+  generateResetPassword();
+  document.getElementById("pwdResetModal").classList.add("show");
+}
+function closeResetModal(){
+  pwdResetTarget="";
+  document.getElementById("pwdResetTemp").value="";
+  document.getElementById("pwdResetModal").classList.remove("show");
+}
+async function submitPasswordReset(ev){
+  ev.preventDefault();
+  if(!isAdmin())return alert("Accès réservé aux administrateurs.");
+  if(!pwdResetTarget||!checkResetForm())return;
+  if(!confirm(`Réinitialiser le mot de passe du compte « ${pwdResetTarget} » ?`))return;
+  const btn=document.getElementById("pwdResetSubmitBtn"); btn.disabled=true;
+  setPwdMsg("pwdResetMsg","Réinitialisation…",true);
+  try{
+    await supaRpc("toxgarde_admin_reset_password",{p_token:cloudToken(),p_username:pwdResetTarget,p_temp_password:document.getElementById("pwdResetTemp").value});
+    document.getElementById("pwdResetTemp").readOnly=true;
+    document.getElementById("pwdResetCancelBtn").textContent="Fermer";
+    setPwdMsg("pwdResetMsg","Mot de passe réinitialisé ✓ Communiquez ce mot de passe temporaire au médecin : il devra en définir un nouveau à sa prochaine connexion.",true);
+  }catch(e){
+    console.error("Tox-Garde / réinitialisation du mot de passe :",e);
+    setPwdMsg("pwdResetMsg",passwordRpcError(e));
+    btn.disabled=false;
+  }
+}
 
 const remembered=localStorage.getItem("toxGardeRememberedUsername");if(remembered){const lu=document.getElementById("loginUsername");if(lu)lu.value=remembered;}
 rebuildRecoveryLedger();
@@ -4812,6 +5023,7 @@ applyAppearance();
   renderAll();
   await refreshJustificationsFromServer();
   startCloudPolling();
+  checkPasswordResetRequired();
 })();
 </script>
 <script>
