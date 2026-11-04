@@ -1393,6 +1393,9 @@ function openPlanningFullscreen(){
   ov.innerHTML='<div class="pfs-bar"><strong>'+escapeHtml(title||"Planning")+'</strong><button type="button" class="btn" id="pfsClose">✕ Fermer</button></div><div class="pfs-body" id="planningFsBody"></div>';
   const body=ov.querySelector("#planningFsBody");
   body.innerHTML=src.innerHTML;
+  // Médecins d'astreinte affichés sous le planning, comme dans la page.
+  const oncallEl=document.getElementById("oncallDisplay");
+  if(oncallEl&&oncallEl.innerHTML.trim())body.insertAdjacentHTML("beforeend",`<div class="oncall-section pfs-oncall">${oncallEl.innerHTML.replace(/\sid="[^"]*"/g,"")}</div>`);
   // Lecture seule : aucune action de modification dans l'aperçu.
   body.querySelectorAll("*").forEach(el=>{["onclick","ondblclick","onchange","oninput","oncontextmenu","contenteditable","draggable"].forEach(a=>el.removeAttribute(a));});
   body.querySelectorAll("button,select,input,textarea").forEach(el=>{el.disabled=true;});
@@ -3627,6 +3630,30 @@ async function exportPlanningPDF(){
         if(data.section==="head" && data.column.index===0)data.cell.styles.halign="left";
       }
     });
+    // Médecins d'astreinte de la période, sous le tableau.
+    const oncall=typeof oncallExportInfo==="function"?oncallExportInfo(per.start):null;
+    if(oncall){
+      const pageHeight=doc.internal.pageSize.getHeight();
+      // Bloc compact (titre + une ligne, ~15 mm) pour rester sur la même page que le planning.
+      let y=(doc.lastAutoTable?.finalY||margin)+4;
+      if(y+(oncall.label?13:6)>pageHeight-margin){doc.addPage();y=margin+4;}
+      doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(24,34,48);
+      doc.text(oncall.label?`MÉDECINS D'ASTREINTE – ${oncall.label}`:"MÉDECINS D'ASTREINTE",margin,y);
+      if(!oncall.label){
+        doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(102,112,133);
+        doc.text("Aucun médecin d'astreinte n'a été désigné pour cette période.",margin,y+4);
+      }else{
+        const line=d=>[d.doctor,d.phone?`Tél. : ${d.phone}`:"Tél. : —",d.email].filter(Boolean).join("   •   ");
+        doc.autoTable({
+          head:[["Médecin 1","Médecin 2"]],
+          body:[[line(oncall.doctors[0]||{}),line(oncall.doctors[1]||{})]],
+          startY:y+1.8, theme:"grid", margin:{left:margin,right:margin,top:margin,bottom:margin}, tableWidth:pageWidth-(margin*2), pageBreak:"avoid", rowPageBreak:"avoid",
+          styles:{font:"helvetica",fontSize:8,cellPadding:{top:1,right:1.5,bottom:1,left:1.5},minCellHeight:5,lineWidth:0.15,lineColor:[119,119,119],textColor:[24,34,48],valign:"middle"},
+          headStyles:{fillColor:[238,242,247],textColor:[24,34,48],fontStyle:"bold",minCellHeight:4.5},
+          bodyStyles:{fontStyle:"bold"}
+        });
+      }
+    }
     doc.save(`planning_gardes_${ctx.history?"ancien_":""}${per.key}.pdf`);
   }).catch(()=>alert("Impossible de préparer l’en-tête du planning."));
 }
@@ -6245,6 +6272,7 @@ body .btn.small.btn-soft,body .btn.small.btn-ok,body .btn.small.danger{padding-b
 .oncall-badge.now{background:#e9f7ef;color:#1e6b3a}
 .oncall-badge.future{background:#eef4fb;color:#1f3b5c}
 .oncall-badge.past{background:#f1f3f6;color:#667085}
+.pfs-oncall{margin:14px 6px 6px}
 .gc-mode{display:flex;flex-direction:column;gap:6px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line,#d8dee9);border-radius:10px}
 .gc-mode label{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;font-weight:500;cursor:pointer}
 .gc-mode input[type=radio]{width:auto!important;margin:0;flex:0 0 auto}
@@ -6277,6 +6305,14 @@ function oncallPeriodLabel(p){
 }
 function oncallPeriodForMonth(y,m){const k=oncallKey(y,m);return oncallPeriods.find(p=>p.startMonth<=k&&k<=(p.endMonth||p.startMonth))||null;}
 function oncallPeriodForDate(isoDate){const d=dateFromISO(isoDate);return oncallPeriodForMonth(d.getFullYear(),d.getMonth());}
+// Pour les exports : null si les fonctions d'astreinte ne sont pas disponibles (rien n'est ajouté),
+// sinon {label, doctors:[{doctor,phone,email}x2]} ou {label:null} si aucune désignation.
+function oncallExportInfo(date){
+  if(oncallUnavailable||!currentSession())return null;
+  const p=oncallPeriodForMonth(date.getFullYear(),date.getMonth());
+  if(!p)return {label:null,doctors:[]};
+  return {label:oncallPeriodLabel(p),doctors:p.doctors.map(d=>({doctor:d.doctor||d.username||"",phone:d.phone||"",email:d.email||""}))};
+}
 // Médecins d'astreinte (noms) pouvant remplacer fromDoctor pour la garde du isoDate.
 function oncallCandidatesFor(isoDate,fromDoctor){
   const p=oncallPeriodForDate(isoDate); if(!p)return [];
