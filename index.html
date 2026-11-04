@@ -869,6 +869,7 @@ body.just-uploading label.btn:has(>input[type=file]),body.just-uploading button[
 <div class="nav-group">Gestion</div>
 <button class="nv nv-g" data-tab="team" title="Équipe"><span class="nav-icon">👨‍⚕️</span><span class="nav-label">Équipe</span></button>
 <button class="nv nv-g" data-tab="stats" title="Récupération"><span class="nav-icon">🔄</span><span class="nav-label">Récupération</span></button>
+<button class="nv nv-g" data-tab="oncall" title="Astreintes"><span class="nav-icon">🚑</span><span class="nav-label">Astreintes</span></button>
 <button class="nv nv-g admin-only" data-tab="bilan" title="Bilan"><span class="nav-icon">📊</span><span class="nav-label">Bilan</span></button>
 <button class="nv nv-g admin-only" data-tab="accounts" title="Comptes"><span class="nav-icon">🔐</span><span class="nav-label">Comptes</span></button>
 <div class="nav-group" id="navGrpMine">Mon espace</div>
@@ -1010,7 +1011,46 @@ body.just-uploading label.btn:has(>input[type=file]),body.just-uploading button[
 <div class="actions admin-only planning-legacy-controls" style="margin-top:10px"><select id="historySelect" onchange="showHistoryPlanning()" style="display:none"></select><button class="btn" onclick="showCurrentPlanning()">Planning actuel</button></div><div id="historyBlocks" class="history-groups"></div>
 <div class="actions doctor-only" style="margin-top:10px"><label style="min-width:360px">Plannings validés<select id="doctorHistorySelect" onchange="showDoctorValidatedPlanning()"></select></label><button class="btn primary" onclick="showDoctorValidatedPlanning()">Afficher</button><button id="doctorPdfBtn" class="btn" type="button" onclick="exportDoctorValidatedPlanningPDF()">📄 Exporter PDF</button></div>
 <div id="doctorPlanningNotice" class="hint doctor-only" style="margin-top:10px"></div>
-<div id="planningTable" style="margin-top:15px"></div></div>
+<div id="planningTable" style="margin-top:15px"></div>
+<div id="oncallSection" class="oncall-section" aria-labelledby="oncallTitle">
+<div id="oncallDisplay"></div>
+<div class="actions" style="margin-top:10px"><button type="button" class="btn small" onclick="openTab('oncall')">🚑 Voir toutes les astreintes</button></div>
+</div>
+</div>
+</section>
+
+<section id="oncall" class="panel">
+<div class="card">
+<h2>🚑 Médecins d’astreinte</h2>
+<p class="hint doctor-only" style="margin-top:0">Consultation seule : les désignations sont gérées par l’administrateur.</p>
+<div id="oncallAdmin" class="oncall-admin admin-only">
+<h3 style="margin:0 0 6px">Nouvelle désignation</h3>
+<p class="hint" style="margin-top:0">Choisissez le mois de début, le mois de fin et les deux médecins d’astreinte de la période.</p>
+<div class="oncall-form">
+<label>Mois de début<select id="oncallStartMonth" onchange="oncallFormChanged()"></select></label>
+<label>Année de début<select id="oncallYear" onchange="oncallFormChanged()"></select></label>
+<span class="oncall-form-gap" aria-hidden="true"></span>
+<label>Mois de fin<select id="oncallEndMonth" onchange="oncallFormChanged()"></select></label>
+<label>Année de fin<select id="oncallEndYear" onchange="oncallFormChanged()"></select></label>
+<span class="oncall-form-gap" aria-hidden="true"></span>
+<label>Médecin 1<select id="oncallDoc1" onchange="oncallDoctorChanged(1)"></select></label>
+<label>Téléphone (médecin 1)<input id="oncallPhone1" type="tel" autocomplete="off" maxlength="40" placeholder="Ex. 06 12 34 56 78"></label>
+<label>E-mail (médecin 1)<input id="oncallEmail1" type="email" autocomplete="off" maxlength="120" placeholder="facultatif"></label>
+<label>Médecin 2<select id="oncallDoc2" onchange="oncallDoctorChanged(2)"></select></label>
+<label>Téléphone (médecin 2)<input id="oncallPhone2" type="tel" autocomplete="off" maxlength="40" placeholder="Ex. 06 12 34 56 78"></label>
+<label>E-mail (médecin 2)<input id="oncallEmail2" type="email" autocomplete="off" maxlength="120" placeholder="facultatif"></label>
+</div>
+<div id="oncallFormStatus" class="tg-status" aria-live="polite"></div>
+<div class="actions" style="margin-top:12px"><button type="button" class="btn primary" id="oncallSaveBtn" onclick="saveOncallDesignation()">Enregistrer la désignation</button><button type="button" class="btn" id="oncallResetBtn" onclick="resetOncallForm()">↺ Nouvelle désignation</button></div>
+<hr style="margin:16px 0;border:0;border-top:1px solid var(--line,#d8dee9)">
+<h3 style="margin:0 0 6px">📥 Importer une liste Excel</h3>
+<p class="hint" style="margin-top:0">Colonnes : Mois début, Mois fin, Médecin 1, Téléphone 1, E-mail 1, Médecin 2, Téléphone 2, E-mail 2. Les médecins sont reconnus par leur nom ou leur identifiant de compte. Une période identique à une désignation existante la remplace.</p>
+<div class="actions"><input type="file" id="oncallImportFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="importOncallFile(event)"><button type="button" class="btn" id="oncallImportBtn" onclick="document.getElementById('oncallImportFile').click()">📥 Importer un fichier</button><button type="button" class="btn" onclick="downloadOncallTemplate()">Télécharger le modèle</button></div>
+<div id="oncallImportStatus" class="tg-status" aria-live="polite"></div>
+</div>
+<h3 style="margin:18px 0 8px">Désignations</h3>
+<div style="overflow-x:auto"><table class="oncall-table"><thead><tr><th>Période</th><th>Médecin 1</th><th>Médecin 2</th><th>Statut</th><th class="admin-only">Action</th></tr></thead><tbody id="oncallTableBody"></tbody></table></div>
+</div>
 </section>
 
 <section id="myBilan" class="panel">
@@ -1386,7 +1426,7 @@ function ensureAllowedTab(){
   try{
     const act=document.querySelector(".panel.active");if(!act)return;
     const id=act.id,admin=isAdmin();
-    const doctorAllowed=["dashboard","team","planning","absences","stats","myGuards","myBilan"];
+    const doctorAllowed=["dashboard","team","planning","absences","stats","myGuards","myBilan","oncall"];
     if((admin&&id==="myBilan")||(!admin&&!doctorAllowed.includes(id)))openTab("dashboard");
   }catch(e){console.warn("ensureAllowedTab",e);}
 }
@@ -4537,7 +4577,7 @@ function toggleAccountPassword(){
   p.type=p.type==="password"?"text":"password";
 }
 
-const _openTab=openTab;openTab=function(id){if(isAdmin()&&id==="myBilan")id="dashboard";if(!isAdmin()&&!['dashboard','team','planning','absences','stats','myGuards','myBilan'].includes(id))id="planning";_openTab(id);if(id==="team")renderAll();if(id==="myGuards")renderMyGuards();};
+const _openTab=openTab;openTab=function(id){if(isAdmin()&&id==="myBilan")id="dashboard";if(!isAdmin()&&!['dashboard','team','planning','absences','stats','myGuards','myBilan','oncall'].includes(id))id="planning";_openTab(id);if(id==="team")renderAll();if(id==="myGuards")renderMyGuards();};
 function addDoctorRecovery(){
   const ses=currentSession(); if(!ses||ses.role==="admin")return alert("Cette saisie est destinée aux comptes Médecin.");
   const date=document.getElementById("doctorRecoveryDate")?.value; if(!date)return alert("Sélectionnez la date de récupération.");
@@ -4624,10 +4664,16 @@ function requestGuardChange(historyKey,date,type,fromDoctor){
   const candidates=state.doctors.filter(d=>d.active&&d.name!==fromDoctor);
   if(!candidates.length)return alert('Aucun autre médecin actif n’est disponible.');
   const options=candidates.map(d=>`<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join('');
+  // Remplacement pour empêchement : liste limitée aux médecins d'astreinte de la période.
+  // L'échange volontaire (fonctionnement historique) reste le choix par défaut, sans restriction.
+  const oncallNames=typeof oncallCandidatesFor==="function"?oncallCandidatesFor(date,fromDoctor):[];
+  guardChangeOptionSets={exchange:options,replacement:oncallNames.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)} (astreinte)</option>`).join('')};
+  const oncallInfo=typeof oncallPeriodForDate==="function"?oncallPeriodForDate(date):null;
+  const modeHtml=`<div class="gc-mode" role="radiogroup" aria-label="Nature de la demande"><label><input type="radio" name="gcMode" value="exchange" checked onchange="guardChangeSetMode('exchange')"> Échange volontaire avec un collègue</label><label><input type="radio" name="gcMode" value="replacement" onchange="guardChangeSetMode('replacement')"> Remplacement pour empêchement (médecins d’astreinte)</label></div><div id="gcReplacementBox" class="gc-replacement" style="display:none"><div class="hint" style="margin:0 0 8px">${oncallInfo?`Médecins d’astreinte — ${escapeHtml(oncallPeriodLabel(oncallInfo))}`:'Aucun médecin d’astreinte n’a été désigné pour cette période.'}</div><label>Motif de l’empêchement<select id="gcReason" style="width:100%;margin-top:6px"><option value="">Sélectionner...</option><option>Maladie</option><option>Urgence</option><option>Indisponibilité</option><option>Autre</option></select></label><label style="display:block;margin-top:8px">Précision (facultatif)<input id="gcReasonDetail" maxlength="200" style="width:100%;margin-top:6px"></label></div>`;
   const modal=document.createElement('div');
   modal.id='guardChangeModal';
   modal.style.cssText='position:fixed;inset:0;background:#0008;z-index:10000;display:flex;align-items:center;justify-content:center;padding:18px;';
-  modal.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#111);width:min(460px,100%);border-radius:14px;padding:20px;box-shadow:0 18px 60px #0004"><h3 style="margin-top:0">🔄 Changer une garde</h3><p style="margin:6px 0 14px">Garde : <b>${escapeHtml(dateFromISO(date).toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}))} — ${escapeHtml(type)}</b></p><label>Choisir le médecin<select id="guardChangeDoctor" style="width:100%;margin-top:6px"><option value="">Sélectionner...</option>${options}</select></label><div id="guardChangeStatus" class="tg-status" aria-live="polite"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button class="btn" type="button" id="guardChangeCancelBtn" onclick="if(!guardChangeSending)document.getElementById('guardChangeModal')?.remove()">Annuler</button><button class="btn primary" type="button" id="guardChangeSendBtn" onclick="submitGuardChangeRequest('${escapeHtml(historyKey)}','${escapeHtml(date)}','${escapeHtml(type)}','${escapeHtml(fromDoctor)}')">Envoyer la demande</button></div></div>`;
+  modal.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#111);width:min(460px,100%);border-radius:14px;padding:20px;box-shadow:0 18px 60px #0004"><h3 style="margin-top:0">🔄 Changer une garde</h3><p style="margin:6px 0 14px">Garde : <b>${escapeHtml(dateFromISO(date).toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}))} — ${escapeHtml(type)}</b></p>${modeHtml}<label>Choisir le médecin<select id="guardChangeDoctor" style="width:100%;margin-top:6px"><option value="">Sélectionner...</option>${options}</select></label><div id="guardChangeStatus" class="tg-status" aria-live="polite"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button class="btn" type="button" id="guardChangeCancelBtn" onclick="if(!guardChangeSending)document.getElementById('guardChangeModal')?.remove()">Annuler</button><button class="btn primary" type="button" id="guardChangeSendBtn" onclick="submitGuardChangeRequest('${escapeHtml(historyKey)}','${escapeHtml(date)}','${escapeHtml(type)}','${escapeHtml(fromDoctor)}')">Envoyer la demande</button></div></div>`;
   document.body.appendChild(modal);
 }
 /* ===== Indicateurs de chargement (opérations en attente de Supabase) ===== */
@@ -4654,24 +4700,48 @@ function showTgToast(kind,text){
 }
 function hideTgToast(){const t=document.getElementById('tgToast');if(t)t.className='tg-toast';if(tgToastTimer){clearTimeout(tgToastTimer);tgToastTimer=null;}}
 let guardChangeSending=false;
+let guardChangeOptionSets={exchange:'',replacement:''};
+function guardChangeMode(){return document.querySelector('#guardChangeModal input[name=gcMode]:checked')?.value==='replacement'?'replacement':'exchange';}
+function guardChangeSetMode(mode){
+  const sel=document.getElementById('guardChangeDoctor'); if(!sel)return;
+  const set=guardChangeOptionSets[mode]||'';
+  sel.innerHTML=`<option value="">${mode==='replacement'&&!set?'Aucun médecin d’astreinte disponible':'Sélectionner...'}</option>${set}`;
+  const box=document.getElementById('gcReplacementBox'); if(box)box.style.display=mode==='replacement'?'block':'none';
+  setTgStatus('guardChangeStatus','',''); const st=document.getElementById('guardChangeStatus'); if(st)st.className='tg-status';
+}
+// Nature d'une demande : les anciennes demandes (sans champ kind) sont des échanges.
+function guardChangeNatureLabel(r){return r?.kind==='replacement'?`Remplacement (empêchement${r.reason?' : '+r.reason:''})`:'Échange';}
 async function submitGuardChangeRequest(historyKey,date,type,fromDoctor){
   if(guardChangeSending)return; // évite les doubles clics / envois multiples
   const target=document.getElementById('guardChangeDoctor')?.value;
-  if(!target)return alert('Sélectionnez un médecin.');
+  const mode=guardChangeMode();
+  if(!target)return alert(mode==='replacement'?'Sélectionnez un médecin d’astreinte.':'Sélectionnez un médecin.');
+  const reason=document.getElementById('gcReason')?.value||'';
+  const reasonDetail=(document.getElementById('gcReasonDetail')?.value||'').trim().slice(0,200);
+  if(mode==='replacement'){
+    if(!reason)return alert('Indiquez le motif de l’empêchement.');
+    // Le remplacement pour empêchement est réservé aux médecins d'astreinte de la période.
+    if(!(typeof oncallCandidatesFor==="function"&&oncallCandidatesFor(date,fromDoctor).includes(target)))return alert('Ce médecin n’est pas médecin d’astreinte pour cette période.');
+  }
   const existing=(state.exchangeRequests||[]).find(r=>r.status==='pending'&&r.historyKey===historyKey&&r.date===date&&r.type===type&&r.fromDoctor===fromDoctor);
   if(existing)return alert('Une demande pour cette garde est déjà en attente.');
   if(!cloudToken())return alert('Session expirée. Veuillez vous reconnecter.');
   const req={id:'chg_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),historyKey,date,type,fromDoctor,toDoctor:target,status:'pending',createdAt:new Date().toISOString()};
+  if(mode==='replacement'){
+    const p=typeof oncallPeriodForDate==="function"?oncallPeriodForDate(date):null;
+    Object.assign(req,{kind:'replacement',reason,reasonDetail,oncallPeriod:p?oncallPeriodLabel(p):''});
+  }
   const send=document.getElementById('guardChangeSendBtn'), cancel=document.getElementById('guardChangeCancelBtn'), select=document.getElementById('guardChangeDoctor');
-  const setBusy=busy=>{[send,cancel,select].forEach(el=>{if(el)el.disabled=busy;});};
+  const extra=[...document.querySelectorAll('#guardChangeModal input[name=gcMode],#gcReason,#gcReasonDetail')];
+  const setBusy=busy=>{[send,cancel,select,...extra].forEach(el=>{if(el)el.disabled=busy;});};
   guardChangeSending=true; setBusy(true);
-  setTgStatus('guardChangeStatus','busy','Envoi de la demande de changement de garde en cours…');
+  setTgStatus('guardChangeStatus','busy',mode==='replacement'?'Envoi de la demande de remplacement en cours…':'Envoi de la demande de changement de garde en cours…');
   state.exchangeRequests.push(req);
   let result=false;
   try{ result=await save({quiet:true}); }
   finally{ guardChangeSending=false; }
   if(result===true){
-    setTgStatus('guardChangeStatus','ok',`Demande envoyée à ${target}.`);
+    setTgStatus('guardChangeStatus','ok',mode==='replacement'?`Demande de remplacement envoyée à ${target}.`:`Demande envoyée à ${target}.`);
     if(send)send.style.display='none';
     if(cancel){cancel.disabled=false;cancel.textContent='Fermer';}
     renderMyGuards();
@@ -4862,9 +4932,9 @@ function renderMyGuards(){
     const statusLabel={accepted:'Acceptée',refused:'Refusée',cancelled:'Annulée'};
     const statusIcon={accepted:'✅',refused:'❌',cancelled:'⚠️'};
     const fmtDate=d=>d?new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
-    el.innerHTML=`<div style="overflow-x:auto"><table><thead><tr><th>Date de garde</th><th>Garde</th><th>De</th><th>Vers</th><th>Statut</th><th>Date du traitement</th></tr></thead><tbody>${allHistory.map(r=>{
+    el.innerHTML=`<div style="overflow-x:auto"><table><thead><tr><th>Date de garde</th><th>Garde</th><th>Nature</th><th>De (médecin initial)</th><th>Vers (médecin effectif)</th><th>Statut</th><th>Date du traitement</th></tr></thead><tbody>${allHistory.map(r=>{
       const treated=r.respondedAt?new Date(r.respondedAt).toLocaleString('fr-FR'):'—';
-      return `<tr><td>${escapeHtml(fmtDate(r.date))}</td><td><b>${escapeHtml(r.type||'—')}</b></td><td>${escapeHtml(r.fromDoctor||'—')}</td><td>${escapeHtml(r.toDoctor||'—')}</td><td>${statusIcon[r.status]||''} ${escapeHtml(statusLabel[r.status]||r.status||'—')}</td><td>${escapeHtml(treated)}</td></tr>`;
+      return `<tr><td>${escapeHtml(fmtDate(r.date))}</td><td><b>${escapeHtml(r.type||'—')}</b></td><td>${escapeHtml(guardChangeNatureLabel(r))}${r.reasonDetail?`<div class="hint">${escapeHtml(r.reasonDetail)}</div>`:''}</td><td>${escapeHtml(r.fromDoctor||'—')}</td><td>${escapeHtml(r.toDoctor||'—')}</td><td>${statusIcon[r.status]||''} ${escapeHtml(statusLabel[r.status]||r.status||'—')}</td><td>${escapeHtml(treated)}</td></tr>`;
     }).join('')}</tbody></table></div>`;
     return;
   }
@@ -4879,8 +4949,8 @@ function renderMyGuards(){
   const incoming=(state.exchangeRequests||[]).filter(r=>r.status==='pending'&&r.toDoctor===doctor).sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));
   const outgoing=(state.exchangeRequests||[]).filter(r=>r.fromDoctor===doctor&&r.status==='pending').sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));
   let html='';
-  if(incoming.length){html+=`<div style="border:1px solid #f2c94c;border-radius:10px;padding:12px;margin-bottom:14px;background:#fffbea"><b>🔄 Demandes de changement reçues</b><div style="margin-top:8px">${incoming.map(r=>`<div style="padding:10px 0;border-top:1px solid #eadfba"><div><b>${escapeHtml(r.fromDoctor)}</b> vous propose sa garde du <b>${escapeHtml(fmt(r.date).date)} — ${escapeHtml(r.type)}</b>.</div><div style="margin-top:8px"><button class="btn btn-ok small" onclick="respondGuardChange('${escapeHtml(r.id)}','accept')">Accepter</button> <button class="btn small" onclick="respondGuardChange('${escapeHtml(r.id)}','refuse')">Refuser</button></div></div>`).join('')}</div></div>`;}
-  if(outgoing.length){html+=`<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px;background:#f8fafc"><b>⏳ Demandes envoyées</b><div style="margin-top:8px">${outgoing.map(r=>`<div style="padding:8px 0;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div>${escapeHtml(r.date)} — <b>${escapeHtml(r.type)}</b> → ${escapeHtml(r.toDoctor)} <span class="hint">(En attente)</span></div><button class="btn small danger" type="button" onclick="cancelGuardChangeRequest('${escapeHtml(r.id)}')">Annuler la demande</button></div>`).join('')}</div></div>`;}
+  if(incoming.length){html+=`<div style="border:1px solid #f2c94c;border-radius:10px;padding:12px;margin-bottom:14px;background:#fffbea"><b>🔄 Demandes de changement reçues</b><div style="margin-top:8px">${incoming.map(r=>`<div style="padding:10px 0;border-top:1px solid #eadfba"><div>${r.kind==='replacement'?`🚑 <b>${escapeHtml(r.fromDoctor)}</b> signale un empêchement${r.reason?` (${escapeHtml(r.reason)}${r.reasonDetail?` — ${escapeHtml(r.reasonDetail)}`:''})`:''} et vous demande, en tant que médecin d’astreinte, de le remplacer pour la garde du <b>${escapeHtml(fmt(r.date).date)} — ${escapeHtml(r.type)}</b>.`:`<b>${escapeHtml(r.fromDoctor)}</b> vous propose sa garde du <b>${escapeHtml(fmt(r.date).date)} — ${escapeHtml(r.type)}</b>.`}</div><div style="margin-top:8px"><button class="btn btn-ok small" onclick="respondGuardChange('${escapeHtml(r.id)}','accept')">Accepter</button> <button class="btn small" onclick="respondGuardChange('${escapeHtml(r.id)}','refuse')">Refuser</button></div></div>`).join('')}</div></div>`;}
+  if(outgoing.length){html+=`<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px;background:#f8fafc"><b>⏳ Demandes envoyées</b><div style="margin-top:8px">${outgoing.map(r=>`<div style="padding:8px 0;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div>${escapeHtml(r.date)} — <b>${escapeHtml(r.type)}</b> → ${escapeHtml(r.toDoctor)} <span class="hint">(${r.kind==='replacement'?'Remplacement — ':''}En attente)</span></div><button class="btn small danger" type="button" onclick="cancelGuardChangeRequest('${escapeHtml(r.id)}')">Annuler la demande</button></div>`).join('')}</div></div>`;}
   const changeHistory=(state.exchangeRequests||[])
     .filter(r=>r.status!=='pending' && (r.fromDoctor===doctor || r.toDoctor===doctor))
     .sort((a,b)=>String(b.respondedAt||b.createdAt||'').localeCompare(String(a.respondedAt||a.createdAt||'')))
@@ -4891,10 +4961,10 @@ function renderMyGuards(){
     html+=`<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px;background:#fff">
       <b>📋 Historique des changements de gardes</b>
       <div style="overflow-x:auto;margin-top:8px">
-        <table><thead><tr><th>Date</th><th>Garde</th><th>De</th><th>Vers</th><th>Statut</th><th>Date du traitement</th></tr></thead><tbody>
+        <table><thead><tr><th>Date</th><th>Garde</th><th>Nature</th><th>De</th><th>Vers</th><th>Statut</th><th>Date du traitement</th></tr></thead><tbody>
         ${changeHistory.map(r=>{
           const treated=r.respondedAt?new Date(r.respondedAt).toLocaleString('fr-FR'):'—';
-          return `<tr><td>${escapeHtml(fmt(r.date).date)}</td><td><b>${escapeHtml(r.type)}</b></td><td>${escapeHtml(r.fromDoctor)}</td><td>${escapeHtml(r.toDoctor)}</td><td>${statusIcon[r.status]||''} ${escapeHtml(statusLabel[r.status]||r.status)}</td><td>${escapeHtml(treated)}</td></tr>`;
+          return `<tr><td>${escapeHtml(fmt(r.date).date)}</td><td><b>${escapeHtml(r.type)}</b></td><td>${escapeHtml(guardChangeNatureLabel(r))}</td><td>${escapeHtml(r.fromDoctor)}</td><td>${escapeHtml(r.toDoctor)}</td><td>${statusIcon[r.status]||''} ${escapeHtml(statusLabel[r.status]||r.status)}</td><td>${escapeHtml(treated)}</td></tr>`;
         }).join('')}
         </tbody></table>
       </div>
@@ -6148,6 +6218,359 @@ body .btn.small{padding:7px 12px;font-size:12px;border-radius:11px}
 body .btn.small.btn-soft,body .btn.small.btn-ok,body .btn.small.danger{padding-bottom:5px;border-bottom-width:2px!important}
 @media(max-width:700px){body .btn:not(.small){min-height:42px}}
 </style>
+<style id="oncallStyle">
+/* ===== Médecins d'astreinte ===== */
+.oncall-section{margin-top:18px;border-top:1px solid var(--line,#d8dee9);padding-top:16px}
+.oncall-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 14px;margin-bottom:12px}
+.oncall-head h3{margin:0;font-size:15px;letter-spacing:.06em;text-transform:uppercase}
+.oncall-period{color:var(--muted,#667085);font-size:13px;font-weight:600}
+.oncall-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.oncall-card{border:1px solid var(--line,#d8dee9);border-left:4px solid var(--primary,#3f83c5);border-radius:12px;padding:12px 14px;background:var(--card,#fff);min-width:0}
+.oncall-rank{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted,#667085)}
+.oncall-name{font-size:16px;font-weight:800;margin:3px 0 8px;overflow-wrap:anywhere}
+.oncall-line{display:flex;gap:8px;align-items:baseline;font-size:14px;margin-top:3px;overflow-wrap:anywhere}
+.oncall-line a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.oncall-line .hint{font-size:13px}
+.oncall-empty{color:var(--muted,#667085);font-size:13px;padding:6px 0}
+.oncall-admin{margin-top:6px;border:1px solid var(--line,#d8dee9);border-radius:12px;background:var(--card,#fff);padding:14px}
+.oncall-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px}
+.oncall-sub{font-size:12px;margin-top:2px;white-space:nowrap}
+.oncall-sub a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.oncall-table td{vertical-align:top}
+.oncall-row-now td{background:#f3faf6}
+.oncall-form label{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:13px;min-width:0}
+.oncall-form select,.oncall-form input{width:100%;box-sizing:border-box}
+.oncall-table td,.oncall-table th{white-space:nowrap}
+.oncall-badge{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700}
+.oncall-badge.now{background:#e9f7ef;color:#1e6b3a}
+.oncall-badge.future{background:#eef4fb;color:#1f3b5c}
+.oncall-badge.past{background:#f1f3f6;color:#667085}
+.gc-mode{display:flex;flex-direction:column;gap:6px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line,#d8dee9);border-radius:10px}
+.gc-mode label{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;font-weight:500;cursor:pointer}
+.gc-mode input[type=radio]{width:auto!important;margin:0;flex:0 0 auto}
+.gc-replacement{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#fff8ed;border:1px solid #f3d9a8}
+@media(max-width:900px){.oncall-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.oncall-form-gap{display:none}}
+@media(max-width:700px){.oncall-grid,.oncall-form{grid-template-columns:1fr}}
+@media print{.oncall-admin{display:none!important}}
+</style>
+<script id="oncallScript">
+/* =========================================================
+   MÉDECINS D'ASTREINTE (binôme par période : mois de début -> mois de fin)
+   Données dans Supabase (supabase_oncall.sql), séparées du JSON principal :
+   seul l'Administrateur peut les modifier ; les médecins les consultent.
+   ========================================================= */
+let oncallPeriods=[];          // [{id,startMonth:'YYYY-MM',endMonth,doctors:[{username,doctor,phone,email}x2]}]
+let oncallContacts=null;       // Admin : comptes Médecin + coordonnées
+let oncallUnavailable=false;   // fonctions SQL non installées
+let oncallEditId=null, oncallSaving=false;
+
+function oncallKey(y,m){return `${y}-${String(m+1).padStart(2,"0")}`;}
+function oncallParseKey(k){const [y,m]=String(k||"").split("-").map(Number);return {y,m:m-1};}
+function oncallMonthCount(a,b){const x=oncallParseKey(a),y=oncallParseKey(b);return (y.y-x.y)*12+(y.m-x.m)+1;}
+// « Janvier 2027 » (1 mois), « Janvier / Février 2027 » (2 mois), « Janvier – Avril 2027 » (plus).
+function oncallPeriodLabel(p){
+  const a=oncallParseKey(p.startMonth), b=oncallParseKey(p.endMonth||p.startMonth), n=oncallMonthCount(p.startMonth,p.endMonth||p.startMonth);
+  if(n<=1)return `${months[a.m]} ${a.y}`;
+  const sep=n===2?" / ":" – ";
+  return a.y===b.y?`${months[a.m]}${sep}${months[b.m]} ${a.y}`:`${months[a.m]} ${a.y}${sep}${months[b.m]} ${b.y}`;
+}
+function oncallPeriodForMonth(y,m){const k=oncallKey(y,m);return oncallPeriods.find(p=>p.startMonth<=k&&k<=(p.endMonth||p.startMonth))||null;}
+function oncallPeriodForDate(isoDate){const d=dateFromISO(isoDate);return oncallPeriodForMonth(d.getFullYear(),d.getMonth());}
+// Médecins d'astreinte (noms) pouvant remplacer fromDoctor pour la garde du isoDate.
+function oncallCandidatesFor(isoDate,fromDoctor){
+  const p=oncallPeriodForDate(isoDate); if(!p)return [];
+  return p.doctors.map(d=>d.doctor).filter(n=>n&&n!==fromDoctor);
+}
+function oncallRpcError(e){
+  const m=String(e&&e.message||e||"");
+  if(/Supabase 404|PGRST202|Could not find the function/i.test(m))return "Fonctions d’astreinte non installées sur Supabase (exécuter supabase_oncall.sql).";
+  return m.replace(/^Supabase \d+\s+—\s+/,"")||"Opération impossible.";
+}
+async function refreshOncallFromServer(){
+  const token=cloudToken(); if(!token||!currentSession())return;
+  try{
+    const r=await supaRpc("toxgarde_list_oncall",{p_token:token});
+    oncallPeriods=(Array.isArray(r)?r:[]).filter(p=>p&&p.startMonth&&Array.isArray(p.doctors));
+    oncallUnavailable=false;
+  }catch(e){
+    if(/Supabase 404|PGRST202|Could not find the function/i.test(String(e&&e.message)))oncallUnavailable=true;
+    console.warn("Tox-Garde / astreintes :",e);
+  }
+  renderOncallDisplay();
+  renderOncallTable();
+}
+// Mois du planning actuellement consulté.
+function oncallDisplayedMonth(){
+  try{
+    if(activePlanningView?.type==="history"&&activePlanningView.key){
+      const hp=historyPeriod(activePlanningView.key,historyData(activePlanningView.key)||{});
+      if(hp?.start)return {y:hp.start.getFullYear(),m:hp.start.getMonth()};
+    }
+  }catch(_){}
+  if(planningDisplayYear!=null&&planningDisplayMonth!=null)return {y:planningDisplayYear,m:planningDisplayMonth};
+  const per=getPeriodDates();return {y:per.start.getFullYear(),m:per.start.getMonth()};
+}
+function oncallDoctorCard(rank,d){
+  const tel=String(d?.phone||"").trim(), mail=String(d?.email||"").trim();
+  const telHref=tel.replace(/[^\d+]/g,"");
+  return `<div class="oncall-card"><div class="oncall-rank">Médecin ${rank}</div><div class="oncall-name">${escapeHtml(d?.doctor||d?.username||"Compte introuvable")}</div>
+<div class="oncall-line"><span aria-hidden="true">📞</span>${tel?`<a href="tel:${escapeHtml(telHref)}">${escapeHtml(tel)}</a>`:'<span class="hint">Téléphone non renseigné</span>'}</div>
+${mail?`<div class="oncall-line"><span aria-hidden="true">✉️</span><a href="mailto:${escapeHtml(mail)}">${escapeHtml(mail)}</a></div>`:""}</div>`;
+}
+function renderOncallDisplay(){
+  const el=document.getElementById("oncallDisplay"); if(!el)return;
+  if(!currentSession()){el.innerHTML="";return;}
+  const {y,m}=oncallDisplayedMonth();
+  const p=oncallPeriodForMonth(y,m);
+  let body;
+  if(oncallUnavailable&&isAdmin())body=`<div class="oncall-empty">${escapeHtml(oncallRpcError("Supabase 404"))}</div>`;
+  else if(!p)body=`<div class="oncall-empty">Aucun médecin d’astreinte n’a été désigné pour cette période.</div>`;
+  else body=`<div class="oncall-grid">${oncallDoctorCard(1,p.doctors[0])}${oncallDoctorCard(2,p.doctors[1])}</div>`;
+  el.innerHTML=`<div class="oncall-head"><h3 id="oncallTitle">Médecins d’astreinte</h3>${p?`<span class="oncall-period">Médecins d’astreinte – ${escapeHtml(oncallPeriodLabel(p))}</span>`:""}</div>${body}`;
+}
+/* ----- Rubrique « Astreintes » ----- */
+async function openOncallTab(){
+  renderOncallTable();
+  if(!isAdmin())return;
+  const yEl=document.getElementById("oncallYear");
+  if(yEl&&!yEl.options.length){
+    const now=new Date().getFullYear();let h="";
+    for(let y=now-3;y<=now+5;y++)h+=`<option value="${y}">${y}</option>`;
+    yEl.innerHTML=h; document.getElementById("oncallEndYear").innerHTML=h;
+    oncallStartMonthOptions();
+    resetOncallForm();
+  }
+  await loadOncallContacts();
+}
+async function loadOncallContacts(){
+  if(!isAdmin())return;
+  try{oncallContacts=await supaRpc("toxgarde_list_doctor_contacts",{p_token:cloudToken()});if(!Array.isArray(oncallContacts))oncallContacts=[];}
+  catch(e){oncallContacts=[];setTgStatus("oncallFormStatus","err",oncallRpcError(e));}
+  ["oncallDoc1","oncallDoc2"].forEach(id=>{
+    const s=document.getElementById(id); if(!s)return; const v=s.value;
+    s.innerHTML='<option value="">-- Choisir un médecin --</option>'+oncallContacts.map(c=>`<option value="${escapeHtml(c.username)}">${escapeHtml(c.doctor||c.username)}</option>`).join("");
+    s.value=v;
+  });
+}
+function oncallStartMonthOptions(){
+  ["oncallStartMonth","oncallEndMonth"].forEach(id=>{const s=document.getElementById(id);if(s&&!s.options.length)s.innerHTML=months.map((mo,i)=>`<option value="${i}">${mo}</option>`).join("");});
+}
+function oncallEnsureYear(id,y){const el=document.getElementById(id);if(el&&![...el.options].some(o=>o.value===String(y)))el.insertAdjacentHTML("beforeend",`<option value="${y}">${y}</option>`);if(el)el.value=String(y);}
+function oncallSetFormMonths(startKey,endKey){
+  const a=oncallParseKey(startKey), b=oncallParseKey(endKey);
+  oncallEnsureYear("oncallYear",a.y); document.getElementById("oncallStartMonth").value=String(a.m);
+  oncallEnsureYear("oncallEndYear",b.y); document.getElementById("oncallEndMonth").value=String(b.m);
+}
+function oncallFormPeriodKey(){
+  return oncallKey(Number(document.getElementById("oncallYear").value),Number(document.getElementById("oncallStartMonth").value));
+}
+function oncallFormEndKey(){
+  return oncallKey(Number(document.getElementById("oncallEndYear").value),Number(document.getElementById("oncallEndMonth").value));
+}
+// Erreur de période (ordre, durée) ou désignation existante qui chevauche la période saisie.
+function oncallFormPeriodError(){
+  const s=oncallFormPeriodKey(), e=oncallFormEndKey();
+  if(e<s)return "Le mois de fin doit être postérieur ou égal au mois de début.";
+  if(oncallMonthCount(s,e)>12)return "Une période ne peut pas dépasser 12 mois.";
+  const c=oncallPeriods.find(p=>p.id!==oncallEditId&&p.startMonth<=e&&s<=(p.endMonth||p.startMonth));
+  return c?`Une désignation existe déjà pour ${oncallPeriodLabel(c)}. Utilisez « Modifier » sur cette ligne.`:"";
+}
+function oncallFormChanged(){
+  const err=oncallFormPeriodError();
+  if(err)setTgStatus("oncallFormStatus","err",err);
+  else document.getElementById("oncallFormStatus").className="tg-status";
+}
+function oncallDoctorChanged(n){
+  const u=document.getElementById("oncallDoc"+n).value;
+  const c=(oncallContacts||[]).find(x=>x.username===u);
+  document.getElementById("oncallPhone"+n).value=c?.phone||"";
+  document.getElementById("oncallEmail"+n).value=c?.email||"";
+  const other=document.getElementById("oncallDoc"+(n===1?2:1)).value;
+  if(u&&other&&u.toLowerCase()===other.toLowerCase())setTgStatus("oncallFormStatus","err","Le même médecin ne peut pas être sélectionné deux fois dans un binôme.");
+  else oncallFormChanged();
+}
+function resetOncallForm(){
+  oncallEditId=null;
+  oncallStartMonthOptions();
+  // Par défaut : premier mois sans désignation à partir du mois en cours, sur deux mois.
+  const now=new Date(); let d=new Date(now.getFullYear(),now.getMonth(),1);
+  for(let i=0;i<36&&oncallPeriodForMonth(d.getFullYear(),d.getMonth());i++)d=new Date(d.getFullYear(),d.getMonth()+1,1);
+  const end=new Date(d.getFullYear(),d.getMonth()+1,1);
+  oncallSetFormMonths(oncallKey(d.getFullYear(),d.getMonth()),oncallPeriodForMonth(end.getFullYear(),end.getMonth())?oncallKey(d.getFullYear(),d.getMonth()):oncallKey(end.getFullYear(),end.getMonth()));
+  [1,2].forEach(n=>{document.getElementById("oncallDoc"+n).value="";document.getElementById("oncallPhone"+n).value="";document.getElementById("oncallEmail"+n).value="";});
+  document.getElementById("oncallSaveBtn").textContent="Enregistrer la désignation";
+  oncallFormChanged();
+}
+function editOncallDesignation(id){
+  if(!isAdmin())return;
+  const p=oncallPeriods.find(x=>x.id===id); if(!p)return;
+  oncallEditId=id; oncallStartMonthOptions();
+  oncallSetFormMonths(p.startMonth,p.endMonth||p.startMonth);
+  p.doctors.forEach((d,i)=>{const s=document.getElementById("oncallDoc"+(i+1));
+    if(![...s.options].some(o=>o.value===d.username))s.insertAdjacentHTML("beforeend",`<option value="${escapeHtml(d.username)}">${escapeHtml(d.doctor||d.username)}</option>`);
+    s.value=d.username; document.getElementById("oncallPhone"+(i+1)).value=d.phone||""; document.getElementById("oncallEmail"+(i+1)).value=d.email||"";});
+  document.getElementById("oncallSaveBtn").textContent="Enregistrer la modification";
+  setTgStatus("oncallFormStatus","busy",`Modification de la période ${oncallPeriodLabel(p)}.`);
+  document.querySelector("#oncallStartMonth")?.scrollIntoView({block:"nearest"});
+  const st=document.getElementById("oncallFormStatus"); st.querySelector(".tg-spinner")?.remove();
+}
+async function saveOncallDesignation(){
+  if(!isAdmin())return alert("Accès réservé aux administrateurs.");
+  if(oncallSaving)return;
+  const d1=document.getElementById("oncallDoc1").value, d2=document.getElementById("oncallDoc2").value;
+  if(!d1||!d2)return setTgStatus("oncallFormStatus","err","Sélectionnez les deux médecins d’astreinte.");
+  if(d1.toLowerCase()===d2.toLowerCase())return setTgStatus("oncallFormStatus","err","Le même médecin ne peut pas être sélectionné deux fois dans un binôme.");
+  if(oncallFormPeriodError())return oncallFormChanged();
+  const emailRe=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  for(const n of [1,2]){const e=document.getElementById("oncallEmail"+n).value.trim();if(e&&!emailRe.test(e))return setTgStatus("oncallFormStatus","err",`Adresse e-mail du médecin ${n} invalide.`);}
+  oncallSaving=true; const btn=document.getElementById("oncallSaveBtn"); btn.disabled=true;
+  setTgStatus("oncallFormStatus","busy","Enregistrement de la désignation en cours…");
+  try{
+    const token=cloudToken();
+    // Coordonnées (uniquement si elles ont changé), puis la désignation.
+    for(const [n,u] of [[1,d1],[2,d2]]){
+      const phone=document.getElementById("oncallPhone"+n).value.trim(), email=document.getElementById("oncallEmail"+n).value.trim();
+      const prev=(oncallContacts||[]).find(x=>x.username===u);
+      if((prev?.phone||"")!==phone||(prev?.email||"")!==email){
+        await supaRpc("toxgarde_save_doctor_contact",{p_token:token,p_username:u,p_phone:phone,p_email:email});
+        if(prev){prev.phone=phone;prev.email=email;}
+      }
+    }
+    const wasEdit=oncallEditId!=null;
+    await supaRpc("toxgarde_save_oncall",{p_token:token,p_id:oncallEditId,p_start_month:oncallFormPeriodKey(),p_end_month:oncallFormEndKey(),p_doctor1:d1,p_doctor2:d2});
+    await refreshOncallFromServer();
+    notifyRealtimeUpdate();
+    resetOncallForm();
+    setTgStatus("oncallFormStatus","ok",wasEdit?"Désignation modifiée.":"Désignation enregistrée.");
+  }catch(e){
+    console.error("Tox-Garde / enregistrement astreinte :",e);
+    setTgStatus("oncallFormStatus","err",oncallRpcError(e));
+  }finally{oncallSaving=false;btn.disabled=false;}
+}
+async function deleteOncallDesignation(id){
+  if(!isAdmin())return;
+  const p=oncallPeriods.find(x=>x.id===id); if(!p)return;
+  if(!confirm(`Supprimer la désignation ${oncallPeriodLabel(p)} ?`))return;
+  try{
+    await supaRpc("toxgarde_delete_oncall",{p_token:cloudToken(),p_id:id});
+    if(oncallEditId===id)resetOncallForm();
+    await refreshOncallFromServer(); notifyRealtimeUpdate();
+    setTgStatus("oncallFormStatus","ok","Désignation supprimée.");
+  }catch(e){setTgStatus("oncallFormStatus","err",oncallRpcError(e));}
+}
+function oncallDoctorCell(d){
+  const tel=String(d?.phone||"").trim(), mail=String(d?.email||"").trim();
+  return `<b>${escapeHtml(d?.doctor||d?.username||"—")}</b>${tel?`<div class="oncall-sub">📞 <a href="tel:${escapeHtml(tel.replace(/[^\d+]/g,""))}">${escapeHtml(tel)}</a></div>`:""}${mail?`<div class="oncall-sub">✉️ <a href="mailto:${escapeHtml(mail)}">${escapeHtml(mail)}</a></div>`:""}`;
+}
+// Liste des désignations (rubrique « Astreintes ») : consultation pour tous, actions pour l'Admin.
+function renderOncallTable(){
+  const tb=document.getElementById("oncallTableBody"); if(!tb)return;
+  if(!currentSession()){tb.innerHTML="";return;}
+  const admin=isAdmin(), cols=admin?5:4;
+  if(oncallUnavailable){tb.innerHTML=`<tr><td colspan="${cols}" class="hint">${admin?escapeHtml(oncallRpcError("Supabase 404")):"Aucune désignation disponible."}</td></tr>`;return;}
+  if(!oncallPeriods.length){tb.innerHTML=`<tr><td colspan="${cols}" class="hint">Aucune désignation enregistrée.</td></tr>`;return;}
+  const nowKey=oncallKey(new Date().getFullYear(),new Date().getMonth());
+  tb.innerHTML=[...oncallPeriods].sort((a,b)=>b.startMonth.localeCompare(a.startMonth)).map(p=>{
+    const end=p.endMonth||p.startMonth;
+    const st=end<nowKey?["past","Passée"]:p.startMonth>nowKey?["future","À venir"]:["now","En cours"];
+    return `<tr class="${st[0]==="now"?"oncall-row-now":""}"><td><b>${escapeHtml(oncallPeriodLabel(p))}</b></td><td>${oncallDoctorCell(p.doctors[0])}</td><td>${oncallDoctorCell(p.doctors[1])}</td><td><span class="oncall-badge ${st[0]}">${st[1]}</span></td>${admin?`<td><button type="button" class="btn small" onclick="editOncallDesignation(${Number(p.id)})">✎ Modifier</button> <button type="button" class="btn small danger" onclick="deleteOncallDesignation(${Number(p.id)})">Supprimer</button></td>`:""}</tr>`;
+  }).join("");
+}
+/* ----- Import Excel (Admin) ----- */
+// Accepte : date Excel, « 2027-01 », « 01/2027 », « 1/2027 », « Janvier 2027 », « janv. 2027 ».
+function oncallParseMonthCell(v){
+  if(v==null||v==="")return "";
+  if(v instanceof Date&&!isNaN(v))return oncallKey(v.getFullYear(),v.getMonth());
+  if(typeof v==="number"){const d=typeof parseExcelDate==="function"?parseExcelDate(v):null;return d?oncallKey(d.getFullYear(),d.getMonth()):"";}
+  const s=String(v).trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  let m=s.match(/^(\d{4})[-\/.](\d{1,2})(?:[-\/.]\d{1,2})?$/); if(m)return +m[2]>=1&&+m[2]<=12?`${m[1]}-${String(+m[2]).padStart(2,"0")}`:"";
+  m=s.match(/^(?:\d{1,2}[-\/.])?(\d{1,2})[-\/.](\d{4})$/); if(m)return +m[1]>=1&&+m[1]<=12?`${m[2]}-${String(+m[1]).padStart(2,"0")}`:"";
+  m=s.match(/^([a-z]+)\.?\s+(\d{4})$/);
+  if(m){const names=months.map(x=>x.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""));const i=names.findIndex(n=>n.startsWith(m[1].slice(0,4))&&(m[1].length>=4||n.startsWith(m[1])));return i>=0?oncallKey(+m[2],i):"";}
+  return "";
+}
+async function importOncallFile(ev){
+  const input=ev.target, f=input.files?.[0]; if(!f)return;
+  if(!isAdmin()){input.value="";return alert("Cette action est réservée aux administrateurs.");}
+  const btn=document.getElementById("oncallImportBtn");
+  try{
+    await ensureXLSX();
+    const wb=XLSX.read(await f.arrayBuffer(),{type:"array",cellDates:true});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:"",raw:true});
+    const norm=x=>String(x??"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"");
+    const pick=(row,names)=>{const k=Object.keys(row).find(k=>names.includes(norm(k)));return k==null?"":row[k];};
+    if(!oncallContacts)await loadOncallContacts();
+    const known=oncallContacts||[];
+    const findDoc=v=>{const t=String(v||"").trim().toLowerCase();if(!t)return null;const m=known.filter(c=>c.username.toLowerCase()===t||String(c.doctor||"").toLowerCase()===t);return m.length===1?m[0]:null;};
+    const list=[], errors=[];
+    rows.forEach((row,i)=>{
+      const line=i+2;
+      const start=oncallParseMonthCell(pick(row,["moisdebut","debut","moisdedebut","periodedebut","du","start"]));
+      const endRaw=pick(row,["moisfin","fin","moisdefin","periodefin","au","end"]);
+      const end=endRaw===""?start:oncallParseMonthCell(endRaw);
+      const n1=pick(row,["medecin1","medecindastreinte1","astreinte1","doctor1"]), n2=pick(row,["medecin2","medecindastreinte2","astreinte2","doctor2"]);
+      if(!start&&!String(n1).trim()&&!String(n2).trim())return; // ligne vide
+      if(!start||!end){errors.push(`Ligne ${line} : mois de début ou de fin illisible.`);return;}
+      if(end<start){errors.push(`Ligne ${line} : le mois de fin précède le mois de début.`);return;}
+      if(oncallMonthCount(start,end)>12){errors.push(`Ligne ${line} : période de plus de 12 mois.`);return;}
+      const d1=findDoc(n1), d2=findDoc(n2);
+      if(!d1||!d2){errors.push(`Ligne ${line} : médecin introuvable parmi les comptes Médecin (${String(!d1?n1:n2).trim()||"vide"}).`);return;}
+      if(d1.username===d2.username){errors.push(`Ligne ${line} : le même médecin figure deux fois.`);return;}
+      const clash=list.find(r=>r.start<=end&&start<=r.end);
+      if(clash){errors.push(`Ligne ${line} : chevauche la ligne ${clash.line} du fichier.`);return;}
+      const ex=oncallPeriods.find(p=>p.startMonth<=end&&start<=(p.endMonth||p.startMonth));
+      if(ex&&!(ex.startMonth===start&&(ex.endMonth||ex.startMonth)===end)){errors.push(`Ligne ${line} : chevauche la désignation existante ${oncallPeriodLabel(ex)}.`);return;}
+      list.push({line,start,end,doctor1:d1.username,doctor2:d2.username,
+        phone1:String(pick(row,["telephone1","tel1","telephonemedecin1"])||"").trim(),email1:String(pick(row,["email1","mail1","emailmedecin1"])||"").trim(),
+        phone2:String(pick(row,["telephone2","tel2","telephonemedecin2"])||"").trim(),email2:String(pick(row,["email2","mail2","emailmedecin2"])||"").trim(),replace:!!ex});
+    });
+    if(errors.length){setTgStatus("oncallImportStatus","err",`Import annulé, aucune donnée modifiée. ${errors.slice(0,5).join(" ")}${errors.length>5?` (+${errors.length-5} autre(s))`:""}`);return;}
+    if(!list.length){setTgStatus("oncallImportStatus","err","Aucune ligne valide trouvée dans le fichier.");return;}
+    const nRep=list.filter(r=>r.replace).length;
+    if(!confirm(`Importer ${list.length} désignation(s)${nRep?` dont ${nRep} remplaçant une désignation existante`:""} ?`))return;
+    btn.disabled=true;
+    setTgStatus("oncallImportStatus","busy","Import de la liste en cours…");
+    const res=await supaRpc("toxgarde_import_oncall",{p_token:cloudToken(),p_rows:list.map(({line,replace,...r})=>r)});
+    oncallContacts=null; await loadOncallContacts();
+    await refreshOncallFromServer(); notifyRealtimeUpdate();
+    setTgStatus("oncallImportStatus","ok",`Import terminé : ${Number(res?.created||0)} créée(s), ${Number(res?.updated||0)} remplacée(s).`);
+  }catch(e){
+    console.error("Tox-Garde / import astreintes :",e);
+    setTgStatus("oncallImportStatus","err","Import annulé, aucune donnée modifiée : "+oncallRpcError(e));
+  }finally{btn.disabled=false;input.value="";}
+}
+async function downloadOncallTemplate(){
+  await ensureXLSX();
+  const y=new Date().getFullYear()+1;
+  const rows=[["Mois début","Mois fin","Médecin 1","Téléphone 1","E-mail 1","Médecin 2","Téléphone 2","E-mail 2"],
+    [`${y}-01`,`${y}-02`,"Dr Exemple A","06 00 00 00 01","a@exemple.fr","Dr Exemple B","06 00 00 00 02",""],
+    [`${y}-03`,`${y}-03`,"Dr Exemple C","06 00 00 00 03","","Dr Exemple D","06 00 00 00 04",""]];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Astreintes"); XLSX.writeFile(wb,"modele_astreintes_tox-garde.xlsx");
+}
+/* ----- Raccordements (sans modifier les fonctions existantes) ----- */
+// Rafraîchissement : aux mêmes moments que les justificatifs (connexion, démarrage, signal temps réel, retour sur l'onglet).
+const _refreshJustificationsOncall=refreshJustificationsFromServer;
+refreshJustificationsFromServer=async function(){const r=await _refreshJustificationsOncall.apply(this,arguments);refreshOncallFromServer();return r;};
+// Déconnexion : aucune donnée d'astreinte conservée pour le compte suivant.
+const _logoutOncall=logout;
+logout=async function(){oncallPeriods=[];oncallContacts=null;oncallEditId=null;
+  // Formulaire et messages réinitialisés pour le compte suivant (le formulaire est reconstruit à l'ouverture).
+  ["oncallYear","oncallEndYear"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML="";});
+  ["oncallFormStatus","oncallImportStatus"].forEach(id=>{const el=document.getElementById(id);if(el){el.className="tg-status";el.innerHTML="";}});
+  const r=await _logoutOncall.apply(this,arguments);renderOncallDisplay();renderOncallTable();return r;};
+// Ouverture de la rubrique « Astreintes » depuis le menu.
+const _openTabOncall=openTab;
+openTab=function(id){const r=_openTabOncall.apply(this,arguments);if(id==="oncall")openOncallTab();return r;};
+// Affichage : à chaque changement du tableau de planning (mois, version, planning validé…).
+(function(){
+  const t=document.getElementById("planningTable"); if(!t||!window.MutationObserver)return;
+  let queued=false;
+  // setTimeout plutôt que requestAnimationFrame : ce dernier est suspendu quand l'onglet est en arrière-plan.
+  new MutationObserver(()=>{if(queued)return;queued=true;setTimeout(()=>{queued=false;renderOncallDisplay();},0);}).observe(t,{childList:true});
+})();
+if(currentSession()&&cloudToken())refreshOncallFromServer(); else renderOncallDisplay();
+</script>
 
 
 

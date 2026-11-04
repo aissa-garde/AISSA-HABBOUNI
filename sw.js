@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'tox-garde-pwa-v45';
+﻿const CACHE_NAME = 'tox-garde-pwa-v47';
 const APP_SHELL = [
   './',
   './index.html',
