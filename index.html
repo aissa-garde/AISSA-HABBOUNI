@@ -1398,6 +1398,10 @@ function openPlanningFullscreen(){
   if(oncallEl&&oncallEl.innerHTML.trim())body.insertAdjacentHTML("beforeend",`<div class="oncall-section pfs-oncall">${oncallEl.innerHTML.replace(/\sid="[^"]*"/g,"")}</div>`);
   // Lecture seule : aucune action de modification dans l'aperçu.
   body.querySelectorAll("*").forEach(el=>{["onclick","ondblclick","onchange","oninput","oncontextmenu","contenteditable","draggable"].forEach(a=>el.removeAttribute(a));});
+  // Même rendu que l'aperçu Médecin : les boutons de modification des cellules (compte Admin)
+  // sont remplacés par leur simple texte.
+  body.querySelectorAll("button.cellEditBtn").forEach(b=>b.replaceWith(document.createTextNode(b.textContent)));
+  body.querySelectorAll("[data-edit-name],[data-edit-date],td[title]").forEach(el=>{el.removeAttribute("data-edit-name");el.removeAttribute("data-edit-date");el.removeAttribute("title");});
   body.querySelectorAll("button,select,input,textarea").forEach(el=>{el.disabled=true;});
   document.body.appendChild(ov);
   document.body.classList.add("pfs-open");
@@ -3520,13 +3524,15 @@ function buildExportHeaderImage(periodTitle){
         // Efface uniquement les pointillés situés après « Planning des gardes — ».
         c.fillStyle="#fff";
         c.fillRect(438,204,430,28);
-        // Texte de période dans le même emplacement, avec réduction automatique si nécessaire.
-        let size=18;
+        // Texte de période aligné sur « Planning des gardes — » de l'image d'en-tête :
+        // même ligne de base (dernière ligne de pixels y=222), même hauteur de majuscules (~12 px => 17 px),
+        // et un espace après le tiret (qui se termine à x=435) identique à celui qui le précède.
+        let size=17;
         c.font=`700 ${size}px Arial, sans-serif`;
-        while(size>10 && c.measureText(periodTitle).width>405){ size--; c.font=`700 ${size}px Arial, sans-serif`; }
+        while(size>10 && c.measureText(periodTitle).width>400){ size--; c.font=`700 ${size}px Arial, sans-serif`; }
         c.fillStyle="#000";
-        c.textBaseline="middle";
-        c.fillText(periodTitle,438,216);
+        c.textBaseline="alphabetic";
+        c.fillText(periodTitle,443,223);
         resolve(canvas.toDataURL("image/png"));
       }catch(e){reject(e);}
     };
