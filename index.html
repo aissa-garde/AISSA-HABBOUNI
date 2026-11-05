@@ -991,7 +991,7 @@ body.just-uploading label.btn:has(>input[type=file]),body.just-uploading button[
     <select id="planningYearSelect" onchange="planningChangeYear(this.value)" aria-label="Choisir l'année"></select>
   </label>
   <strong id="planningMonthLabel"></strong>
-  <button id="deleteDisplayedPlanningBtn" type="button" class="btn danger admin-only" onclick="deleteDisplayedPlanning()">🗑 Supprimer planning</button>
+  <button id="deleteDisplayedPlanningBtn" type="button" class="btn danger admin-only" onclick="deleteDisplayedPlanning()" title="Supprimer le planning" aria-label="Supprimer le planning"><span class="del-ico" aria-hidden="true">🗑</span><span class="del-txt"> Supprimer planning</span></button>
 </div>
 <div id="planningMonthTabs" class="planning-month-tabs" aria-label="Sélection du mois"></div>
 <div id="planningVersionTabs" class="planning-version-tabs admin-only" aria-label="Versions du planning"></div>
@@ -1006,7 +1006,6 @@ body.just-uploading label.btn:has(>input[type=file]),body.just-uploading button[
     <button type="button" class="btn" onclick="exportPlanningPDF();this.closest('details').open=false">PDF (paysage)</button>
   </div>
 </details>
-<button class="btn admin-only" onclick="window.print()">Imprimer</button>
 <button class="btn primary admin-only" onclick="confirmCurrentPlanning()">✓ Valider le planning</button></div>
 <div class="actions admin-only planning-legacy-controls" style="margin-top:10px"><select id="historySelect" onchange="showHistoryPlanning()" style="display:none"></select><button class="btn" onclick="showCurrentPlanning()">Planning actuel</button></div><div id="historyBlocks" class="history-groups"></div>
 <div class="actions doctor-only" style="margin-top:10px"><label style="min-width:360px">Plannings validés<select id="doctorHistorySelect" onchange="showDoctorValidatedPlanning()"></select></label><button class="btn primary" onclick="showDoctorValidatedPlanning()">Afficher</button><button id="doctorPdfBtn" class="btn" type="button" onclick="exportDoctorValidatedPlanningPDF()">📄 Exporter PDF</button></div>
@@ -6287,6 +6286,24 @@ body .btn.small.btn-soft,body .btn.small.btn-ok,body .btn.small.danger{padding-b
 @media(max-width:900px){.oncall-form-gap{display:none}}
 @media(max-width:700px){.oncall-grid,.oncall-form{grid-template-columns:1fr}}
 @media print{.oncall-admin{display:none!important}}
+/* Tableau de bord : cartes « Astreinte » */
+.dc-A{--t:#eef4fb;--a:#3f83c5}
+.dc-A-now{box-shadow:inset 0 0 0 2px #3f83c5}
+.dc-A .dc-person a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.dc-A .dc-pill{white-space:nowrap}
+.dc-me{font-size:11px;font-weight:700;color:#3f83c5}
+@media(max-width:720px){#dashOncall.dc-g2{grid-template-columns:1fr}}
+/* ===== Planning — boutons d'action compacts sur téléphone (ordinateur inchangé) ===== */
+@media(max-width:700px){
+  #planning .planning-main-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px!important;overflow:visible!important;padding-bottom:0!important;margin-top:8px}
+  #planning .planning-main-actions>.btn,#planning .planning-main-actions>.export-menu>summary{min-height:36px!important;height:36px;padding:5px 8px!important;font-size:11.5px!important;border-radius:10px!important;width:100%;min-width:0!important;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
+  #planning .planning-main-actions>.export-menu{flex:none!important;min-width:0!important;width:100%}
+  #planning .planning-main-actions .pfs-ico{font-size:12px}
+  #deleteDisplayedPlanningBtn{flex:0 0 36px!important;width:36px!important;min-width:36px!important;height:36px!important;min-height:36px!important;padding:0!important;font-size:16px!important;line-height:1!important;border-radius:10px!important;justify-content:center;align-items:center}
+  #deleteDisplayedPlanningBtn .del-txt{display:none}
+  #planning .planning-month-nav{gap:8px}
+  #planning .planning-month-nav strong{font-size:17px!important;flex:1 1 auto;min-width:0!important;text-align:center}
+}
 </style>
 <script id="oncallScript">
 /* =========================================================
@@ -6341,6 +6358,38 @@ async function refreshOncallFromServer(){
   }
   renderOncallDisplay();
   renderOncallTable();
+  renderOncallDashboard();
+}
+/* ----- Tableau de bord : rubrique « Astreinte » -----
+   Réutilise les désignations existantes (oncallPeriods).
+   Administrateur et Médecin : binôme de la période en cours et de la période suivante.
+   Médecin : son nom est signalé « (vous) » et sa prochaine astreinte est ajoutée si elle vient plus tard. */
+function oncallIsMine(d,ses){
+  const u=String(ses?.username||"").toLowerCase(), n=String(ses?.doctor||"").toLowerCase();
+  return !!d&&((u&&String(d.username||"").toLowerCase()===u)||(n&&String(d.doctor||"").toLowerCase()===n));
+}
+function oncallDashContact(d,me){
+  const tel=String(d?.phone||"").trim();
+  return `<div class="dc-person"><b>${escapeHtml(d?.doctor||d?.username||"—")}</b>${me?' <span class="dc-me">(vous)</span>':""}${tel?` · <a href="tel:${escapeHtml(tel.replace(/[^\d+]/g,""))}">${escapeHtml(tel)}</a>`:""}</div>`;
+}
+function renderOncallDashboard(){
+  const el=document.getElementById("dashOncall"); if(!el)return;
+  const ses=currentSession(); if(!ses){el.innerHTML="";return;}
+  if(oncallUnavailable){el.innerHTML=`<div class="dc-empty">${isAdmin()?escapeHtml(oncallRpcError("Supabase 404")):"Aucune information d’astreinte disponible."}</div>`;return;}
+  const nowKey=oncallKey(new Date().getFullYear(),new Date().getMonth());
+  const sorted=[...oncallPeriods].sort((a,b)=>a.startMonth.localeCompare(b.startMonth));
+  const isNow=p=>p.startMonth<=nowKey&&nowKey<=(p.endMonth||p.startMonth);
+  const doctor=!isAdmin();
+  const isMineP=p=>doctor&&!!p&&p.doctors.some(d=>oncallIsMine(d,ses));
+  const cur=sorted.find(isNow), next=sorted.find(p=>p.startMonth>nowKey);
+  const card=(title,p)=>`<div class="dc-cell dc-box dc-A${isMineP(p)?" dc-A-now":""}"><div class="dc-top"><b>${title}</b>${p?`<span class="dc-pill">${escapeHtml(oncallPeriodLabel(p))}</span>`:""}</div>${p?p.doctors.map(d=>oncallDashContact(d,doctor&&oncallIsMine(d,ses))).join(""):`<div class="dc-none">Aucune désignation.</div>`}</div>`;
+  let html=card("En cours",cur)+card("Période suivante",next);
+  // Médecin : sa prochaine astreinte si elle n'est ni en cours ni la période suivante.
+  if(doctor){
+    const mine=sorted.find(p=>isMineP(p)&&(p.endMonth||p.startMonth)>=nowKey);
+    if(mine&&mine!==cur&&mine!==next)html+=card("Ma prochaine astreinte",mine);
+  }
+  el.innerHTML=html;
 }
 // Mois du planning actuellement consulté.
 function oncallDisplayedMonth(){
@@ -6600,7 +6649,16 @@ logout=async function(){oncallPeriods=[];oncallContacts=null;oncallEditId=null;
   // Formulaire et messages réinitialisés pour le compte suivant (le formulaire est reconstruit à l'ouverture).
   ["oncallYear","oncallEndYear"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML="";});
   ["oncallFormStatus","oncallImportStatus"].forEach(id=>{const el=document.getElementById(id);if(el){el.className="tg-status";el.innerHTML="";}});
-  const r=await _logoutOncall.apply(this,arguments);renderOncallDisplay();renderOncallTable();return r;};
+  const r=await _logoutOncall.apply(this,arguments);renderOncallDisplay();renderOncallTable();renderOncallDashboard();return r;};
+// Tableau de bord : section « Astreinte » ajoutée après le rendu existant (aucune donnée nouvelle).
+const _renderTodayGuardsOncall=renderTodayGuards;
+renderTodayGuards=function(){
+  const r=_renderTodayGuardsOncall.apply(this,arguments);
+  const el=document.getElementById("todayGuards");
+  if(el&&!document.getElementById("dashOncall"))el.insertAdjacentHTML("beforeend",`<div class="dc-section">Astreinte</div><div id="dashOncall" class="dc-grid dc-g2"></div>`);
+  renderOncallDashboard();
+  return r;
+};
 // Ouverture de la rubrique « Astreintes » depuis le menu.
 const _openTabOncall=openTab;
 openTab=function(id){const r=_openTabOncall.apply(this,arguments);if(id==="oncall")openOncallTab();return r;};
