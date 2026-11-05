@@ -6696,10 +6696,7 @@ if(currentSession()&&cloudToken())refreshOncallFromServer(); else renderOncallDi
 </script>
 <style id="supervisorStyle">
 /* ===== Superviseur : mode consultation seule ===== */
-.sup-banner{display:none;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:7px 12px;background:#fff4d6;color:#7a4b00;border-bottom:1px solid #f0d58a;font-size:13px;font-weight:800;letter-spacing:.04em;text-align:center;position:sticky;top:0;z-index:50}
-.sup-banner small{font-weight:600;letter-spacing:0}
-body.role-supervisor .sup-banner{display:flex}
-body.role-supervisor #pwdHeaderBtn,
+.sup-role-tag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#fff;border:1px solid #c9dbef;color:#2563a8!important;font-size:11px;font-weight:700;letter-spacing:.02em;vertical-align:middle;white-space:nowrap}
 body.role-supervisor .header-settings,
 body.role-supervisor #mobileSettingsNav,
 body.role-supervisor nav [data-tab="generate"],
@@ -6712,7 +6709,6 @@ body.role-supervisor #oncallAdmin,
 body.role-supervisor .oncall-table th.admin-only,
 body.role-supervisor .sup-hidden{display:none!important}
 body.role-supervisor .cellEditBtn{pointer-events:none;cursor:default}
-@media(max-width:700px){.sup-banner{font-size:11.5px;padding:6px 10px}}
 </style>
 <script id="supervisorScript">
 /* =========================================================
@@ -6736,7 +6732,9 @@ const SUP_READ_RPC={
   toxgarde_list_justifications:"toxgarde_sup_list_justifications",
   toxgarde_get_justification_file:"toxgarde_sup_get_justification_file",
   toxgarde_list_oncall:"toxgarde_sup_list_oncall",
-  toxgarde_logout:"toxgarde_sup_logout"
+  toxgarde_logout:"toxgarde_sup_logout",
+  // Seule écriture permise : son propre mot de passe (mot de passe actuel vérifié par le serveur).
+  toxgarde_change_password:"toxgarde_sup_change_password"
 };
 const SUP_EMPTY_RPC={toxgarde_password_status:{mustChange:false},toxgarde_list_accounts:[],toxgarde_list_doctor_contacts:[],toxgarde_list_supervisors:[]};
 const _supaRpcSupervisor=supaRpc;
@@ -6823,14 +6821,13 @@ supervisorLockUI=function(){
   _supervisorLockUIBase();
   document.querySelectorAll("main input:disabled,main select:disabled,main textarea:disabled").forEach(el=>{if(!before.has(el))el.dataset.supLocked="1";});
 };
+// Étiquette « Superviseur » à côté de l'identifiant, dans l'en-tête.
 function supervisorBanner(){
-  let b=document.getElementById("supBanner");
-  if(!b){
-    b=document.createElement("div");b.id="supBanner";b.className="sup-banner";b.setAttribute("role","status");
-    const header=document.querySelector("header"); if(header)header.insertAdjacentElement("afterend",b); else document.body.prepend(b);
-  }
-  const ses=currentSession();
-  b.innerHTML=`👁 MODE CONSULTATION SEULE${ses?.displayName?` <small>— ${escapeHtml(ses.displayName)}</small>`:""}`;
+  const name=document.querySelector("#authUserInfo .auth-account-name");
+  if(!name||!isSupervisor()||name.querySelector(".sup-role-tag"))return;
+  const tag=document.createElement("span");tag.className="sup-role-tag";tag.textContent="Superviseur";
+  tag.title="Compte Superviseur : consultation seule";
+  name.appendChild(tag);
 }
 const _applyAuthUISupervisor=applyAuthUI;
 applyAuthUI=function(){
