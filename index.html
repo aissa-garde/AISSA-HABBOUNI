@@ -921,6 +921,22 @@ body.just-uploading label.btn:has(>input[type=file]),body.just-uploading button[
 </table>
 
 </div>
+<div class="card admin-only" id="supervisorsManager" style="margin-top:16px">
+<h2>👁 Comptes Superviseur <small class="hint" style="font-weight:400">(consultation seule)</small></h2>
+<p class="hint" style="margin-top:0">Accès global en lecture seule : plannings, gardes, congés, récupérations, astreintes, demandes, justificatifs, statistiques. Aucune modification possible (bloquée par le serveur).</p>
+<div class="grid">
+<label>Identifiant<input id="supUsername" autocomplete="off" maxlength="60" placeholder="Ex. superviseur.dupont"></label>
+<label>Nom affiché<input id="supDisplayName" autocomplete="off" maxlength="120" placeholder="Ex. Pr Dupont"></label>
+<label>Mot de passe<input id="supPassword" type="password" autocomplete="new-password" placeholder="Création : obligatoire — Modification : laisser vide pour conserver"></label>
+</div>
+<div class="actions" style="margin-top:12px">
+<button class="btn primary" type="button" id="supSaveBtn" onclick="saveSupervisor()">➕ Créer / mettre à jour</button>
+<button class="btn" type="button" onclick="clearSupervisorForm()">↺ Nouveau compte</button>
+<button class="btn" type="button" onclick="toggleSupervisorPassword()">👁 Afficher le mot de passe</button>
+</div>
+<div id="supFormStatus" class="tg-status" aria-live="polite"></div>
+<div style="overflow-x:auto;margin-top:15px"><table><thead><tr><th>Identifiant</th><th>Nom affiché</th><th>Statut</th><th>Action</th></tr></thead><tbody id="supervisorsBody"></tbody></table></div>
+</div>
 </section>
 
 <section id="absences" class="panel">
@@ -4275,7 +4291,13 @@ async function login(ev){
   try{
     setLoginProgress(25,"Authentification Supabase…");
     const result=await supaRpc("toxgarde_login",{p_username:u,p_password:pw});
-    const a=Array.isArray(result)?result[0]:result;
+    let a=Array.isArray(result)?result[0]:result;
+    // Compte Superviseur (consultation seule) : comptes et sessions séparés côté serveur.
+    let supervisor=null;
+    if(!a?.token && typeof supervisorLogin==="function"){
+      supervisor=await supervisorLogin(u,pw);
+      if(supervisor)a={token:supervisor.token,username:supervisor.username,role:"admin",doctor:""};
+    }
     if(!a?.token)throw new Error("Identifiant ou mot de passe incorrect.");
 
     setLoginProgress(45,"Compte authentifié. Chargement des données…");
@@ -4293,7 +4315,8 @@ async function login(ev){
     setLoginProgress(65,"Données récupérées. Préparation de votre session…");
 
     // La session n'est mémorisée qu'après authentification + lecture cloud réussies.
-    persistSession({username:a.username,role:a.role,doctor:a.doctor||""},keep);
+    persistSession(supervisor?{username:a.username,role:"admin",doctor:"",supervisor:true,displayName:supervisor.displayName||""}:{username:a.username,role:a.role,doctor:a.doctor||""},keep);
+    if(typeof supervisorPendingToken!=="undefined")supervisorPendingToken=null;
     (keep?localStorage:sessionStorage).setItem("toxGardeCloudToken",a.token);
     if(keep)sessionStorage.removeItem("toxGardeCloudToken");
     else localStorage.removeItem("toxGardeCloudToken");
@@ -4304,7 +4327,7 @@ async function login(ev){
       setLoginProgress(78,"Synchronisation des données…");
       state=Object.assign(state,remote);
       state.accounts=[];
-    }else if(a.role==="admin"){
+    }else if(a.role==="admin" && !supervisor){
       setLoginProgress(72,"Initialisation des données administrateur…");
       const localAccounts=Array.isArray(state.accounts)?JSON.parse(JSON.stringify(state.accounts)):[];
       for(const acc of localAccounts){
@@ -6670,6 +6693,252 @@ openTab=function(id){const r=_openTabOncall.apply(this,arguments);if(id==="oncal
   new MutationObserver(()=>{if(queued)return;queued=true;setTimeout(()=>{queued=false;renderOncallDisplay();},0);}).observe(t,{childList:true});
 })();
 if(currentSession()&&cloudToken())refreshOncallFromServer(); else renderOncallDisplay();
+</script>
+<style id="supervisorStyle">
+/* ===== Superviseur : mode consultation seule ===== */
+.sup-banner{display:none;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:7px 12px;background:#fff4d6;color:#7a4b00;border-bottom:1px solid #f0d58a;font-size:13px;font-weight:800;letter-spacing:.04em;text-align:center;position:sticky;top:0;z-index:50}
+.sup-banner small{font-weight:600;letter-spacing:0}
+body.role-supervisor .sup-banner{display:flex}
+body.role-supervisor #pwdHeaderBtn,
+body.role-supervisor .header-settings,
+body.role-supervisor #mobileSettingsNav,
+body.role-supervisor nav [data-tab="generate"],
+body.role-supervisor nav [data-tab="accounts"],
+body.role-supervisor #generate,
+body.role-supervisor #accounts,
+body.role-supervisor #adminAvailabilityPane,
+body.role-supervisor .adminAbsTab[data-view="availability"],
+body.role-supervisor #oncallAdmin,
+body.role-supervisor .oncall-table th.admin-only,
+body.role-supervisor .sup-hidden{display:none!important}
+body.role-supervisor .cellEditBtn{pointer-events:none;cursor:default}
+@media(max-width:700px){.sup-banner{font-size:11.5px;padding:6px 10px}}
+</style>
+<script id="supervisorScript">
+/* =========================================================
+   RÔLE SUPERVISEUR — consultation seule (supabase_superviseur.sql)
+   Sécurité réelle côté serveur : comptes et sessions Superviseur séparés ; toutes les fonctions
+   d'écriture existantes refusent son jeton. Côté navigateur (confort et défense en profondeur) :
+   - les appels Supabase sont redirigés vers les fonctions de lecture toxgarde_sup_* ; tout autre appel est bloqué ;
+   - toute sauvegarde est annulée (retour aux données du serveur) ;
+   - les commandes de modification sont masquées et les champs de saisie désactivés.
+   Le Superviseur utilise l'interface de consultation de l'Administrateur (session marquée supervisor:true).
+   ========================================================= */
+let supervisorPendingToken=null;   // jeton reçu à la connexion, avant l'enregistrement de la session
+let supervisorSnapshot=null;       // dernières données lues sur le serveur
+function isSupervisor(){return currentSession()?.supervisor===true;}
+function isSupervisorToken(t){return !!t&&(t===supervisorPendingToken||(isSupervisor()&&t===cloudToken()));}
+
+// --- Appels Supabase ---
+const SUP_READ_RPC={
+  toxgarde_get_data:"toxgarde_sup_get_data",
+  toxgarde_get_revision:"toxgarde_sup_get_revision",
+  toxgarde_list_justifications:"toxgarde_sup_list_justifications",
+  toxgarde_get_justification_file:"toxgarde_sup_get_justification_file",
+  toxgarde_list_oncall:"toxgarde_sup_list_oncall",
+  toxgarde_logout:"toxgarde_sup_logout"
+};
+const SUP_EMPTY_RPC={toxgarde_password_status:{mustChange:false},toxgarde_list_accounts:[],toxgarde_list_doctor_contacts:[],toxgarde_list_supervisors:[]};
+const _supaRpcSupervisor=supaRpc;
+supaRpc=async function(name,body){
+  if(!isSupervisorToken(body&&body.p_token))return _supaRpcSupervisor.apply(this,arguments);
+  if(SUP_READ_RPC[name])return _supaRpcSupervisor(SUP_READ_RPC[name],body);
+  if(Object.prototype.hasOwnProperty.call(SUP_EMPTY_RPC,name))return JSON.parse(JSON.stringify(SUP_EMPTY_RPC[name]));
+  throw new Error("Mode consultation seule : modification non autorisée.");
+};
+// Connexion : appelée par login() quand l'identifiant n'est pas un compte Administrateur / Médecin.
+async function supervisorLogin(username,password){
+  try{
+    const r=await _supaRpcSupervisor("toxgarde_supervisor_login",{p_username:username,p_password:password});
+    const o=Array.isArray(r)?r[0]:r;
+    if(!o?.token)return null;
+    supervisorPendingToken=o.token;
+    return {token:o.token,username:o.username,displayName:o.display_name||""};
+  }catch(e){
+    // Fonction non installée : le comportement de connexion reste celui d'origine.
+    if(!/Supabase 404|PGRST202|Could not find the function/i.test(String(e&&e.message)))console.warn("Tox-Garde / connexion Superviseur :",e);
+    return null;
+  }
+}
+
+// --- Données : lecture seule ---
+const _cloudLoadSupervisor=cloudLoad;
+cloudLoad=async function(token){
+  const r=await _cloudLoadSupervisor.apply(this,arguments);
+  if(isSupervisorToken(token))supervisorSnapshot=JSON.stringify(r&&typeof r==="object"?r:{});
+  return r;
+};
+function supervisorRevert(){
+  if(!supervisorSnapshot)return;
+  try{Object.assign(state,JSON.parse(supervisorSnapshot));state.accounts=[];localStorage.setItem("gardeMed",JSON.stringify(state));}catch(_){}
+}
+let supervisorNoticeAt=0;
+function supervisorNotice(){
+  const now=Date.now(); if(now-supervisorNoticeAt<1500)return; supervisorNoticeAt=now;
+  if(typeof showTgToast==="function")showTgToast("err","Mode consultation seule : aucune modification n’est possible.");
+}
+const _saveSupervisor=save;
+save=async function(){
+  if(isSupervisor()){supervisorRevert();renderAll();supervisorNotice();return false;}
+  return _saveSupervisor.apply(this,arguments);
+};
+const _cloudSaveSupervisor=cloudSave;
+cloudSave=async function(){
+  if(isSupervisor())throw new Error("Mode consultation seule : modification non autorisée.");
+  return _cloudSaveSupervisor.apply(this,arguments);
+};
+
+// --- Interface ---
+const SUP_ALLOWED_ACTION=/^\s*(openTab|planningSelectMonth|planningChangeYear|planningChangeGeneration|showCurrentPlanning|showHistoryPlanning|showDoctorValidatedPlanning|selectHistoryBlock|toggleHistoryPanel|openPlanningFullscreen|exportPlanning|exportPlanningWord|exportPlanningPDF|exportDoctorValidatedPlanningPDF|openJustificationFile|setAdminAbsView|resetAdminAbsFilters|renderAdminAbsences|bilanSetYear|bilanSortBy|bilanExportExcel|bilanExportPDF|myBilanSetYear|hideTgToast|logout)\s*\(/;
+const SUP_ALLOWED_FIELDS=["planningYearSelect","doctorHistorySelect","historySelect","adminAbsMonthSearch","adminAbsDoctorSearch"];
+function supervisorLockUI(){
+  if(!isSupervisor())return;
+  const root=document.querySelector("main"); if(!root)return;
+  // Boutons et éléments cliquables : seules les actions de consultation restent visibles.
+  root.querySelectorAll("[onclick]").forEach(el=>{
+    if(el.classList.contains("cellEditBtn")){el.tabIndex=-1;return;}   // cellule du planning : texte conservé, clic neutralisé
+    el.classList.toggle("sup-hidden",!SUP_ALLOWED_ACTION.test(el.getAttribute("onclick")||""));
+  });
+  // Champs de saisie : désactivés, sauf la navigation et les filtres.
+  root.querySelectorAll("input,select,textarea").forEach(el=>{
+    const handler=(el.getAttribute("onchange")||"")+(el.getAttribute("oninput")||"");
+    const allowed=SUP_ALLOWED_FIELDS.includes(el.id)||SUP_ALLOWED_ACTION.test(handler);
+    if(allowed)return;
+    el.disabled=true;
+    if(el.type==="file"){(el.closest("label")||el).classList.add("sup-hidden");}
+  });
+}
+function supervisorUnlockUI(){
+  document.querySelectorAll(".sup-hidden").forEach(el=>el.classList.remove("sup-hidden"));
+  document.querySelectorAll("main input:disabled,main select:disabled,main textarea:disabled").forEach(el=>{
+    // Ne réactive que ce que le mode Superviseur a désactivé ; l'interface d'origine reprend la main au rendu suivant.
+    if(el.dataset.supLocked==="1"){el.disabled=false;delete el.dataset.supLocked;}
+  });
+}
+// Marque les champs désactivés par le mode Superviseur (pour pouvoir les réactiver après déconnexion).
+const _supervisorLockUIBase=supervisorLockUI;
+supervisorLockUI=function(){
+  if(!isSupervisor())return;
+  const before=new Set([...document.querySelectorAll("main input:disabled,main select:disabled,main textarea:disabled")]);
+  _supervisorLockUIBase();
+  document.querySelectorAll("main input:disabled,main select:disabled,main textarea:disabled").forEach(el=>{if(!before.has(el))el.dataset.supLocked="1";});
+};
+function supervisorBanner(){
+  let b=document.getElementById("supBanner");
+  if(!b){
+    b=document.createElement("div");b.id="supBanner";b.className="sup-banner";b.setAttribute("role","status");
+    const header=document.querySelector("header"); if(header)header.insertAdjacentElement("afterend",b); else document.body.prepend(b);
+  }
+  const ses=currentSession();
+  b.innerHTML=`👁 MODE CONSULTATION SEULE${ses?.displayName?` <small>— ${escapeHtml(ses.displayName)}</small>`:""}`;
+}
+const _applyAuthUISupervisor=applyAuthUI;
+applyAuthUI=function(){
+  const r=_applyAuthUISupervisor.apply(this,arguments);
+  const sup=isSupervisor();
+  document.body.classList.toggle("role-supervisor",sup);
+  supervisorBanner();
+  if(sup){
+    // La vue « + Ajouter nouveaux » (saisie) est remplacée par la liste des congés.
+    if(typeof setAdminAbsView==="function")setAdminAbsView("leave");
+    const act=document.querySelector(".panel.active");
+    if(act&&["generate","accounts"].includes(act.id))openTab("dashboard");
+    supervisorLockUI();
+  }else{
+    supervisorUnlockUI();
+  }
+  return r;
+};
+const _openTabSupervisor=openTab;
+openTab=function(id){
+  if(isSupervisor()&&["generate","accounts"].includes(id))id="dashboard";
+  const r=_openTabSupervisor.call(this,id);
+  if(isSupervisor()&&id==="absences"&&typeof setAdminAbsView==="function"&&adminAbsView==="availability")setAdminAbsView("leave");
+  return r;
+};
+// Verrouillage maintenu à chaque nouveau rendu (changement de mois, d'onglet, actualisation…).
+(function(){
+  const root=document.querySelector("main"); if(!root||!window.MutationObserver)return;
+  let queued=false;
+  new MutationObserver(()=>{if(!isSupervisor()||queued)return;queued=true;setTimeout(()=>{queued=false;supervisorLockUI();},0);}).observe(root,{childList:true,subtree:true});
+})();
+// Dernier filet : un clic sur une commande non autorisée est intercepté avant son exécution.
+document.addEventListener("click",ev=>{
+  if(!isSupervisor())return;
+  const el=ev.target.closest&&ev.target.closest("main [onclick]");
+  if(!el)return;
+  if(!el.classList.contains("cellEditBtn")&&SUP_ALLOWED_ACTION.test(el.getAttribute("onclick")||""))return;
+  ev.preventDefault();ev.stopImmediatePropagation();
+  if(!el.classList.contains("cellEditBtn"))supervisorNotice();
+},true);
+
+/* ----- Gestion des Superviseurs (Administrateur principal) ----- */
+function supervisorRpcError(e){
+  const m=String(e&&e.message||e||"");
+  if(/Supabase 404|PGRST202|Could not find the function/i.test(m))return "Fonctions Superviseur non installées sur Supabase (exécuter supabase_superviseur.sql).";
+  return m.replace(/^Supabase \d+\s+—\s+/,"")||"Opération impossible.";
+}
+let supervisorsCache=[];
+async function renderSupervisors(){
+  const tb=document.getElementById("supervisorsBody"); if(!tb)return;
+  if(!isAdmin()||isSupervisor()){tb.innerHTML="";return;}
+  try{
+    const r=await supaRpc("toxgarde_list_supervisors",{p_token:cloudToken()});
+    supervisorsCache=Array.isArray(r)?r:[];
+  }catch(e){tb.innerHTML=`<tr><td colspan="4" class="hint">${escapeHtml(supervisorRpcError(e))}</td></tr>`;return;}
+  if(!supervisorsCache.length){tb.innerHTML='<tr><td colspan="4" class="hint">Aucun compte Superviseur.</td></tr>';return;}
+  const enc=v=>encodeURIComponent(String(v)).replaceAll("'","%27");
+  tb.innerHTML=supervisorsCache.map(s=>`<tr><td>${escapeHtml(s.username)}</td><td>${escapeHtml(s.display_name||"—")}</td><td>${s.active?"✅ Actif":"⛔ Désactivé"}</td><td><button class="btn small" type="button" onclick="editSupervisor(decodeURIComponent('${enc(s.username)}'))">✎ Modifier / mot de passe</button> <button class="btn small" type="button" onclick="setSupervisorActive(decodeURIComponent('${enc(s.username)}'),${s.active?"false":"true"})">${s.active?"Désactiver":"Activer"}</button> <button class="btn small danger" type="button" onclick="deleteSupervisor(decodeURIComponent('${enc(s.username)}'))">Supprimer</button></td></tr>`).join("");
+}
+function clearSupervisorForm(){
+  ["supUsername","supDisplayName","supPassword"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  const u=document.getElementById("supUsername"); if(u)u.readOnly=false;
+  const p=document.getElementById("supPassword"); if(p)p.type="password";
+  const st=document.getElementById("supFormStatus"); if(st){st.className="tg-status";st.innerHTML="";}
+}
+function toggleSupervisorPassword(){const p=document.getElementById("supPassword");if(p)p.type=p.type==="password"?"text":"password";}
+function editSupervisor(username){
+  if(!isAdmin()||isSupervisor())return;
+  const s=supervisorsCache.find(x=>x.username===username); if(!s)return;
+  clearSupervisorForm();
+  document.getElementById("supUsername").value=s.username; document.getElementById("supUsername").readOnly=true;
+  document.getElementById("supDisplayName").value=s.display_name||"";
+  setTgStatus("supFormStatus","ok",`Modification de « ${s.username} ». Saisissez un nouveau mot de passe pour le réinitialiser, ou laissez vide pour le conserver.`);
+  document.getElementById("supDisplayName").focus();
+}
+async function saveSupervisor(){
+  if(!isAdmin()||isSupervisor())return alert("Accès réservé à l’administrateur principal.");
+  const username=document.getElementById("supUsername").value.trim();
+  const displayName=document.getElementById("supDisplayName").value.trim();
+  const password=document.getElementById("supPassword").value;
+  if(!username)return setTgStatus("supFormStatus","err","Saisissez un identifiant.");
+  if(password&&password.length<8)return setTgStatus("supFormStatus","err","Le mot de passe doit contenir au moins 8 caractères.");
+  const btn=document.getElementById("supSaveBtn"); btn.disabled=true;
+  setTgStatus("supFormStatus","busy","Enregistrement en cours…");
+  try{
+    const r=await supaRpc("toxgarde_upsert_supervisor",{p_token:cloudToken(),p_username:username,p_display_name:displayName,p_password:password});
+    clearSupervisorForm();
+    setTgStatus("supFormStatus","ok",r?.created?"Compte Superviseur créé.":(password?"Compte mis à jour, mot de passe réinitialisé.":"Compte mis à jour."));
+    await renderSupervisors();
+  }catch(e){setTgStatus("supFormStatus","err",supervisorRpcError(e));}
+  finally{btn.disabled=false;}
+}
+async function setSupervisorActive(username,active){
+  if(!isAdmin()||isSupervisor())return;
+  try{await supaRpc("toxgarde_set_supervisor_active",{p_token:cloudToken(),p_username:username,p_active:!!active});await renderSupervisors();}
+  catch(e){setTgStatus("supFormStatus","err",supervisorRpcError(e));}
+}
+async function deleteSupervisor(username){
+  if(!isAdmin()||isSupervisor())return;
+  if(!confirm(`Supprimer le compte Superviseur « ${username} » ?`))return;
+  try{await supaRpc("toxgarde_delete_supervisor",{p_token:cloudToken(),p_username:username});clearSupervisorForm();await renderSupervisors();}
+  catch(e){setTgStatus("supFormStatus","err",supervisorRpcError(e));}
+}
+const _renderAccountsSupervisor=renderAccounts;
+renderAccounts=async function(){const r=await _renderAccountsSupervisor.apply(this,arguments);renderSupervisors();return r;};
+
+// État initial (session Superviseur déjà ouverte sur cet appareil).
+if(isSupervisor()){document.body.classList.add("role-supervisor");supervisorBanner();supervisorLockUI();}
 </script>
 
 
